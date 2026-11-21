@@ -1,205 +1,109 @@
 # CLAUDE.md — open-source-catalog
 
-This is UnitySVC Labs' compute catalog. Add container-backed services here.
-Notification integrations remain in `unitysvc-labs/unitysvc-services-notify`.
-Keep existing service names and backend-written identity sidecars when
-reorganizing the catalog.
+This repository is the **UnitySVC Open Source Catalog**: container recipes for
+open-source software. UnitySVC Labs is the seller; the software author is the
+provider. Contributors submit PRs without becoming sellers.
 
-This repository holds **UnitySVC service data** — the declarative files (plus
-tests) that define services published to the UnitySVC gateway/marketplace. It is
-*data*, not application code; there is no server here. **`unitysvc-sellers`
-(repo + `docs/`) is the authoritative standard** for this format and the CLI;
-this file is the quick, repo-local reference and defers to those docs.
+Read [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[container reference](docs/container-recipes.md) before editing a recipe.
+The [unitysvc-sellers docs](https://github.com/unitysvc/unitysvc-sellers/tree/main/docs)
+define the service-data format; these files define catalog-specific requirements.
 
-## Where the data lives and in what shape
+## Recipe layout and names
 
-**All service data lives under `services/specs/`** (files are JSON or TOML — role is fixed
-by filename: `offering.json`, `listing.json`, `provider.json`, `service.json`).
-Author each service one of **two ways**:
+Add `services/specs/<provider>/<software_name>/` with `provider.json`,
+`offering.json`, `listing.json`, an application `usage.md`, and either a local
+`compose.yaml` or an upstream commit-pinned Compose URL. Keep published names
+stable. Do not add or edit backend-written `service.json` identity sidecars.
 
-**(a) Full spec** — a concrete folder per service:
+- `listing.name`: `<provider>/<software_name>`, matching the catalog path.
+- `offering.name`: the bare `<software_name>`.
+- `display_name`: a descriptive, human-readable name for the container service,
+  up to 200 characters. The listing can override the offering's display name.
+- `offering.summary`: a required one-line catalog teaser, **at most 200
+  characters**, also used by frontend search.
+- `offering.description`: details beyond the summary. Start with what the
+  service does in depth, then explain how to use it (channels, instance access
+  and parameters), and cover pricing/support where useful. Point to **How to
+  use this service** for full setup. Usually two or three paragraphs suffice;
+  separate them with `\n\n`. There is no fixed paragraph count or 200-character
+  description limit. Do not repeat the summary as a teaser paragraph.
 
-    services/specs/<provider>/<service-name>/
-      ├── offering.json      # exactly one — technical spec (upstream, auth, channels, payout)
-      ├── listing.json       # one or more — customer-facing (base_url, price, docs, params)
-      ├── provider.json      # the provider record
-      ├── service.json       # { "service_id": "…" } — identity sidecar; commit it, minimal form
-      └── <docs>             # connectivity.*.j2, description.md, code-example.*.j2
+See [names and marketplace copy](CONTRIBUTING.md#names-and-marketplace-copy).
 
-**(b) Templates + param data** — one template renders many services (large
-catalogs, notification-channel fleets):
+## Channels, parameters, environment and compute sizes
 
-    services/templates/<template>/{provider.json, offering.json.j2, listing.json.j2}
-    services/specs/<provider>/<name>.json          # { "template": "<template>", "parameters": {…} }
-    services/specs/<provider>/<name>.service.json  # identity sidecar
-    # Commit the param file + its .service.json — NEVER the rendered folder.
-    # specs commands render param files into a temp folder ephemerally.
+Declare container channels under `offering.upstream_access_config`. Every
+channel uses `access_method: container` and has its **own**:
 
-Either way, the folder (or param-file stem) under `services/specs/<provider>/` **is** the
-service name. The backend derives identity: `service.name ← listing.name`,
-`display_name ← listing/offering display_name`, `status ← worst-of components`.
+- `params.schema`: enrollment settings, descriptions, validation and appropriate
+  defaults; `params.testing_defaults` supplies sample values for test tooling.
+- `environment`: per-container environment variables bound to that channel's
+  parameters with `{{ params.NAME }}`. Container names must match Compose services.
+- `resources`: a named compute size for one container (for example `nano`), or a
+  complete per-service map such as `{"web": "small", "redis": "nano"}` for a stack.
+  Choose suitable active sizes from the [size table](https://unitysvc.com/docs/sizes)
+  using upstream requirements and measured startup/workload needs.
 
-## Offering `description` convention — three paragraphs
+All channels share the offering's **one Compose instance spec**. Offer different
+channels for different compute sizes, parameters/defaults or environment values;
+declare each channel's settings explicitly. Use a separate recipe for a different
+stack. See [sizes and channels](docs/container-recipes.md#sizes-and-channels).
 
-The `offering.json` `description` (the service's marketplace description) MUST be
-**exactly three paragraphs, separated by `\n\n`**:
+Keep Compose literal. Bind configurable application settings through channel
+parameters and `environment`; do not rely on Compose `${VAR}` interpolation,
+`.env` files, `.env.example`, `env_file`, a seller-secret manifest, or
+`${ customer_secrets.* }` for container configuration.
 
-1. **Brief** — a one-line summary of what the service provides. Keep it under
-   **200 characters**. This is the preview/teaser line.
-2. **Detail** — what the service does in depth: the mechanism, the upstream it
-   fronts, how bytes/requests flow, billing basis.
-3. **How to use** — how a customer actually consumes it: the channels (e.g.
-   `byok` vs `plus`), where each is reached, what config each needs. Point at the
-   longer "How to use this service" doc for full setup.
+Application keys, tokens and passwords are parameters too. Defaults can generate
+application credentials where appropriate; customers supply external-provider
+credentials their application needs. Authentication belongs to the application:
+UnitySVC adds no application security gate or built-in instance-key variable.
+See [parameters and environment](docs/container-recipes.md#parameters-and-environment).
 
-The richer, table-driven walkthrough still lives in the service's
-`*-description.md` doc; the three-paragraph `description` is the concise summary.
+## Catalog requirements
 
-## Environment (required for tests and anything touching staging)
+- Use an OSI-approved open-source license and documented container image; credit
+  the author as provider without inventing contact details or implying endorsement
+  or promised support. Identify the tested image version; prefer a digest to pin it.
+- Every listing uses `{"list_price": {"type": "base_cost"}}`; every offering uses
+  `{"payout_price": {"type": "constant", "price": "0"}}`. Labs adds no markup and
+  receives no seller payout.
+- Capabilities are matching official IDs or `name | annotation`. The frontend
+  shows the name as a badge and the annotation on hover, as a seller claim.
+  Follow the [capability contract and limits](CONTRIBUTING.md#capabilities).
+- Include a `container_connectivity` test preset and the shared public guide
+  `"Using container services": {"$doc_preset": "container_description"}`
+  (`unitysvc-data>=0.2.18`) in every container listing.
+- Include the application's own **How to use this service** document, covering
+  setup, authentication, first use, runtime cost, stopping and temporary storage.
 
-Load the repo's committed secrets manifest first — it provides the
-`customer_secrets` values local tests resolve (and is the CI seed source):
+## Local checks require no seller credentials
 
-    set -a; . ./services/seller.secrets.txt; set +a
+Install `unitysvc-sellers` with `unitysvc-core>=0.3.19` and
+`unitysvc-data>=0.2.18`, then run from the repository root:
 
-You also need the seller credentials in your environment —
-`UNITYSVC_SELLER_API_KEY`, `UNITYSVC_SELLER_API_URL`
-(`https://seller.staging.unitysvc.com/v1/`), and `UNITYSVC_API_KEY` (the svcpass
-key used as a gateway customer). A 401 / "Missing svcpass API key" means the
-environment isn't loaded.
+```bash
+usvc_seller specs validate
+usvc_seller specs format --check services
+python scripts/check_channel_binding.py
+```
 
-Invoke the CLI as `usvc_seller …` if on PATH, else
-`uvx --from unitysvc-sellers usvc_seller …`, else from a local checkout
-`uv run --project ~/unitysvc/unitysvc-sellers usvc_seller …`.
+Do not source a seller environment or create an environment example/secret
+manifest. These checks need no seller account, API key or seller-provided secrets.
+For local Docker checks, supply explicit test parameter values and record startup,
+readiness and authentication results, with credentials redacted. The current CLI
+runner's parameter-binding limitation is documented in the
+[contribution checks](CONTRIBUTING.md#check-your-work). Local Docker evidence does
+not prove the platform's named size fits.
 
-## Naming rules (the validator rejects violations)
+## Publication belongs to Labs maintainers
 
-- `listing.name` MUST equal `<provider>/<service-name>` (its path under `services/specs/`),
-  or be a bare top-level handle. `offering.name` stays the **bare** service name.
-- If `listing.name` contains `/`, the first segment MUST equal `provider.name`.
-- `user_access_interfaces.<iface>.base_url`: use
-  `${API_GATEWAY_BASE_URL}/{{ service_name }}` (resolved from `listing.name` at
-  request time) — literal `<provider>/<service>` paths are rejected. Name the
-  single static interface `canonical`.
-- Segments ≥ 2 chars, start alphanumeric, allowed `[A-Za-z0-9._-]`, at most one
-  `@variant`. Single-letter first segments are reserved (`a b c d f g l m r t …`);
-  only `a/` is a permitted movable-pointer carve-out.
+Contributors open PRs; they do not upload to staging/production, change service
+status, publish or merge as part of recipe development. Labs' protected workflows
+hold publication credentials. Maintainers preserve service identities and record
+new backend IDs through PRs after publication.
 
-## seller.secrets.txt / .env.example — the secrets manifest
-
-Every `${ customer_secrets.<NAME> }` referenced in a listing/offering needs a
-same-named **seller** secret on the platform (the gateway-side test plugs in a
-real value). Seed them from the repo-committed manifest, never GitHub variables:
-
-- Commit `seller.secrets.txt` (symlinked as `.env.example`) at the repo root:
-  `export NAME="value"` lines, each preceded by a `#` comment block that is the
-  **customer-facing** description (what the customer sets + how to obtain it). It
-  is both shell-sourceable for local tests and the upload workflow's seed source
-  (`usvc_seller secrets upload seller.secrets.txt`).
-- Seed the **mock** value; keep the manifest exhaustive —
-  `grep -rho '\${ customer_secrets\.[A-Z_]*' services/specs/ | sort -u` should have no
-  name missing from it. A missing name is silently skipped ⇒ the gateway test
-  fails with no obvious cause.
-- **Namespace** secret names by service (`HTTP_RELAY_BASE_URL`,
-  `SMTP_RELAY_PASSWORD`, `<PROVIDER>_API_KEY`) — bare names collide.
-- Container application settings, including keys, passwords and tokens, are
-  enrollment parameters bound through the channel's `environment`. Use the
-  parameter default mechanism where appropriate. The application enforces
-  authentication; UnitySVC adds no application security gate or built-in instance
-  credential. See `docs/container-recipes.md` for the current container contract.
-
-## Verification pipeline — all four green before "ready"
-
-    usvc_seller specs validate                     # schema + cross-file, no network
-    usvc_seller specs format                       # canonical formatting; commit result
-    usvc_seller specs run-tests <name>             # UPSTREAM-side (docs vs upstream directly)
-    usvc_seller specs upload <name>                # push to staging (re-upload ⇒ revision)
-    usvc_seller services run-tests <name> --force  # GATEWAY-side (route + svcpass + upstream)
-
-- **Selector NAME** fnmatches `listing.name`; `%` is a shell-safe synonym for `*`
-  (`cohere/%`, `%-byok`, `%command%`). Wildcards only at start/end. If a name
-  matches an active row **and** a pending revision, single-row commands need
-  `--id <prefix>`.
-- Testing does NOT require the service to be public/active. `set-visibility` +
-  `submit` is **publishing** — a separate explicit step, not part of testing.
-
-### Persistent `pending` for on-wire testing without the CLI runner
-
-`services run-tests` flips the service to `pending` only for the duration of the
-run. To test a service **directly with your own scripts** (curl, the rendered
-code examples, a REST client) against the gateway, make `pending` persistent
-first, then revert when done:
-
-    usvc_seller services enable-testing <name>   # draft|rejected|suspended → pending (routable)
-    # ... run your own scripts against the gateway ...
-    usvc_seller services withdraw <name>         # pending|rejected → draft (revert)
-
-`enable-testing` is a **pure status change** — it does NOT run the activation
-pipeline, does NOT progress the service to `active`, and is NOT a submission for
-review (use `submit` for that). It just makes the service routable so on-wire
-tests resolve. Same `NAME` / `--id` / `--local-ids` / `--all` selectors as the
-other `services` commands.
-
-## Testing gotchas (these have bitten us repeatedly)
-
-- **Draft status is NOT a cause of test failures.** `run-tests` temporarily
-  flips the service to `pending` so the gateway routes to it. Do not chase draft
-  status — a service in `draft`/`rejected` while testing is expected and fine.
-- A gateway **550 "No active enrollment found"** is about enrollment →
-  AccessInterface routing (the enrollment-scoped AI + bridge + rendered
-  `routing_key.username`), NOT status. If a clean re-provision doesn't fix it,
-  suspect stale/conflicting staging data.
-- Tests run in **two modes**: `specs run-tests` renders docs against the upstream
-  directly (`local_testing` true branch, seller credential); `services run-tests`
-  renders the same docs against the gateway (customer svcpass key). A failure
-  only in gateway mode ⇒ wrong base_url shape (`{{ service_name }}`), wrong
-  `api_key` disposition, or not re-uploaded since the data changed.
-- An "empty host `:587`" / connectivity failure when running **locally** is
-  usually a missing env var (e.g. `SMTP_GATEWAY_HOST`), not a service defect.
-- `specs run-tests` Python `ModuleNotFoundError: requests` ⇒ wrong Python;
-  `source ~/unitysvc/.venv/bin/activate`. Environmental, not your data.
-
-## service.json sidecar
-
-- Auto-written by `specs upload` (and the CI upload workflow); carries the
-  backend `service_id` so later uploads target the existing service. **Commit
-  whatever the tool writes — don't hand-edit.** `service_id` is the only
-  load-bearing field.
-- Two committed shapes, both valid: a **concrete** `service.json` carries the CI
-  write-back's richer form (`service_id` + derived `name` / `display_name` /
-  `status` / `time_created`); a **param-file** `<name>.service.json` stays
-  minimal `{ "service_id": "…" }`.
-- Delete the sidecar only to deliberately re-upload as a brand-new service. If a
-  rename leaves the derived fields stale (`name` of the old service), correct
-  them or let the next upload/CI write-back refresh them.
-
-## Tests: connectivity is mandatory; presets come from unitysvc-data
-
-Every service needs at least one connectivity-test document. Two forms:
-
-- A **`$doc_preset`** from the **`unitysvc-data`** package
-  (`~/unitysvc/unitysvc-data`) — e.g. `llm_connectivity`, `api_connectivity`,
-  `smtp_connectivity_v2`. That repo is where test/connectivity presets live and
-  are added.
-- A **local Jinja file** (`connectivity.*.j2`, `code-example.*.j2`) under the
-  service dir for custom probes — handle both modes via the `local_testing` flag.
-
-Without a connectivity test the service is untestable and cannot activate.
-
-Every container listing also includes the shared public usage document:
-`"Using container services": {"$doc_preset": "container_description"}`
-(`unitysvc-data>=0.2.18`), alongside its application-specific setup guide.
-Declare capabilities as matching official IDs or `name | annotation`; the name
-is the frontend badge and the annotation is its hover explanation. See
-`CONTRIBUTING.md` for the capability contract and limits.
-
-## Standards & references
-
-- **`unitysvc-sellers`** — the authoritative standard. Read
-  `~/unitysvc/unitysvc-sellers/docs/`: `file-schemas.md`, `pricing.md`,
-  `naming-conventions.md`, `secrets-and-variables.md`, `service-templates.md`,
-  `documenting-services.md`, `cli-reference.md`, `seller-lifecycle.md`. When this
-  file conflicts with those docs, the docs win.
-- **`unitysvc-data`** — connectivity-test / code-example presets (`$doc_preset`).
-- **`unitysvc-services-demo`** — closest working examples of every pattern:
-  `~/unitysvc/unitysvc-services-demo/specs/unitysvc-demo/`.
+See [the maintainer guide](docs/maintaining.md) for publication and identity work.
+Notification integrations remain in
+[`unitysvc-services-notify`](https://github.com/unitysvc-labs/unitysvc-services-notify).

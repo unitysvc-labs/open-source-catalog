@@ -14,7 +14,8 @@ check fails when:
    ``${ customer_secrets.{{ params.X }} ?? … }`` makes a missing secret look
    present;
 3. an ``Authorization`` header is a literal instead of a secret reference;
-4. a ``${ customer_secrets.X }`` name is missing from ``seller.secrets.txt``;
+4. a container channel uses ``${ customer_secrets.X }`` instead of enrollment
+   parameters bound through its environment;
 5. a channel declares required enrollment parameters (``params.schema``,
    unitysvc/unitysvc#2726) but is not ``enrollable``, so the enrollment lands
    on a channel that never reads them;
@@ -31,6 +32,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from contextlib import chdir
 from pathlib import Path
 
 from unitysvc_sellers.params_render import materialized_param_specs
@@ -92,13 +94,15 @@ def auth_headers(cfg: dict) -> list[str]:
 
 
 def main() -> int:
-    manifest = set(
-        re.findall(r"^export ([A-Za-z0-9_]+)=", (SERVICES / "seller.secrets.txt").read_text(), re.M)
-    )
     errors: list[str] = []
     seen_unbound: set[str] = set()
-    with materialized_param_specs(SERVICES) as _:
-        for offering_path in sorted(Path("specs").glob("*/*/offering.json")):
+    # Concrete-only catalogs are not copied/chdir'd by materialized_param_specs.
+    # Enter services explicitly so the root-level contribution command scans it.
+    with chdir(SERVICES), materialized_param_specs(SERVICES):
+        offerings = sorted(Path("specs").glob("*/*/offering.json"))
+        if not offerings:
+            errors.append("No service offerings found under services/specs/.")
+        for offering_path in offerings:
             svc = offering_path.parent.name
             offering = json.loads(offering_path.read_text())
             if offering.get("status") == "deprecated":
@@ -111,6 +115,11 @@ def main() -> int:
             channels = {ch: channel_body(cfg) for ch, cfg in active.items()}
             enrollable = {ch: cfg for ch, cfg in channels.items() if channel_type(cfg) == "enrollable"}
             for ch, cfg in active.items():
+                if cfg.get("access_method") == "container" and REF.search(json.dumps(channels[ch])):
+                    errors.append(
+                        f"{svc}@{ch}: container settings must use enrollment parameters "
+                        "bound through environment, not customer_secrets"
+                    )
                 required = required_params(cfg)
                 if required and ch not in enrollable:
                     errors.append(
@@ -137,8 +146,6 @@ def main() -> int:
                     name, has_default = m.group(1), m.group(2)
                     if name.startswith("{{") and has_default:
                         errors.append(f"{key}: {m.group(0)} — a param-named secret must not have a default")
-                    if not name.startswith("{{") and not name.startswith("__") and name not in manifest:
-                        errors.append(f"{key}: customer secret {name} missing from seller.secrets.txt")
                 for value in auth_headers(cfg):
                     if "${" not in value:
                         errors.append(f"{key}: literal Authorization header {value!r}")
@@ -146,7 +153,7 @@ def main() -> int:
         errors.append(f"{stale}: in ALLOWED_UNBOUND but no longer unbound — drop it from the list")
     for e in errors:
         print(f"::error::{e}")
-    print(f"checked channel binding: {len(errors)} problem(s)")
+    print(f"checked channel binding: {len(offerings)} service folder(s), {len(errors)} problem(s)")
     return 1 if errors else 0
 
 
