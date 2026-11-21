@@ -68,4 +68,4 @@ Consult the [current sizes and rates](https://unitysvc.com/docs/sizes). A single
 
 Offer separate channels for size choices or different parameter defaults. For example, `base` might use `nano` and `larger` might use `small`, where both sizes are suitable and available. Each channel declares its own parameters and environment; every channel uses the same Compose spec and the listing's bare `base_cost` price. Use a separate recipe for a different stack.
 
-Record upstream minimums and observed startup/demo CPU, memory and scratch-disk needs. Local Docker does not reproduce the platform's named-size limits, so report what you measured and what still needs platform verification.
+Record upstream minimums and observed CPU, memory and scratch-disk needs at startup and under the intended workload. Local Docker does not reproduce the platform's named-size limits, so report what you measured and what still needs platform verification.
