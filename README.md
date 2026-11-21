@@ -51,6 +51,8 @@ See [Getting started](https://github.com/unitysvc/unitysvc-sellers/blob/main/doc
 
 ### Contribute a recipe (route 1)
 
+The recommended way is to ask your coding assistant (Claude Code, Codex, Qoder, Qwen, DeepSeek or similar) to do it: [CONTRIBUTING.md](CONTRIBUTING.md#the-recommended-way-ask-your-coding-assistant) has a prompt to fill in and paste. To do it by hand:
+
 1. Pick an upstream project and its container image.
 2. Add the source and license attribution, the Compose file, enrollment parameters, size choice and tests under `services/specs/<provider>/<project>/`.
 3. Open a PR. Automatic checks run, then Labs reviews.

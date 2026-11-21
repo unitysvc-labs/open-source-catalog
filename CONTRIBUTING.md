@@ -4,6 +4,37 @@ A recipe is the set of files that lets UnitySVC run an open-source project as a 
 
 Not sure this is the right route? See [For authors](README.md#for-authors) for the Developer-seller and commercial-seller alternatives.
 
+## The recommended way: ask your coding assistant
+
+If you use a coding assistant (Claude Code, Codex, Qoder, Qwen, DeepSeek or similar), let it write the recipe and open the PR. Fill in the angle-bracket parts and give it this prompt, from a working directory where it can fork and clone repositories (for example with the GitHub CLI signed in to your account):
+
+```text
+Create a pull request for https://github.com/unitysvc-labs/unitysvc-compute-services that adds <PROJECT NAME> (<UPSTREAM REPO URL>) as a container recipe.
+
+About the software: <one or two sentences on what it does, and the demo a customer should be able to try>. The image is <IMAGE, e.g. ghcr.io/owner/name:tag>. <If the upstream has a Compose file: its URL is <URL>; use it as the instance spec by link.> It listens on port <PORT>. I am <the upstream author | a community maintainer, not the author>.
+
+Fork the repository, work on a branch, and read first, in this order:
+1. CONTRIBUTING.md and README.md in the repository (the rules, the pricing policy, the checklist).
+2. The two existing recipes under services/specs/ (services/specs/kadxy/weixin-ilink-gateway is the smallest complete one; services/specs/binwiederhier/ntfy-sh shows many parameters). Copy their structure and conventions.
+3. The compute sizes: https://unitysvc.com/docs/sizes
+4. The container services guide: https://github.com/unitysvc/unitysvc-sellers/blob/main/docs/guides/container-services.md
+
+Then:
+- Create services/specs/<provider>/<project>/ with provider.json, offering.json, listing.json, compose.yaml (or an instance_spec link) and usage.md. The provider is the software's author, with their own homepage; never invent a contact address or imply the author supports or endorses this.
+- Check the license is OSI-approved and record its SPDX identifier. Stop and tell me if it is not.
+- Pricing is fixed: listing.json has {"list_price": {"type": "base_cost"}} and offering.json has {"payout_price": {"type": "constant", "price": "0"}}. No dollar prices, markups or other payout.
+- Keep the Compose file plain: no {{ params }} in it. Put per-customer settings in the channel's environment as {{ params.NAME }}, declared under params.schema with descriptions, validation, a safe default or generated token, and testing_defaults. No password or token shared by every customer.
+- Choose the smallest size from the sizes page that really runs the software, and explain how you checked.
+- Use the container_connectivity preset for the connectivity test.
+- Do not add a service.json, and do not upload, publish or merge anything.
+- Run `usvc_seller specs validate`, `usvc_seller specs format --check services` and `python scripts/check_channel_binding.py`, and run the container locally with Docker if you can. Fix what they report.
+- If anything you need is missing or unclear (license, image, port, authentication, a size that fits), ask me instead of guessing.
+
+Open the PR with the repository's template filled in, including the license, the image, the size choice and the check output.
+```
+
+What the assistant needs from you: the project and image, what a demo should show, and whether you are the author. It should come back to you with questions rather than guess a license, a contact address or a size. Read its PR before you submit it; you are vouching for the recipe.
+
 ## Before you start
 
 - **License.** The project must use an OSI-approved open-source license, identified by its SPDX identifier and linked to the upstream license text. An exception needs an explicit catalog-policy decision from Labs.
