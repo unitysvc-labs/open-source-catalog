@@ -14,12 +14,17 @@ Fill in this prompt in a workspace where your assistant can fork repositories an
 
 ```text
 Add <PROJECT NAME> from <UPSTREAM PROJECT URL> to
-https://github.com/unitysvc-labs/unitysvc-compute-services.
-I am <the author | a community contributor>. The demo should show <USE CASE>.
+https://github.com/unitysvc-labs/open-source-catalog.
+I am <the author | a community contributor>.
+Optional documentation/image page: <URL>.
+Optional upstream Compose file: <URL>.
+Optional use case: <WHAT CUSTOMERS SHOULD BE ABLE TO DO>.
 
 Fork the repo, create a branch, and read README.md, CONTRIBUTING.md and
-docs/container-recipes.md. Use the upstream docs, license and image page to
-establish the configuration; ask me about missing facts instead of guessing.
+docs/container-recipes.md. Read the upstream README, docs, license and image
+page to write the descriptions, settings and usage guide. Reuse a compatible
+upstream Compose file through a commit permalink where possible. Ask me about
+missing facts instead of guessing.
 Use the existing recipes as structural examples, not authentication templates.
 
 Follow the catalog's pricing, attribution, parameter and testing requirements.
@@ -75,7 +80,7 @@ Do not add fixed dollar prices, markups, surcharges or other payouts. The platfo
 
 ### Sizes and channels
 
-Choose the smallest suitable size from the [current size table](https://unitysvc.com/docs/sizes), based on upstream requirements and observed startup/demo usage. Account for every container in a stack. You can offer several channels with different sizes and parameter defaults; all use the offering's one instance spec. See [sizes and channels](docs/container-recipes.md#sizes-and-channels).
+Choose the smallest suitable size from the [current size table](https://unitysvc.com/docs/sizes), based on upstream requirements and observed startup and intended workload. Account for every container in a stack. You can offer several channels with different sizes and parameter defaults; all use the offering's one instance spec. See [sizes and channels](docs/container-recipes.md#sizes-and-channels).
 
 ## Check your work
 

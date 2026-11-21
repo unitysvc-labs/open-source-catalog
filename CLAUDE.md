@@ -1,4 +1,4 @@
-# CLAUDE.md — unitysvc-compute-services
+# CLAUDE.md — open-source-catalog
 
 This is UnitySVC Labs' compute catalog. Add container-backed services here.
 Notification integrations remain in `unitysvc-labs/unitysvc-services-notify`.
