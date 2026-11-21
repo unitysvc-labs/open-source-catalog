@@ -34,7 +34,7 @@ You pay the platform's published compute base cost for your running instance. Un
 | Left running for a month | about $3 |
 | A $5 top-up | over 1,000 one-hour trials |
 
-Stopping the instance stops the charge, and you can start it again whenever you need it. That makes on-demand use cheap: turn the container on when you need it and pay only for the minutes it is on. A size that would cost about $300 a month if left running costs about $0.40 an hour, so ten hours of use in a month is roughly $4. Larger software is affordable even for occasional use.
+Stopping the instance stops the charge, and you can start it again whenever you need it. That makes on-demand use cheap: turn the container on when you need it and pay only for the time it is on. There is no subscription fee and no hidden charge. A size that would cost about $300 a month if left running costs about $0.40 an hour, so ten hours of use in a month is roughly $4. Larger software is affordable even for occasional use.
 
 See the [compute sizes and rates](https://unitysvc.com/docs/sizes) for the current figures; they follow the platform's rules and can change. The base cost is the published platform charge, not a claim that cloud infrastructure is free or billed at a third-party provider's price.
 
