@@ -9,7 +9,7 @@
   "instance_spec": "compose.yaml",
   "name": "weixin-ilink-gateway",
   "payout_price": {
-    "description": "Free staging prototype",
+    "description": "At cost: UnitySVC Labs receives no seller payout",
     "price": "0",
     "type": "constant"
   },

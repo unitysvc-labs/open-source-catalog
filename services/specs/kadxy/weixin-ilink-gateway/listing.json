@@ -16,9 +16,7 @@
     }
   },
   "list_price": {
-    "description": "$5 per month per instance",
-    "price": "5",
-    "type": "one_month"
+    "type": "base_cost"
   },
   "name": "kadxy/weixin-ilink-gateway",
   "status": "ready",

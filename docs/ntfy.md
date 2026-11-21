@@ -14,7 +14,7 @@ This repo contains the provider, offering, and listing data for the **ntfy Push 
 - Message priorities (1–5), emoji tags, click actions, and attachments
 - Scheduled/delayed delivery
 - A private server per enrollment, protected by an access token (`NTFY_ACCESS_TOKEN`)
-- Billed per instance-month (list price $5 per month)
+- Billed at the platform's compute cost for the time the instance runs (no markup, no seller payout)
 
 ## Data Structure
 
@@ -23,8 +23,8 @@ services/specs/
 └── binwiederhier/
     └── ntfy-sh/                       # the folder name IS the service name
         ├── provider.json              # Provider: ntfy's author, Philipp C. Heckel (`binwiederhier`)
-        ├── offering.json              # Offering: container channel, entry, params, payout
-        ├── listing.json               # Listing: documents and price
+        ├── offering.json              # Offering: container channel, entry, params, zero payout
+        ├── listing.json               # Listing: documents and at-cost (base_cost) price
         ├── service.json               # Identity sidecar (backend service_id)
         ├── compose.yaml               # Instance spec: the ntfy image and fixed settings
         ├── usage.md                   # "How to use this service" (public)

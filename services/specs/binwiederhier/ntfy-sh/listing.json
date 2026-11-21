@@ -20,9 +20,7 @@
     }
   },
   "list_price": {
-    "description": "$5 per month per instance",
-    "price": "5",
-    "type": "one_month"
+    "type": "base_cost"
   },
   "name": "binwiederhier/ntfy-sh",
   "status": "ready",
