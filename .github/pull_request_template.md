@@ -13,7 +13,7 @@
 - [ ] **Pricing:** listing has `{"list_price": {"type": "base_cost"}}`; offering has `{"payout_price": {"type": "constant", "price": "0"}}`; no dollar prices, markups or surcharges.
 - [ ] **Size:** the smallest size that works (`____`); how I checked: ____. Every service of a stack is accounted for.
 - [ ] **Parameters:** `{{ params.NAME }}` bindings in the channel `environment`, declared in `params.schema` with descriptions, validation and `testing_defaults`; no fixed shared credentials.
-- [ ] **Docs:** `usage.md` covers setup, authentication, a demo step, cost and stopping, and what is lost on stop.
+- [ ] **Docs:** `usage.md` covers setup, authentication, a first-use step, cost and stopping, and what is lost on stop.
 - [ ] **Tests:** the `container_connectivity` preset; Docker check output below.
 - [ ] No `service.json` added and no existing one edited.
 

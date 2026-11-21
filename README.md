@@ -1,6 +1,6 @@
-# Open Source Containers for the UnitySVC Compute Cloud
+# UnitySVC Open Source Catalog
 
-Let people try your open-source project on their own [UnitySVC](https://unitysvc.com) instance. Contribute a container recipe; [UnitySVC Labs](https://github.com/unitysvc-labs) reviews it, and customers pay the platform compute cost while they run it.
+Let people run your open-source project on their own private [UnitySVC](https://unitysvc.com) instance, for a quick try or for long-term use. Contribute a container recipe; [UnitySVC Labs](https://github.com/unitysvc-labs) reviews it, and customers pay the platform compute cost while they run it.
 
 This repository is the catalog of those recipes. Each one is a small, reviewed set of files (a Compose file, enrollment parameters and a guide) that UnitySVC turns into a private container for every customer who enrolls.
 
@@ -18,12 +18,12 @@ Notification integrations, including `labs/msg-to-ntfy`, `labs/msg-to-weixin` an
 1. Find the published service in the UnitySVC catalog.
 2. Enroll and choose a channel and size.
 3. Configure the parameters.
-4. Start the instance and try the software.
+4. Start the instance and use the software, for a quick try or for as long as you need it.
 5. **Stop the instance when you are done.** Closing a browser tab does not stop it.
 
 Stopping or replacing an instance discards its temporary storage, so messages, logins and caches kept inside it are lost. Each service's guide lists what it keeps and what it does not.
 
-### What a demo costs
+### What it costs
 
 You pay the platform's published compute base cost for your running instance. UnitySVC Labs adds no margin and receives no seller payout. A `nano` instance costs about $3 a month, so:
 
@@ -31,6 +31,7 @@ You pay the platform's published compute base cost for your running instance. Un
 | --- | --- |
 | One-hour trial | under 1¢ |
 | Left running for a day | about 10¢ |
+| Left running for a month | about $3 |
 | A $5 top-up | over 1,000 one-hour trials |
 
 Stopping the instance stops the charge. See the [compute sizes and rates](https://unitysvc.com/docs/sizes) for the current figures; they follow the platform's rules and can change. The base cost is the published platform charge, not a claim that cloud infrastructure is free or billed at a third-party provider's price.

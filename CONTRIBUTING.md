@@ -52,7 +52,7 @@ Under `services/specs/<provider>/<project>/`:
 | `offering.json` | The technical spec: the container channel, its entries, parameters and size, and the zero payout |
 | `listing.json` | What customers see: the bare `base_cost` price, documents and the connectivity-test preset |
 | `compose.yaml` | The Compose file (the offering's `instance_spec`): a file in the recipe, or an upstream file referenced by URL. See [The Compose file](#the-compose-file) |
-| `usage.md` | How to use the service: setup, authentication, a demo step, what it costs and how to stop it, and what is lost when the instance stops |
+| `usage.md` | How to use the service: setup, authentication, a first-use step, what it costs and how to stop it, and what is lost when the instance stops |
 
 Use [`services/specs/kadxy/weixin-ilink-gateway`](services/specs/kadxy/weixin-ilink-gateway) as the smallest complete reference recipe. Do not add a `service.json`: the platform creates a new service's identity. Never edit an existing one.
 
