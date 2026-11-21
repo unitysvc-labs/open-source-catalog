@@ -1,4 +1,8 @@
-# CLAUDE.md — unitysvc-services-ntfy
+# CLAUDE.md — unitysvc-compute-services
+
+This is UnitySVC Labs' compute catalog. Add container-backed services here;
+the ntfy gateway companion also lives here. Keep existing service names and
+backend-written identity sidecars when reorganizing the catalog.
 
 This repository holds **UnitySVC service data** — the declarative files (plus
 tests) that define services published to the UnitySVC gateway/marketplace. It is
@@ -55,7 +59,7 @@ The richer, table-driven walkthrough still lives in the service's
 Load the repo's committed secrets manifest first — it provides the
 `customer_secrets` values local tests resolve (and is the CI seed source):
 
-    set -a; . ./seller.secrets.txt; set +a      # == .env.example (a symlink to it)
+    set -a; . ./services/seller.secrets.txt; set +a
 
 You also need the seller credentials in your environment —
 `UNITYSVC_SELLER_API_KEY`, `UNITYSVC_SELLER_API_URL`

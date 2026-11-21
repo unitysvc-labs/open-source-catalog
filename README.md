@@ -1,124 +1,55 @@
-# UnitySVC ntfy
+# UnitySVC Labs compute services
 
-Service data for [ntfy.sh](https://ntfy.sh) push notifications on the [UnitySVC](https://unitysvc.com) platform.
+The catalog for compute services published by [UnitySVC Labs](https://github.com/unitysvc-labs). Add new container-backed services here, under `services/specs/<provider>/<service>/`.
 
-## Overview
+## Services
 
-This repo contains the provider, offering, and listing data for the **ntfy Push Notifications** service. `binwiederhier/ntfy-sh` is a **container service**: UnitySVC runs the official `binwiederhier/ntfy` image as one private instance per enrollment on the UnitySVC compute cluster, at the customer's expense. Publish messages via simple HTTP POST requests to the instance URL and receive them on mobile (iOS/Android), desktop, or via a streaming API.
+| Service | What it provides | Definition |
+| --- | --- | --- |
+| `binwiederhier/ntfy-sh` | A private ntfy container for each enrollment, with ntfy access-token authentication | [Container service](services/specs/binwiederhier/ntfy-sh), [setup and operation](docs/ntfy.md) |
+| `labs/msg-to-ntfy` | Gateway delivery of the unified `msg` envelope to an ntfy destination, including ntfy.sh or a private instance | [Service parameters](services/specs/labs/msg-to-ntfy.json) |
 
-**Key features:**
+The gateway companion uses the local `services/templates/msg-to-channel/` template. Both services retain their existing names, prices, documents and backend service IDs.
 
-- HTTP POST/PUT publishing (no client library required)
-- Real-time subscriptions via WebSocket and JSON stream
-- Mobile apps for iOS and Android
-- Message priorities (1–5), emoji tags, click actions, and attachments
-- Scheduled/delayed delivery
-- A private server per enrollment, protected by an access token (`NTFY_ACCESS_TOKEN`)
-- Billed per instance-month (list price $5 per month)
+## Layout
 
-## Data Structure
-
-```
-services/specs/
-└── binwiederhier/
-    └── ntfy-sh/                       # the folder name IS the service name
-        ├── provider.json              # Provider: ntfy's author, Philipp C. Heckel (`binwiederhier`)
-        ├── offering.json              # Offering: container channel, entry, params, payout
-        ├── listing.json               # Listing: documents and price
-        ├── service.json               # Identity sidecar (backend service_id)
-        ├── compose.yaml               # Instance spec: the ntfy image and fixed settings
-        ├── usage.md                   # "How to use this service" (public)
-        ├── user-guide.md              # Tutorial: publish, subscribe, troubleshooting (public)
-        └── images/                    # Screenshots used by the guide
+```text
+services/
+  specs/binwiederhier/ntfy-sh/   private ntfy instance, Compose file and guides
+  specs/labs/msg-to-ntfy.json    gateway companion parameters
+  templates/msg-to-channel/     gateway companion template
+  seller.secrets.txt           documented mock/test secret defaults
+scripts/
+  generate_ntfy_params.py       regenerate ntfy environment parameters
+  check_channel_binding.py      check credential and enrollment binding
+docs/ntfy.md                    container service guide
 ```
 
-The service is published as **`binwiederhier/ntfy-sh`** — `listing.name` is the folder's
-path under `services/specs/`, and `offering.name` is the bare service name (`ntfy-sh`).
+Keep each provider's identity and service name independent of this repository's name. Commit the backend-written `service.json` / `*.service.json` sidecar so moving files or adding services does not create a new marketplace identity.
 
-### How the instance is configured
+## Validate and test
 
-`compose.yaml` holds the fixed, non-secret ntfy settings (cache and auth
-databases in `/tmp`, 12 h retention, 4 KB messages, `deny-all` default access,
-health check). The offering's `base` channel (`access_method: container`,
-`type: enrollable`, tier `nano`) exposes one public entry, `api`, on the ntfy
-HTTP port with `auth: app`, so **ntfy itself** authenticates every request.
-
-The enrollment parameter **`NTFY_ACCESS_TOKEN`** (generated default, can be
-replaced; ntfy's `tk_` + 29-character format) is injected through the
-channel's `environment` as `NTFY_AUTH_TOKENS`, owned by a provisioned `admin`
-user whose password is a placeholder hash that nobody knows. Customers
-publish and subscribe with `Authorization: Bearer <token>`.
-
-Storage is ephemeral: cached messages are lost when the instance is replaced
-or stopped.
-
-### Provider
-
-The provider is the software's author on GitHub, **Philipp C. Heckel** (`binwiederhier`), not UnitySVC Labs: the listing credits the people who wrote ntfy, and `listing.name` is `binwiederhier/ntfy-sh`. UnitySVC Labs is only the seller that uploads it. The provider's contact address is ntfy's published general contact (`contact@mail.ntfy.sh`); the author was not asked to take part.
-
-### Parameters
-
-Every ntfy environment variable the container accepts is an enrollment parameter, with ntfy's own default as the default, so a stock enrollment runs the stock configuration. `NTFY_ACCESS_TOKEN` is the only required one. The service owns, and does not expose, the variables that would break it: where ntfy listens and its TLS, its storage files and database, its cluster mode, and its default access (the list and the reason for each are `EXCLUDED` in `scripts/generate_ntfy_params.py`).
-
-`scripts/generate_ntfy_params.py` writes the parameters and the channel's `environment` from ntfy's configuration reference at a given tag. Run it when the ntfy version changes, then `usvc_seller specs format`. The documentation table sometimes shows an example where ntfy's real default is unset (`NTFY_UPSTREAM_BASE_URL`), which the script overrides; to check a change, start the image with every variable at its default and see that it comes up.
-
-### Documents
-
-Documents are defined in `listing.json` and referenced via relative `file_path`:
-
-| Document | Category | Public | Description |
-|----------|----------|--------|-------------|
-| Connectivity test | `connectivity_test` | No | generic `container_connectivity` preset: the platform starts the instance, waits for its health check and fetches each entry |
-| How to use this service | `getting_started` | Yes | Enroll, token, publish, subscribe, limits |
-| User guide | `tutorial` | Yes | Publishing options, subscribing, troubleshooting |
-
-## Setup
-
-Supply your seller credentials (this service needs no seller secrets, so there is no secrets manifest):
+Install the current `unitysvc-sellers` CLI with `unitysvc-core>=0.3.19` and `unitysvc-data>=0.2.17`, then run from the repository root:
 
 ```bash
-
-export UNITYSVC_SELLER_API_KEY="<seller-key>"
-export UNITYSVC_SELLER_API_URL="https://seller.staging.unitysvc.com/v1/"
+usvc_seller specs validate --has-service-id
+usvc_seller specs format --check services
+python scripts/check_channel_binding.py
 ```
 
-The CLI ships with [`unitysvc-sellers`](https://github.com/unitysvc/unitysvc-sellers).
-Invoke it as `usvc_seller …` if it's on PATH, else
-`uvx --from unitysvc-sellers usvc_seller …`.
+For local upstream tests, load `services/seller.secrets.txt` and use the commands in [the ntfy guide](docs/ntfy.md). Its values are mock defaults; configure real seller/customer credentials for the environment being tested. The ntfy container test needs Docker.
 
-## Commands
+Known tooling limitation at migration: `unitysvc-sellers` 0.3.23 with core 0.3.19 raises `validate_instance_spec() got an unexpected keyword argument 'environment'` in its local container-test runner. Direct Docker verification passed with the committed environment defaults, including health, anonymous-access refusal, and token-authenticated publish/subscribe. Both gateway companion connectivity probes also passed.
 
-```bash
-# Schema + cross-file validation (no network)
-usvc_seller specs validate
+CI uses UnitySVC Labs' shared validation, formatting and upload workflows. Staging uploads are manual; production uploads run manually or after a pull request merges. Configure seller API credentials through GitHub Actions secrets.
 
-# Canonical formatting; commit the result
-usvc_seller specs format
+## Adding a compute service
 
-# Local container test — runs the image in Docker and waits for the health check
-usvc_seller specs run-tests binwiederhier/ntfy-sh --force
+1. Add a provider, offering, listing and restricted Compose specification under `services/specs/<provider>/<service>/` (or use the standard template/parameter layout).
+2. Credit the software's author as provider and declare its license, resource sizes, enrollment parameters, price and application authentication.
+3. Use `unitysvc-data` presets for connectivity tests and keep public setup documentation beside the service.
+4. Validate and format, test locally and on staging, then commit the identity sidecar written by upload.
 
-# Push to staging (re-upload creates a revision)
-usvc_seller specs upload binwiederhier/ntfy-sh
+## Migration
 
-# Platform test — starts a temporary instance on the compute cluster
-usvc_seller services run-tests binwiederhier/ntfy-sh --force
-```
-
-
-## Architecture
-
-```
-Publisher (cURL/Python/etc.)
-    │  Authorization: Bearer <NTFY_ACCESS_TOKEN>
-    ▼
-https://<enrollment-code>.<apps-domain>     (one ntfy container per enrollment)
-    │
-    ├──► Mobile app (iOS/Android)
-    ├──► WebSocket clients
-    └──► JSON stream subscribers
-```
-
-- Requests go **directly to the instance**, not through the UnitySVC API gateway; the UnitySVC API key is not used.
-- **Authentication** is ntfy's own access control, seeded at start-up from `NTFY_ACCESS_TOKEN`; anonymous requests are denied.
-- **Mobile apps** connect to the instance URL and sign in with the token.
+This repository continues the history of `unitysvc-labs/unitysvc-services-ntfy`, renamed to serve the whole compute catalog. The `labs/msg-to-ntfy` definition and its required template/test defaults moved from [unitysvc-services-notify](https://github.com/unitysvc-labs/unitysvc-services-notify). Notification services for other destinations remain in that catalog.
