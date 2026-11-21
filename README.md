@@ -1,118 +1,48 @@
-# UnitySVC Open Source Catalog
+# Open Source Containers for the UnitySVC Compute Cloud
 
-Let people run your open-source project on their own private [UnitySVC](https://unitysvc.com) instance, for a quick try or for long-term use. Contribute a container recipe; [UnitySVC Labs](https://github.com/unitysvc-labs) reviews it, and customers pay the platform compute cost while they run it.
+Let people try your open-source project without setting up a server. Submit a container recipe; [UnitySVC Labs](https://github.com/unitysvc-labs) reviews and publishes it. Customers run their own instances and pay the platform's compute base cost. Labs adds no markup and receives no seller payout.
 
-This repository is the catalog of those recipes. Each one is a small, reviewed set of files (a Compose file, enrollment parameters and a guide) that UnitySVC turns into a private container for every customer who enrolls.
-
-## Services
-
-| Service | What it provides | Definition |
-| --- | --- | --- |
-| `binwiederhier/ntfy-sh` | A private ntfy container for each enrollment, with ntfy access-token authentication | [Container service](services/specs/binwiederhier/ntfy-sh), [setup and operation](docs/ntfy.md) |
-| `kadxy/weixin-ilink-gateway` | A private Weixin iLink gateway per enrollment, with QR login, messaging, media and webhooks | [Container service](services/specs/kadxy/weixin-ilink-gateway), [setup and operation](services/specs/kadxy/weixin-ilink-gateway/usage.md) |
-
-Notification integrations, including `labs/msg-to-ntfy`, `labs/msg-to-weixin` and `labs/weixin-to-msg`, remain in [unitysvc-services-notify](https://github.com/unitysvc-labs/unitysvc-services-notify).
-
-## For customers
-
-1. Find the published service in the UnitySVC catalog.
-2. Enroll and choose a channel and size.
-3. Configure the parameters.
-4. Start the instance and use the software, for a quick try or for as long as you need it.
-5. **Stop the instance when you are done.** Closing a browser tab does not stop it.
-
-Stopping or replacing an instance discards its temporary storage, so messages, logins and caches kept inside it are lost. Each service's guide lists what it keeps and what it does not.
-
-### What it costs
-
-You pay the platform's published compute base cost for your running instance. UnitySVC Labs adds no margin and receives no seller payout. A `nano` instance costs about $3 a month, so:
-
-| Use | Approximate cost |
-| --- | --- |
-| One-hour trial | under 1¢ |
-| Left running for a day | about 10¢ |
-| Left running for a month | about $3 |
-| A $5 top-up | over 1,000 one-hour trials |
-
-Stopping the instance stops the charge, and you can start it again whenever you need it. That makes on-demand use cheap: turn the container on when you need it and pay only for the time it is on. There is no subscription fee and no hidden charge. A size that would cost about $300 a month if left running costs about $0.40 an hour, so ten hours of use in a month is roughly $4. Larger software is affordable even for occasional use.
-
-See the [compute sizes and rates](https://unitysvc.com/docs/sizes) for the current figures; they follow the platform's rules and can change. The base cost is the published platform charge, not a claim that cloud infrastructure is free or billed at a third-party provider's price.
-
-A run keeps the price it had when it started. A new price applies the next time an instance starts, and a running instance is never restarted or re-priced because of a catalog change.
+A recipe describes the containers, enrollment parameters and steps to try the software.
 
 ## For authors
 
-There are three ways to put your software in front of customers. They differ in who owns the listing and who can earn money.
+Choose the route that fits what you want to offer:
 
-| Route | Publishing and approval | Pricing and payout | Additional services |
-| --- | --- | --- | --- |
-| **1. Contribute a recipe to this catalog** | Open a PR. Labs reviews, approves and publishes it under its seller account. You need no seller account and no infrastructure. | Platform compute base cost only; no Labs margin and no payout to you. | The contribution is the demo recipe. You cannot attach your own services or paid support to Labs' listing. |
-| **2. Become a Developer-tier seller** | You own the seller account and publish from your own repository. Services go live automatically when their tests and the Developer policy checks pass. No catalog PR is needed. | At cost only; you cannot set a markup and receive no payout. | You can publish your own container services and talk to customers through [Rooms](https://github.com/unitysvc/unitysvc-sellers/blob/main/docs/seller-lifecycle.md). Paid services need route 3. |
-| **3. Become a seller with payout options** | You complete seller and payout onboarding and maintain your own catalog. | You set commercial prices under platform rules and can receive payouts. | You can sell a premium edition, managed service and support, using Rooms to talk to customers. |
+1. **Share a demo:** [contribute a recipe](CONTRIBUTING.md). You need no seller account or hosting infrastructure. Labs approves and publishes it; you receive no payout and cannot attach additional services or paid support to Labs' listing.
+2. **Publish your own at-cost services:** become a **Developer seller**. Maintain your own repository and customer relationships. Eligible container services go live when their tests and Developer policy checks pass. You cannot add a markup or receive payouts, but can support customers through Rooms.
+3. **Sell commercial services:** apply for a **seller account with payouts**. Set your own prices and offer premium software, managed services or support. Rooms provides a place to discuss setup and support with customers.
 
-See [Getting started](https://github.com/unitysvc/unitysvc-sellers/blob/main/docs/getting-started.md) and [After you publish](https://github.com/unitysvc/unitysvc-sellers/blob/main/docs/seller-lifecycle.md) for routes 2 and 3. Labs sells no extras on these recipes and promises no support from the upstream author.
+To start selling, sign in at [UnitySVC](https://unitysvc.com), choose **Add a role → Become a seller**, and select Developer or submit a commercial seller application. Follow the [seller quick start](https://github.com/unitysvc/unitysvc-sellers/blob/main/docs/getting-started.md) to create an API key and publish from your repository.
 
-### Contribute a recipe (route 1)
+Developer sellers who want to earn revenue must [contact support](https://unitysvc.com/support) for a seller-type change and review; there is no self-service conversion.
 
-The recommended way is to ask your coding assistant (Claude Code, Codex, Qoder, Qwen, DeepSeek or similar) to do it: [CONTRIBUTING.md](CONTRIBUTING.md#the-recommended-way-ask-your-coding-assistant) has a prompt to fill in and paste. To do it by hand:
+Community recipes are welcome alongside author submissions. We mark them as unofficial unless the author participates. Inclusion does not imply author endorsement or a promise of author support.
 
-1. Pick an upstream project and its container image.
-2. Add the source and license attribution, the Compose file, enrollment parameters, size choice and tests under `services/specs/<provider>/<project>/`.
-3. Open a PR. Automatic checks run, then Labs reviews.
-4. After the merge, Labs publishes the service through the normal platform process.
+## For customers
 
-You do not need seller credentials or a pre-existing backend service ID: the platform creates the identity for a new service when Labs publishes it. [CONTRIBUTING.md](CONTRIBUTING.md) has the details, and the PR template lists what a reviewer will check.
+1. Sign in at [UnitySVC](https://unitysvc.com) and add funds if needed.
+2. Find the published service in the [catalog](https://unitysvc.com/services).
+3. Enroll, choose a channel/size and configure its parameters, including any application keys or tokens.
+4. Start the instance and follow the service's guide to try the software.
+5. **Stop the instance when finished.** Closing a browser tab does not stop it.
 
-Community-maintained recipes are welcome as well as submissions from the upstream author. A community recipe is marked as unofficial unless the author has taken part; a public repository or email address is not evidence of the author's endorsement, and Labs does not claim that the author supports the demo.
+The application handles its own authentication. Stopping or replacing an instance loses its temporary storage; check the service's guide for what this means for messages, logins and other data.
 
-## Layout
+### What it costs
 
-```text
-services/
-  specs/binwiederhier/ntfy-sh/       private ntfy instance, Compose file and guides
-  specs/kadxy/weixin-ilink-gateway/  private Weixin gateway, Compose file and guide
-  seller.secrets.txt               seller-secret manifest (none currently needed)
-scripts/
-  generate_ntfy_params.py           regenerate ntfy environment parameters
-  check_channel_binding.py          check credential and enrollment binding
-docs/ntfy.md                        container service guide
-```
+You pay for runtime at the selected channel's [published compute rate](https://unitysvc.com/docs/sizes), with no Labs markup or seller payout. Start an instance when you need it and stop it to end that run's compute charges. Rates depend on the size and can change.
 
-Keep each provider's identity and service name independent of this repository's name. Commit the backend-written `service.json` / `*.service.json` sidecar so moving files or adding services does not create a new marketplace identity.
+A pricing update does not change an existing run's pinned price; the updated terms apply on its next start.
 
-## Validate and test
+## Services
 
-Install the current `unitysvc-sellers` CLI with `unitysvc-core>=0.3.19` and `unitysvc-data>=0.2.17`, then run from the repository root:
-
-```bash
-usvc_seller specs validate --has-service-id
-usvc_seller specs format --check services
-python scripts/check_channel_binding.py
-```
-
-Local container tests need Docker. Use `usvc_seller specs run-tests kadxy/weixin-ilink-gateway --force` or the commands in [the ntfy guide](docs/ntfy.md). Both services use enrollment parameters for application credentials; neither requires seller-secret defaults. Configure real seller/customer credentials for tests against UnitySVC.
-
-Known tooling limitation: the local container-test runner in `unitysvc-sellers` 0.3.24 still follows the older Document-environment path and does not bind a channel's `testing_defaults` or the named sizes ([unitysvc-sellers#240](https://github.com/unitysvc/unitysvc-sellers/issues/240)). Until that is fixed, a local Docker check is evidence about the container, not about the platform's size limits. Direct Docker checks passed for both services at migration: ntfy covered health, anonymous-access refusal, and token-authenticated publish/subscribe; Weixin covered health, `/console`, rejection of absent/incorrect API keys, and authenticated `/status` without logging into a Weixin account.
-
-CI uses UnitySVC Labs' shared validation, formatting and upload workflows. Staging uploads are manual; production uploads run manually or after a pull request merges. Configure seller API credentials through GitHub Actions secrets.
+| Service | What you can try | Guide |
+| --- | --- | --- |
+| [`binwiederhier/ntfy-sh`](services/specs/binwiederhier/ntfy-sh) | Push notifications over HTTP, with mobile and streaming clients | [ntfy setup](services/specs/binwiederhier/ntfy-sh/usage.md) |
+| [`kadxy/weixin-ilink-gateway`](services/specs/kadxy/weixin-ilink-gateway) | A Weixin iLink gateway with QR login, messaging and webhooks | [Weixin setup](services/specs/kadxy/weixin-ilink-gateway/usage.md) |
 
 ## Catalog pricing policy
 
-Every service in this catalog has the same two commercial settings, and nothing else:
+Every listing uses `base_cost`, and every offering has an explicit zero payout. Each channel is charged at its own size's platform cost. [CONTRIBUTING.md](CONTRIBUTING.md#pricing) gives the required settings.
 
-```json
-// listing.json
-{"list_price": {"type": "base_cost"}}
-// offering.json
-{"payout_price": {"type": "constant", "price": "0"}}
-```
-
-A bare `base_cost` list price makes the platform charge its published compute cost for the channel's size, with no markup, fixed dollar amount or per-request surcharge, and the explicit zero payout makes Labs earn nothing. A missing payout would default to the whole charge, so it is always written out. Do not write dollar prices or size limits in this repository; the platform owns them. Different channels can use different sizes and parameters and still resolve to their own platform cost.
-
-## Adding a service
-
-Follow [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Migration
-
-This repository continues the history of `unitysvc-labs/unitysvc-services-ntfy`, renamed to serve the whole compute catalog. The `kadxy/weixin-ilink-gateway` definition moved here from [unitysvc-services-notify](https://github.com/unitysvc-labs/unitysvc-services-notify), preserving its existing service ID. The ntfy notification integration remains in that catalog.
+For recipe details, see the [container reference](docs/container-recipes.md). Repository layout, publication and tooling notes are in the [maintainer guide](docs/maintaining.md).
