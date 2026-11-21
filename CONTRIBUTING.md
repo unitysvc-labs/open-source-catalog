@@ -9,9 +9,9 @@ Not sure this is the right route? See [For authors](README.md#for-authors) for t
 If you use a coding assistant (Claude Code, Codex, Qoder, Qwen, DeepSeek or similar), let it write the recipe and open the PR. Fill in the angle-bracket parts and give it this prompt, from a working directory where it can fork and clone repositories (for example with the GitHub CLI signed in to your account):
 
 ```text
-Create a pull request for https://github.com/unitysvc-labs/unitysvc-compute-services that adds <PROJECT NAME> (<UPSTREAM REPO URL>) as a container recipe.
+Create a pull request for https://github.com/unitysvc-labs/unitysvc-compute-services that adds <PROJECT NAME> as a container recipe.
 
-About the software: <one or two sentences on what it does, and the demo a customer should be able to try>. The image is <IMAGE, e.g. ghcr.io/owner/name:tag>. <If the upstream has a Compose file: its URL is <URL>; use it as the instance spec by link.> It listens on port <PORT>. I am <the upstream author | a community maintainer, not the author>.
+Read about the software from <UPSTREAM REPO OR DOCS URL> (its README, documentation, license and container image page: <IMAGE PAGE URL, if you have one>). Use what you read, not your memory, to write the descriptions, find the official image and tag, the port, how it is configured and authenticated, and the settings a customer may want to change. <If the upstream has a Compose file: use <URL> as the instance spec by link.> I am <the upstream author | a community maintainer, not the author>. The demo I want a customer to be able to try: <one sentence, optional>.
 
 Fork the repository, work on a branch, and read first, in this order:
 1. CONTRIBUTING.md and README.md in the repository (the rules, the pricing policy, the checklist).
@@ -28,12 +28,12 @@ Then:
 - Use the container_connectivity preset for the connectivity test.
 - Do not add a service.json, and do not upload, publish or merge anything.
 - Run `usvc_seller specs validate`, `usvc_seller specs format --check services` and `python scripts/check_channel_binding.py`, and run the container locally with Docker if you can. Fix what they report.
-- If anything you need is missing or unclear (license, image, port, authentication, a size that fits), ask me instead of guessing.
+- Write the descriptions, parameters and usage guide from the upstream documentation you read, in the style of the existing recipes. If the upstream does not say something you need (license, official image, port, authentication, a size that fits), ask me instead of guessing.
 
 Open the PR with the repository's template filled in, including the license, the image, the size choice and the check output.
 ```
 
-What the assistant needs from you: the project and image, what a demo should show, and whether you are the author. It should come back to you with questions rather than guess a license, a contact address or a size. Read its PR before you submit it; you are vouching for the recipe.
+What you give the assistant is a link to the project (and its image page), and whether you are the author. It reads the upstream documentation and writes the recipe from it; you do not spell out the descriptions or settings. It should come back with questions rather than guess a license, a contact address or a size. Read its PR before you submit it: you are vouching for the recipe.
 
 ## Before you start
 
