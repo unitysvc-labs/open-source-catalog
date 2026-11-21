@@ -47,12 +47,30 @@ Start with [`services/specs/kadxy/weixin-ilink-gateway`](services/specs/kadxy/we
 | File | Contents |
 | --- | --- |
 | `provider.json` | Software author, homepage and license/contact references |
-| `offering.json` | Container channels, parameters, environment bindings, sizes, entries and zero payout |
-| `listing.json` | Customer description, `base_cost` price, documents and the `container_connectivity` preset |
+| `offering.json` | Marketplace summary and description, container channels, parameters, environment bindings, sizes, entries and zero payout |
+| `listing.json` | Customer-facing name, `base_cost` price, documents and the `container_connectivity` preset |
 | `compose.yaml` | The offering's instance spec, or use an upstream commit-pinned URL |
 | `usage.md` | Setup, authentication, a first-use example, cost, stopping and storage limitations |
 
 Do not add a `service.json` for a new recipe or edit an existing identity sidecar. Labs records the backend-generated ID after publication.
+
+### Names and marketplace copy
+
+| Field | What to write |
+| --- | --- |
+| `listing.name` | `<provider>/<software_name>`, matching the path under `services/specs/`. Prefer the upstream owner/project names for new recipes; keep published service names stable. |
+| `offering.name` | The bare `<software_name>`, without the provider prefix. |
+| `display_name` | A descriptive, human-readable name for the container service, up to 200 characters. Set it in the listing; it can fall back to the offering's display name. |
+| `offering.summary` | A one-line description of what the service provides, **at most 200 characters**. It appears in catalog previews and is included in frontend search. |
+| `offering.description` | Longer customer-facing detail that expands on the summary. Do not repeat the summary as a teaser paragraph. |
+
+The description usually needs two or three short paragraphs, separated by `\n\n`:
+
+1. Explain what this service does in detail: the software it runs, how requests or data flow, and relevant features and limitations.
+2. Explain how to use it: available channels, the instance URL or entry, required parameters and defaults. Refer to **How to use this service** for full setup.
+3. Explain pricing and support where useful: runtime charges at `base_cost`, no Labs markup or seller payout, and where to find software-specific help. Do not promise author support unless the author has agreed to provide it.
+
+This is a content guide, not a fixed paragraph count. The separate `summary` field carries the catalog teaser; `description` has no 200-character limit.
 
 ### Capabilities
 
@@ -113,6 +131,8 @@ Declare settings under each channel's `params.schema` and bind them in its `envi
 
 All application tokens, keys and passwords come from these parameters. A parameter default such as `{{ token_urlsafe(32) }}` can generate a value for the enrollment; the customer can keep it or supply their own. Authentication is the application's responsibility: UnitySVC adds no application security gate or built-in instance-key variable. Do not ship a usable credential shared by all customers.
 
+Recipes need no `.env.example`, `.env` file or seller-secret manifest. Do not load a seller environment or use `${ customer_secrets.* }` for container settings. Declare those settings as channel parameters and bind them to the container's environment. For local Docker checks, pass explicit test values; customers supply any external-provider credentials their application needs when enrolling.
+
 The [container reference](docs/container-recipes.md#parameters-and-environment) shows a complete parameter-binding example. Explain which settings are required and whether changing them restarts the instance.
 
 ### Pricing
@@ -136,6 +156,8 @@ Do not add fixed dollar prices, markups, surcharges or other payouts. The platfo
 Choose the smallest suitable size from the [current size table](https://unitysvc.com/docs/sizes), based on upstream requirements and observed startup and intended workload. Account for every container in a stack. You can offer several channels with different sizes and parameter defaults; all use the offering's one instance spec. See [sizes and channels](docs/container-recipes.md#sizes-and-channels).
 
 ## Check your work
+
+These checks need no seller account, seller credentials or seller-provided secrets.
 
 Install `unitysvc-sellers` with `unitysvc-core>=0.3.19` and `unitysvc-data>=0.2.18`. From the repository root, run:
 

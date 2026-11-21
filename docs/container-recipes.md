@@ -30,6 +30,8 @@ Public `entries` select a Compose service and container port. Customers reach th
 
 Keep Compose literal. Declare enrollment parameters in each channel's `params.schema`, then map them to container variables in that channel's `environment`. Channel values override the same names in the Compose file; every named service must exist in the spec.
 
+Do not add `.env.example`, `.env` files or seller-secret manifests. Configurable container settings belong in the recipe's channel parameters; local Docker checks use explicit test values.
+
 For an application whose `gateway` container reads an `API_KEY` variable, the relevant channel fields are:
 
 ```json

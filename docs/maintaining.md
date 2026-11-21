@@ -16,6 +16,8 @@ The current v0.3.24 container runner has a [channel-parameter compatibility issu
 
 CI currently runs schema, format and channel-binding checks. Staging uploads are manual; production uploads run manually or after a PR merges. Labs configures seller credentials through Actions secrets. New PR runtime testing and publication improvements are planned in [the catalog design](https://github.com/unitysvc/unitysvc-llc/issues/81); they are not implemented by this documentation change.
 
+Publication credentials belong to Labs' protected workflows. Contributors do not need them for local validation or recipe development. Recipes carry no `.env.example`, `.env` file or seller-secret manifest; application settings and credentials are enrollment parameters bound to container environment variables.
+
 Each application's keys and tokens are enrollment parameters with appropriate defaults. UnitySVC does not supply built-in instance credentials or add an application authentication gate.
 
 ## Repository history

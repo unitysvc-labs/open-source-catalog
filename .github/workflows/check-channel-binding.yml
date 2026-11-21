@@ -2,8 +2,8 @@ name: Check Channel Binding
 
 # Fails when a channel would be advertised as Directly Usable (`unbound`) while
 # it actually needs customer setup, when a param-named secret carries a default,
-# when an Authorization header is a literal, or when a customer secret is
-# missing from services/seller.secrets.txt (issue #52).
+# when an Authorization header is a literal, or when a container setting uses
+# customer_secrets instead of an enrollment parameter (issue #52).
 
 on:
   workflow_dispatch:

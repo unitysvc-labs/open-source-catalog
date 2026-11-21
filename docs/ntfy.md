@@ -72,9 +72,9 @@ Documents are defined in `listing.json` and referenced via relative `file_path`:
 | How to use this service | `getting_started` | Yes | Enroll, token, publish, subscribe, limits |
 | User guide | `tutorial` | Yes | Publishing options, subscribing, troubleshooting |
 
-## Setup
+## Maintainer publication setup
 
-Supply your seller credentials. The container service uses enrollment parameters and needs no seller secrets. The `labs/msg-to-ntfy` notification integration lives in `unitysvc-labs/unitysvc-services-notify`.
+Contributors use the [local contribution checks](../CONTRIBUTING.md#check-your-work) without seller credentials. Only Labs maintainers need the publication credentials below for staging and platform testing. Application settings use enrollment parameters and need no seller-provided secrets. The `labs/msg-to-ntfy` notification integration lives in `unitysvc-labs/unitysvc-services-notify`.
 
 ```bash
 
