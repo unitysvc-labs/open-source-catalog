@@ -74,7 +74,7 @@ Documents are defined in `listing.json` and referenced via relative `file_path`:
 
 ## Setup
 
-Supply your seller credentials. The container service uses enrollment parameters and needs no seller secrets; the repository's `services/seller.secrets.txt` manifest is for its gateway companion.
+Supply your seller credentials. The container service uses enrollment parameters and needs no seller secrets. The `labs/msg-to-ntfy` notification integration lives in `unitysvc-labs/unitysvc-services-notify`.
 
 ```bash
 

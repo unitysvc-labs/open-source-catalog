@@ -7,22 +7,21 @@ The catalog for compute services published by [UnitySVC Labs](https://github.com
 | Service | What it provides | Definition |
 | --- | --- | --- |
 | `binwiederhier/ntfy-sh` | A private ntfy container for each enrollment, with ntfy access-token authentication | [Container service](services/specs/binwiederhier/ntfy-sh), [setup and operation](docs/ntfy.md) |
-| `labs/msg-to-ntfy` | Gateway delivery of the unified `msg` envelope to an ntfy destination, including ntfy.sh or a private instance | [Service parameters](services/specs/labs/msg-to-ntfy.json) |
+| `kadxy/weixin-ilink-gateway` | A private Weixin iLink gateway per enrollment, with QR login, messaging, media and webhooks | [Container service](services/specs/kadxy/weixin-ilink-gateway), [setup and operation](services/specs/kadxy/weixin-ilink-gateway/usage.md) |
 
-The gateway companion uses the local `services/templates/msg-to-channel/` template. Both services retain their existing names, prices, documents and backend service IDs.
+Both services retain their existing names, prices, documents and backend service IDs. Notification integrations, including `labs/msg-to-ntfy`, `labs/msg-to-weixin` and `labs/weixin-to-msg`, remain in [unitysvc-services-notify](https://github.com/unitysvc-labs/unitysvc-services-notify).
 
 ## Layout
 
 ```text
 services/
-  specs/binwiederhier/ntfy-sh/   private ntfy instance, Compose file and guides
-  specs/labs/msg-to-ntfy.json    gateway companion parameters
-  templates/msg-to-channel/     gateway companion template
-  seller.secrets.txt           documented mock/test secret defaults
+  specs/binwiederhier/ntfy-sh/       private ntfy instance, Compose file and guides
+  specs/kadxy/weixin-ilink-gateway/  private Weixin gateway, Compose file and guide
+  seller.secrets.txt               seller-secret manifest (none currently needed)
 scripts/
-  generate_ntfy_params.py       regenerate ntfy environment parameters
-  check_channel_binding.py      check credential and enrollment binding
-docs/ntfy.md                    container service guide
+  generate_ntfy_params.py           regenerate ntfy environment parameters
+  check_channel_binding.py          check credential and enrollment binding
+docs/ntfy.md                        container service guide
 ```
 
 Keep each provider's identity and service name independent of this repository's name. Commit the backend-written `service.json` / `*.service.json` sidecar so moving files or adding services does not create a new marketplace identity.
@@ -37,9 +36,9 @@ usvc_seller specs format --check services
 python scripts/check_channel_binding.py
 ```
 
-For local upstream tests, load `services/seller.secrets.txt` and use the commands in [the ntfy guide](docs/ntfy.md). Its values are mock defaults; configure real seller/customer credentials for the environment being tested. The ntfy container test needs Docker.
+Local container tests need Docker. Use `usvc_seller specs run-tests kadxy/weixin-ilink-gateway --force` or the commands in [the ntfy guide](docs/ntfy.md). Both services use enrollment parameters for application credentials; neither requires seller-secret defaults. Configure real seller/customer credentials for tests against UnitySVC.
 
-Known tooling limitation at migration: `unitysvc-sellers` 0.3.23 with core 0.3.19 raises `validate_instance_spec() got an unexpected keyword argument 'environment'` in its local container-test runner. Direct Docker verification passed with the committed environment defaults, including health, anonymous-access refusal, and token-authenticated publish/subscribe. Both gateway companion connectivity probes also passed.
+Known tooling limitation at migration: `unitysvc-sellers` 0.3.23 with core 0.3.19 raises `validate_instance_spec() got an unexpected keyword argument 'environment'` in its local container-test runner. Direct Docker checks passed for both services: ntfy covered health, anonymous-access refusal, and token-authenticated publish/subscribe; Weixin covered health, `/console`, rejection of absent/incorrect API keys, and authenticated `/status` without logging into a Weixin account.
 
 CI uses UnitySVC Labs' shared validation, formatting and upload workflows. Staging uploads are manual; production uploads run manually or after a pull request merges. Configure seller API credentials through GitHub Actions secrets.
 
@@ -52,4 +51,4 @@ CI uses UnitySVC Labs' shared validation, formatting and upload workflows. Stagi
 
 ## Migration
 
-This repository continues the history of `unitysvc-labs/unitysvc-services-ntfy`, renamed to serve the whole compute catalog. The `labs/msg-to-ntfy` definition and its required template/test defaults moved from [unitysvc-services-notify](https://github.com/unitysvc-labs/unitysvc-services-notify). Notification services for other destinations remain in that catalog.
+This repository continues the history of `unitysvc-labs/unitysvc-services-ntfy`, renamed to serve the whole compute catalog. The `kadxy/weixin-ilink-gateway` definition moved here from [unitysvc-services-notify](https://github.com/unitysvc-labs/unitysvc-services-notify), preserving its existing service ID. The ntfy notification integration remains in that catalog.
