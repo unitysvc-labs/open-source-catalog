@@ -13,6 +13,9 @@
       "file_path": "usage.md",
       "is_public": true,
       "mime_type": "markdown"
+    },
+    "Using container services": {
+      "$doc_preset": "container_description"
     }
   },
   "list_price": {
