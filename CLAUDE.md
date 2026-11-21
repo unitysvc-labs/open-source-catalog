@@ -1,8 +1,9 @@
 # CLAUDE.md — unitysvc-compute-services
 
-This is UnitySVC Labs' compute catalog. Add container-backed services here;
-the ntfy gateway companion also lives here. Keep existing service names and
-backend-written identity sidecars when reorganizing the catalog.
+This is UnitySVC Labs' compute catalog. Add container-backed services here.
+Notification integrations remain in `unitysvc-labs/unitysvc-services-notify`.
+Keep existing service names and backend-written identity sidecars when
+reorganizing the catalog.
 
 This repository holds **UnitySVC service data** — the declarative files (plus
 tests) that define services published to the UnitySVC gateway/marketplace. It is
