@@ -1,0 +1,94 @@
+# Contributing a recipe
+
+You need no seller account, seller credentials, hosting infrastructure or backend service ID. Submit a PR; Labs reviews and publishes the recipe. To publish independently or earn revenue, see the [author options](README.md#for-authors).
+
+## Before you start
+
+- **License:** use an OSI-approved open-source license, with its SPDX identifier and a link to the upstream license. Ask Labs about exceptions.
+- **Image:** use the project's documented container image for the platform's supported architecture. Identify the version you tested; a digest pins the exact image.
+- **Attribution:** credit the software author as provider. Use published contact details only; flag missing details for review. State whether you are the author or a community contributor, and do not imply unconfirmed author endorsement or support.
+
+## Ask your coding assistant
+
+Fill in this prompt in a workspace where your assistant can fork repositories and open PRs:
+
+```text
+Add <PROJECT NAME> from <UPSTREAM PROJECT URL> to
+https://github.com/unitysvc-labs/unitysvc-compute-services.
+I am <the author | a community contributor>. The demo should show <USE CASE>.
+
+Fork the repo, create a branch, and read README.md, CONTRIBUTING.md and
+docs/container-recipes.md. Use the upstream docs, license and image page to
+establish the configuration; ask me about missing facts instead of guessing.
+Use the existing recipes as structural examples, not authentication templates.
+
+Follow the catalog's pricing, attribution, parameter and testing requirements.
+Document the size choice, application authentication, first-use steps and
+shutdown/storage behavior. All application keys and tokens are parameters with
+defaults where appropriate; UnitySVC supplies no built-in instance key or
+application authentication gate.
+
+Run the checks below and collect local Docker evidence where possible. Open a
+PR with the template filled in. Do not add or edit service identity sidecars,
+upload services, publish or merge.
+```
+
+Review the proposed recipe and test results before submitting it.
+
+## What to add
+
+Start with [`services/specs/kadxy/weixin-ilink-gateway`](services/specs/kadxy/weixin-ilink-gateway) as a structural example. Add `services/specs/<provider>/<project>/` with:
+
+| File | Contents |
+| --- | --- |
+| `provider.json` | Software author, homepage and license/contact references |
+| `offering.json` | Container channels, parameters, environment bindings, sizes, entries and zero payout |
+| `listing.json` | Customer description, `base_cost` price, documents and the `container_connectivity` preset |
+| `compose.yaml` | The offering's instance spec, or use an upstream commit-pinned URL |
+| `usage.md` | Setup, authentication, a first-use example, cost, stopping and storage limitations |
+
+Do not add a `service.json` for a new recipe or edit an existing identity sidecar. Labs records the backend-generated ID after publication.
+
+### Parameters and authentication
+
+Declare settings under each channel's `params.schema` and bind them in its `environment` map using `{{ params.NAME }}`. Supply descriptions, validation, appropriate defaults and `testing_defaults`. Keep Compose literal; parameter references belong in the channel, not the Compose file.
+
+All application tokens, keys and passwords come from these parameters. A parameter default such as `{{ token_urlsafe(32) }}` can generate a value for the enrollment; the customer can keep it or supply their own. Authentication is the application's responsibility: UnitySVC adds no application security gate or built-in instance-key variable. Do not ship a usable credential shared by all customers.
+
+The [container reference](docs/container-recipes.md#parameters-and-environment) shows a complete parameter-binding example. Explain which settings are required and whether changing them restarts the instance.
+
+### Pricing
+
+In `listing.json`:
+
+```json
+{"list_price": {"type": "base_cost"}}
+```
+
+In `offering.json`:
+
+```json
+{"payout_price": {"type": "constant", "price": "0"}}
+```
+
+Do not add fixed dollar prices, markups, surcharges or other payouts. The platform resolves `base_cost` from the selected channel's size.
+
+### Sizes and channels
+
+Choose the smallest suitable size from the [current size table](https://unitysvc.com/docs/sizes), based on upstream requirements and observed startup/demo usage. Account for every container in a stack. You can offer several channels with different sizes and parameter defaults; all use the offering's one instance spec. See [sizes and channels](docs/container-recipes.md#sizes-and-channels).
+
+## Check your work
+
+Install `unitysvc-sellers` with `unitysvc-core>=0.3.19` and `unitysvc-data>=0.2.17`. From the repository root, run:
+
+```bash
+usvc_seller specs validate
+usvc_seller specs format --check services
+python scripts/check_channel_binding.py
+```
+
+Use the `container_connectivity` preset and test startup, readiness and application authentication with Docker. Include commands, configuration and results in the PR, with credentials redacted.
+
+The v0.3.24 CLI runner does not bind channel parameters or `testing_defaults` correctly ([#240](https://github.com/unitysvc/unitysvc-sellers/issues/240)). Until fixed, supply test parameter values explicitly for your manual Docker check and report any tooling failure separately. Starting locally does not prove the chosen platform size fits.
+
+Fill in the PR template. Labs reviews the recipe and publishes it through the platform lifecycle after merge; contributors do not upload or publish services.

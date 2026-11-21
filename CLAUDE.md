@@ -102,8 +102,11 @@ real value). Seed them from the repo-committed manifest, never GitHub variables:
   fails with no obvious cause.
 - **Namespace** secret names by service (`HTTP_RELAY_BASE_URL`,
   `SMTP_RELAY_PASSWORD`, `<PROVIDER>_API_KEY`) — bare names collide.
-- Sensitive (key/password/token) → `customer_secrets`. Operational
-  (host/port/url/flag) → a direct `{{ params.X }}` with a default, not a secret.
+- Container application settings, including keys, passwords and tokens, are
+  enrollment parameters bound through the channel's `environment`. Use the
+  parameter default mechanism where appropriate. The application enforces
+  authentication; UnitySVC adds no application security gate or built-in instance
+  credential. See `docs/container-recipes.md` for the current container contract.
 
 ## Verification pipeline — all four green before "ready"
 

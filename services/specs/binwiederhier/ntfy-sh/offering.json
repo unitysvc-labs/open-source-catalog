@@ -3,7 +3,7 @@
     "notification-relay"
   ],
   "currency": "USD",
-  "description": "A private ntfy push-notification server per enrollment: publish over plain HTTP, receive on iOS, Android, desktop or a streaming client.\n\nUnitySVC runs the official ntfy image in an isolated container for each enrollment, reachable at its own HTTPS address. Every request must carry your access token. Message priorities, tags, click actions, scheduled delivery and attachments all work as in ntfy. Messages are capped at 4096 bytes and kept for 12 hours. Storage is temporary: cached messages are lost when the instance is replaced or stopped. Billing is per instance-month.\n\nEnroll in the base channel, keep or replace the generated access token, then publish with `Authorization: Bearer <token>` to `https://<instance>/<topic>`. Point the ntfy app at the same instance URL to subscribe. See How to use this service for the full setup and limitations.",
+  "description": "A private ntfy push-notification server per enrollment: publish over plain HTTP, receive on iOS, Android, desktop or a streaming client.\n\nUnitySVC runs the official ntfy image in an isolated container for each enrollment, reachable at its own HTTPS address. Every request must carry your access token. Message priorities, tags, click actions, scheduled delivery and attachments all work as in ntfy. Messages are capped at 4096 bytes and kept for 12 hours. Storage is temporary: cached messages are lost when the instance is replaced or stopped. You pay only the platform's compute cost for the time the instance runs, with no markup.\n\nEnroll in the base channel, keep or replace the generated access token, then publish with `Authorization: Bearer <token>` to `https://<instance>/<topic>`. Point the ntfy app at the same instance URL to subscribe. See How to use this service for the full setup and limitations.",
   "details": {
     "features": [
       "HTTP POST/PUT publishing",
@@ -28,9 +28,9 @@
   "instance_spec": "compose.yaml",
   "name": "ntfy-sh",
   "payout_price": {
-    "description": "Platform retains 20% after base cost",
-    "percentage": "80.00",
-    "type": "revenue_share"
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
   },
   "service_type": "container",
   "status": "ready",
