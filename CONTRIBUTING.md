@@ -22,7 +22,7 @@ docs/container-recipes.md. Use the upstream docs, license and image page to
 establish the configuration; ask me about missing facts instead of guessing.
 Use the existing recipes as structural examples, not authentication templates.
 
-Follow the catalog's pricing, attribution, parameter and testing requirements.
+Follow the catalog's pricing, attribution, capability, parameter and testing requirements.
 Document the size choice, application authentication, first-use steps and
 shutdown/storage behavior. All application keys and tokens are parameters with
 defaults where appropriate; UnitySVC supplies no built-in instance key or
@@ -48,6 +48,59 @@ Start with [`services/specs/kadxy/weixin-ilink-gateway`](services/specs/kadxy/we
 | `usage.md` | Setup, authentication, a first-use example, cost, stopping and storage limitations |
 
 Do not add a `service.json` for a new recipe or edit an existing identity sidecar. Labs records the backend-generated ID after publication.
+
+### Capabilities
+
+Declare what the software does in `offering.json`'s `capabilities` array. Use a
+bare [official capability ID](https://github.com/unitysvc/unitysvc-sellers/blob/main/docs/file-schemas.md#capabilities)
+only when its documented input/output contract fits, such as `notification-relay`.
+Unknown bare names are rejected. `container` describes how the service runs;
+it is not a capability.
+
+When no official capability fits, write `name | annotation`:
+
+```json
+{
+  "capabilities": [
+    "text-to-pdf | Converts uploaded UTF-8 text into a PDF document."
+  ]
+}
+```
+
+The frontend shows `text-to-pdf` as the capability badge and its annotation on
+hover, marked as described by the seller. Choose a short, lower-case hyphenated
+name and explain the input, result and important limits. This is a seller claim,
+not a platform verification; an annotation does not inherit an official routing
+contract even if its name matches one. Filters match the full entry, so use
+consistent wording.
+
+Names are limited to 64 characters, annotations to 500, and an offering to 32
+entries. Newlines and control characters are not allowed. Describe only actions
+the application actually supports, rather than marketing claims or deployment
+features.
+
+### Shared container guide
+
+Every container listing includes the common guide from `unitysvc-data`, alongside
+its application-specific `usage.md`:
+
+```json
+{
+  "documents": {
+    "Using container services": {"$doc_preset": "container_description"},
+    "How to use this service": {
+      "category": "getting_started",
+      "file_path": "usage.md",
+      "is_public": true,
+      "mime_type": "markdown"
+    }
+  }
+}
+```
+
+The shared guide covers enrollment, instance access, runtime charges and stopping.
+Keep software-specific login, first-use steps and limitations in the application's
+own guide. Include the `container_connectivity` test document as well.
 
 ### Parameters and authentication
 
@@ -79,7 +132,7 @@ Choose the smallest suitable size from the [current size table](https://unitysvc
 
 ## Check your work
 
-Install `unitysvc-sellers` with `unitysvc-core>=0.3.19` and `unitysvc-data>=0.2.17`. From the repository root, run:
+Install `unitysvc-sellers` with `unitysvc-core>=0.3.19` and `unitysvc-data>=0.2.18`. From the repository root, run:
 
 ```bash
 usvc_seller specs validate

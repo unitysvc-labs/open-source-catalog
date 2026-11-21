@@ -186,6 +186,13 @@ Every service needs at least one connectivity-test document. Two forms:
 
 Without a connectivity test the service is untestable and cannot activate.
 
+Every container listing also includes the shared public usage document:
+`"Using container services": {"$doc_preset": "container_description"}`
+(`unitysvc-data>=0.2.18`), alongside its application-specific setup guide.
+Declare capabilities as matching official IDs or `name | annotation`; the name
+is the frontend badge and the annotation is its hover explanation. See
+`CONTRIBUTING.md` for the capability contract and limits.
+
 ## Standards & references
 
 - **`unitysvc-sellers`** — the authoritative standard. Read
