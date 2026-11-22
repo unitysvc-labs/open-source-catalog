@@ -1,4 +1,8 @@
 {
+  "display_name": "Tencent Weixin (Mainland) iLink Gateway",
+  "name": "kadxy/weixin-ilink-gateway",
   "service_id": "80b3f8d5-8684-4822-981f-e05ab7971475",
+  "status": "created",
+  "time_created": "2026-11-22T03:16:08.693232Z",
   "upstream_test_status": "pass"
 }
