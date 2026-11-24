@@ -9,11 +9,21 @@ on:
     types: [closed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      full:
+        description: >-
+          Send every service, ignoring the saved upload state (the state is still rewritten),
+          instead of only the ones that changed since the last upload.
+        type: boolean
+        default: false
 
 jobs:
   upload:
     if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     uses: unitysvc-labs/.github/.github/workflows/seller-upload-production.yml@main
+    with:
+      # Only a manual run can ask for a full resync; a merged pull request sends what changed.
+      full: ${{ github.event_name == 'workflow_dispatch' && inputs.full }}
     secrets: inherit
     permissions:
       contents: write
