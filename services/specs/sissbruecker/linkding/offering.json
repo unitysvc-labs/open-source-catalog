@@ -3,7 +3,7 @@
     "bookmark-manager | Saves, tags, searches and shares web bookmarks through a web interface and a REST API, and can keep a snapshot of each page."
   ],
   "currency": "USD",
-  "description": "UnitySVC runs the official linkding image in a separate container for each enrollment, with its own HTTPS address. linkding is a self-hosted bookmark manager: save links with tags and notes, search and filter them, group them in bundles, read an archived copy of a page, and import or export bookmarks. It has a REST API and browser extensions, and a browser can add a bookmark with one click. Your bookmarks are kept in the instance's own SQLite database and survive stopping and restarting the instance.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then set the CSRF trusted origin to your instance's address (the sign-in form needs it behind the platform's HTTPS front end). The REST API token is in Settings > Integrations. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform stores the instance's data in your account's files while it is stopped. Labs adds no markup and receives no seller payout. See the upstream linkding documentation and issue tracker for software-specific help.",
+  "description": "UnitySVC runs the official linkding image in a separate container for each enrollment, with its own HTTPS address. linkding is a self-hosted bookmark manager: save links with tags and notes, search and filter them, group them in bundles, read an archived copy of a page, and import or export bookmarks. It has a REST API and browser extensions, and a browser can add a bookmark with one click. Your bookmarks are kept in the instance's own SQLite database and survive stopping and restarting the instance.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then replace the placeholder trusted origin with your instance's address (the sign-in form needs it behind the platform's HTTPS front end). The REST API token is in Settings > Integrations. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform stores the instance's data in your account's files while it is stopped. Labs adds no markup and receives no seller payout. See the upstream linkding documentation and issue tracker for software-specific help.",
   "details": {
     "features": [
       "Bookmarks with tags, notes, bundles, search and filters",
@@ -68,8 +68,8 @@
         "schema": {
           "properties": {
             "LD_CSRF_TRUSTED_ORIGINS": {
-              "default": "",
-              "description": "The address of this instance, for example https://abc123.apps.example (shown in the enrollment's instance details), or several separated by commas. linkding refuses sign-in and form posts from an address it does not trust, so set this after the instance is created, then save; changing it restarts the instance and keeps your data. Leave empty until you know the address.",
+              "default": "https://instance.invalid",
+              "description": "The address of this instance, for example https://abc123.example.app (shown in the enrollment's instance details), or several separated by commas. linkding refuses sign-in and form posts from an address it does not trust, so replace the placeholder with your instance address after the instance is created, then save; changing it restarts the instance and keeps your data. The placeholder https://instance.invalid trusts nothing, because the platform needs a value here.",
               "title": "Trusted origins (instance address)",
               "type": "string"
             },
@@ -98,7 +98,7 @@
           "type": "object"
         },
         "testing_defaults": {
-          "LD_CSRF_TRUSTED_ORIGINS": "",
+          "LD_CSRF_TRUSTED_ORIGINS": "https://instance.invalid",
           "LD_SUPERUSER_NAME": "admin",
           "LD_SUPERUSER_PASSWORD": "local-test-password-only"
         }
