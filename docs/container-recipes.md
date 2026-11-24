@@ -22,7 +22,30 @@ The [core instance-spec validator](https://github.com/unitysvc/unitysvc-core/blo
 
 Images must already be built. A tag is accepted; use a digest to pin the image you tested. Check the target architecture. Compose service names must be DNS labels: lowercase letters, digits and hyphens.
 
-Volume mounts provide scratch storage, not persistent storage. It survives a container restart but is lost when the instance is stopped or replaced, and counts against ephemeral-storage limits.
+A named volume is scratch storage by default. It survives a container restart but is lost when the instance is stopped or replaced, and counts against ephemeral-storage limits. To keep a volume's files between runs, persist it in the channel (below); the Compose file stays the same and runs unchanged under Docker.
+
+### Persistent volumes
+
+The channel's `volumes` says which named volumes of the Compose file persist, keyed by the volume's name. Persistence is the channel's offer, not the file's, so one Compose file can back a channel that persists a volume and another that does not.
+
+```json
+"volumes": {
+  "data": {
+    "type": "persist",
+    "source": "{{ storage.path }}/data",
+    "mode": "rw",
+    "exclude": ["*-wal", "*-shm"]
+  }
+}
+```
+
+- The key must be a top-level named volume of the Compose file that a service mounts. `type` is `persist` (or `scratch`, the default); `source` is `{{ storage.path }}/<folder>` (the enrollment's own folder in the customer's storage, the default) or `{{ home.path }}/<folder>` (a folder of the customer's home); `mode` is `rw` or `ro`; `exclude` lists globs left out both ways; `uid` and `gid` give the owner of the restored files, for an image that runs as a non-root user.
+- The channel must ask the customer for the storage access it needs, in `customer_access_requests`: a required `service:storage` with `read` and `write` (`read` alone for `mode: ro`), or `service:home` with a `path` that covers the folder.
+- Files are restored before the application starts, copied while it runs (about every 30 seconds) and once more when it stops. Copying only adds and replaces: nothing is deleted from storage, empty files, symbolic links and files over 1 GiB are not stored, and a crash can lose the last 30 seconds.
+- An application that keeps a SQLite database in WAL mode should exclude `*-wal` and `*-shm`. Copying never deletes, so an earlier copy of a write-ahead file would be restored beside a newer database, and SQLite's documentation warns that mixing a database with a write-ahead file from another point in time can corrupt it.
+- Say in `usage.md` what is kept, what is lost on a crash, and that changing a parameter that is only read at first start (for example an initial password) has no effect afterwards.
+
+Validating a recipe that persists needs `unitysvc-core>=0.3.20`.
 
 Public `entries` select a Compose service and container port. Customers reach the instance over HTTPS on port 443. The application handles access control; naming an entry does not add an authentication gate.
 

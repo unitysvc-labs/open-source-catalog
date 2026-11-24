@@ -80,7 +80,7 @@ See [parameters and environment](docs/container-recipes.md#parameters-and-enviro
 
 ## Local checks require no seller credentials
 
-Install `unitysvc-sellers` with `unitysvc-core>=0.3.19` and
+Install `unitysvc-sellers` with `unitysvc-core>=0.3.20` and
 `unitysvc-data>=0.2.18`, then run from the repository root:
 
 ```bash

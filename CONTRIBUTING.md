@@ -159,7 +159,7 @@ Choose the smallest suitable size from the [current size table](https://unitysvc
 
 These checks need no seller account, seller credentials or seller-provided secrets.
 
-Install `unitysvc-sellers` with `unitysvc-core>=0.3.19` and `unitysvc-data>=0.2.18`. From the repository root, run:
+Install `unitysvc-sellers` with `unitysvc-core>=0.3.20` and `unitysvc-data>=0.2.18`. From the repository root, run:
 
 ```bash
 usvc_seller specs validate
