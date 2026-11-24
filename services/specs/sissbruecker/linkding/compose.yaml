@@ -10,7 +10,8 @@ services:
       LD_SERVER_HOST: 0.0.0.0
     volumes:
       # The database, the generated secret key, favicons, previews and assets. The channel decides whether
-      # this volume persists (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      # this volume persists, in the linkding folder of the customer's home (offering.json, `volumes`); under plain Docker
+      # it is an ordinary named volume.
       - data:/etc/linkding/data
     healthcheck:
       test: [CMD, curl, -f, "http://127.0.0.1:9090/health"]

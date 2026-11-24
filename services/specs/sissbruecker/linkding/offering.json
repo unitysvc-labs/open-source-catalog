@@ -3,7 +3,7 @@
     "bookmark-manager | Saves, tags, searches and shares web bookmarks through a web interface and a REST API, and can keep a snapshot of each page."
   ],
   "currency": "USD",
-  "description": "UnitySVC runs the official linkding image in a separate container for each enrollment, with its own HTTPS address. linkding is a self-hosted bookmark manager: save links with tags and notes, search and filter them, group them in bundles, read an archived copy of a page, and import or export bookmarks. It has a REST API and browser extensions, and a browser can add a bookmark with one click. Your bookmarks are kept in the instance's own SQLite database and survive stopping and restarting the instance.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then replace the placeholder trusted origin with your instance's address (the sign-in form needs it behind the platform's HTTPS front end). The REST API token is in Settings > Integrations. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform stores the instance's data in your account's files while it is stopped. Labs adds no markup and receives no seller payout. See the upstream linkding documentation and issue tracker for software-specific help.",
+  "description": "UnitySVC runs the official linkding image in a separate container for each enrollment, with its own HTTPS address. linkding is a self-hosted bookmark manager: save links with tags and notes, search and filter them, group them in bundles, read an archived copy of a page, and import or export bookmarks. It has a REST API and browser extensions, and a browser can add a bookmark with one click. Your bookmarks are kept in the instance's own SQLite database, stored in the `linkding` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then replace the placeholder trusted origin with your instance's address (the sign-in form needs it behind the platform's HTTPS front end). The REST API token is in Settings > Integrations. You can run one linkding instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream linkding documentation and issue tracker for software-specific help.",
   "details": {
     "features": [
       "Bookmarks with tags, notes, bundles, search and filters",
@@ -11,7 +11,7 @@
       "REST API with a personal token",
       "Browser extensions and a one-click bookmarklet",
       "Import and export of bookmarks",
-      "Your data persists across stops and restarts"
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
     ],
     "links": {
       "documentation": "https://linkding.link/",
@@ -31,15 +31,16 @@
   },
   "service_type": "container",
   "status": "ready",
-  "summary": "A private, self-hosted bookmark manager: save, tag and search your links on your own linkding instance, with a REST API, browser extensions and data that survives restarts.",
+  "summary": "A private, self-hosted bookmark manager: save, tag and search your links on your own linkding instance, with a REST API, browser extensions and data kept in your home between runs.",
   "time_created": "2026-11-24T00:00:00Z",
   "upstream_access_config": {
     "base": {
       "access_method": "container",
       "customer_access_requests": [
         {
-          "justification": "Keeps linkding's database and files in your account's storage so your bookmarks survive stopping and restarting the instance.",
-          "object": "service:storage",
+          "justification": "Keeps linkding's database and files in the linkding folder of your home, so your bookmarks are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=linkding/",
           "permissions": [
             "read",
             "write"
@@ -47,7 +48,7 @@
           "required": true
         }
       ],
-      "description": "One private linkding instance for one enrollment; its data is kept between runs.",
+      "description": "One private linkding instance; its data is kept in the linkding folder of your home between runs and enrollments.",
       "entries": [
         {
           "auth": "app",
@@ -84,7 +85,7 @@
             },
             "LD_SUPERUSER_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password at the first start only: your data persists, so changing this value later does not change the password. Change the password in linkding's own settings instead. Save it; it is also shown in the enrollment's instance details.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when linkding first creates the account: your data lives in your home, so if the account already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in linkding's own settings. Save it; it is also shown in the enrollment's instance details.",
               "format": "password",
               "minLength": 12,
               "title": "Administrator password",
@@ -112,7 +113,7 @@
             "*-shm"
           ],
           "mode": "rw",
-          "source": "{{ storage.path }}/data",
+          "source": "{{ home.path }}/linkding",
           "type": "persist"
         }
       }
