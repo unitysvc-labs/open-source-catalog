@@ -5,10 +5,19 @@ name: Upload Data to Staging
 
 on:
   workflow_dispatch:
+    inputs:
+      full:
+        description: >-
+          Send every service, ignoring the saved upload state (the state is still rewritten),
+          instead of only the ones that changed since the last upload.
+        type: boolean
+        default: false
 
 jobs:
   upload:
     uses: unitysvc-labs/.github/.github/workflows/seller-upload-staging.yml@main
+    with:
+      full: ${{ inputs.full }}
     secrets: inherit
     permissions:
       contents: write
