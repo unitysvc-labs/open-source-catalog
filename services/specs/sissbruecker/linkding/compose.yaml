@@ -1,0 +1,22 @@
+# linkding, one private instance per enrollment. The superuser and the other settings are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  linkding:
+    image: sissbruecker/linkding:1.47.0@sha256:e35cb50e0581178f245125ffaa909c565416c94c9f22ace305a7d234a4345522
+    ports:
+      - 9090
+    environment:
+      # Listen on IPv4 (the image's default, [::], needs IPv6 in the pod).
+      LD_SERVER_HOST: 0.0.0.0
+    volumes:
+      # The database, the generated secret key, favicons, previews and assets. The channel decides whether
+      # this volume persists (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/etc/linkding/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:9090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+volumes:
+  data:

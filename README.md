@@ -46,6 +46,7 @@ A pricing update does not change an existing run's pinned price; the updated ter
 | --- | --- | --- |
 | [`binwiederhier/ntfy-sh`](services/specs/binwiederhier/ntfy-sh) | Push notifications over HTTP, with mobile and streaming clients | [ntfy setup](services/specs/binwiederhier/ntfy-sh/usage.md) |
 | [`kadxy/weixin-ilink-gateway`](services/specs/kadxy/weixin-ilink-gateway) | A Weixin iLink gateway with QR login, messaging and webhooks | [Weixin setup](services/specs/kadxy/weixin-ilink-gateway/usage.md) |
+| [`sissbruecker/linkding`](services/specs/sissbruecker/linkding) | A private bookmark manager with a REST API, whose data persists between runs | [linkding setup](services/specs/sissbruecker/linkding/usage.md) |
 
 ## Catalog pricing policy
 

@@ -1,0 +1,121 @@
+{
+  "capabilities": [
+    "bookmark-manager | Saves, tags, searches and shares web bookmarks through a web interface and a REST API, and can keep a snapshot of each page."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official linkding image in a separate container for each enrollment, with its own HTTPS address. linkding is a self-hosted bookmark manager: save links with tags and notes, search and filter them, group them in bundles, read an archived copy of a page, and import or export bookmarks. It has a REST API and browser extensions, and a browser can add a bookmark with one click. Your bookmarks are kept in the instance's own SQLite database and survive stopping and restarting the instance.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then set the CSRF trusted origin to your instance's address (the sign-in form needs it behind the platform's HTTPS front end). The REST API token is in Settings > Integrations. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform stores the instance's data in your account's files while it is stopped. Labs adds no markup and receives no seller payout. See the upstream linkding documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Bookmarks with tags, notes, bundles, search and filters",
+      "Reader-mode view and optional page snapshots",
+      "REST API with a personal token",
+      "Browser extensions and a one-click bookmarklet",
+      "Import and export of bookmarks",
+      "Your data persists across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://linkding.link/",
+      "homepage": "https://linkding.link/",
+      "source_code": "https://github.com/sissbruecker/linkding"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "linkding",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted bookmark manager: save, tag and search your links on your own linkding instance, with a REST API, browser extensions and data that survives restarts.",
+  "time_created": "2026-11-24T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps linkding's database and files in your account's storage so your bookmarks survive stopping and restarting the instance.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private linkding instance for one enrollment; its data is kept between runs.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 9090,
+          "service": "linkding"
+        }
+      ],
+      "environment": {
+        "linkding": {
+          "LD_CSRF_TRUSTED_ORIGINS": "{{ params.LD_CSRF_TRUSTED_ORIGINS }}",
+          "LD_SUPERUSER_NAME": "{{ params.LD_SUPERUSER_NAME }}",
+          "LD_SUPERUSER_PASSWORD": "{{ params.LD_SUPERUSER_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "LD_CSRF_TRUSTED_ORIGINS": {
+              "default": "",
+              "description": "The address of this instance, for example https://abc123.apps.example (shown in the enrollment's instance details), or several separated by commas. linkding refuses sign-in and form posts from an address it does not trust, so set this after the instance is created, then save; changing it restarts the instance and keeps your data. Leave empty until you know the address.",
+              "title": "Trusted origins (instance address)",
+              "type": "string"
+            },
+            "LD_SUPERUSER_NAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. Changing it later creates another administrator and leaves the first one in place.",
+              "maxLength": 150,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@.+_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "LD_SUPERUSER_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password at the first start only: your data persists, so changing this value later does not change the password. Change the password in linkding's own settings instead. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            }
+          },
+          "required": [
+            "LD_SUPERUSER_NAME",
+            "LD_SUPERUSER_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "LD_CSRF_TRUSTED_ORIGINS": "",
+          "LD_SUPERUSER_NAME": "admin",
+          "LD_SUPERUSER_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ storage.path }}/data",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
