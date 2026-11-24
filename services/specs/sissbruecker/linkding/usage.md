@@ -7,7 +7,7 @@ Each enrollment runs its own private [linkding](https://linkding.link/) server. 
 1. Enroll in **base**. The enrollment asks for access to your storage (`service:storage`, read and write): linkding's data is kept there so it survives stopping and restarting. Approve it, or the instance does not start.
 2. The form shows an **Administrator name** (default `admin`) and a generated **Administrator password**. Keep the password or replace it with your own (at least 12 characters), then save it. They are stored with the enrollment (view and copy them from the instance details) and given to linkding at its first start. They are application credentials, not your UnitySVC API key.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it.
-4. Set **Trusted origins (instance address)** to that address, for example `https://abc123.example.app`, and save. linkding refuses a sign-in or any form post from an address it does not trust, and behind the platform's HTTPS front end it does not know its own. Saving restarts the instance; your data stays.
+4. Replace **Trusted origins (instance address)** with that address, for example `https://abc123.example.app`, and save. It starts as the placeholder `https://instance.invalid`, which trusts nothing (the platform needs a value there). linkding refuses a sign-in or any form post from an address it does not trust, and behind the platform's HTTPS front end it does not know its own. Saving restarts the instance; your data stays.
 5. Open the address, sign in with the administrator name and password, and add a bookmark.
 
 ## Use it

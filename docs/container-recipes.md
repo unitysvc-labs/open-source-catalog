@@ -83,6 +83,8 @@ For an application whose `gateway` container reads an `API_KEY` variable, the re
 
 The default mechanism generates a parameter value; it is not an implicit platform credential. UnitySVC substitutes the saved parameter when starting the instance. The software must actually use the key and enforce authentication. Apply the same pattern to tokens, passwords and other settings, using formats supported by the application.
 
+A parameter bound in `environment` needs a **non-empty** value: the platform treats an empty string as missing, so an instance whose enrollment (or `testing_defaults`) leaves one empty fails to start with `missing_parameter` and its connectivity test fails. Give an optional setting a harmless non-empty default, or leave it out of `environment`.
+
 Do not rely on `${VAR}` placeholders or a built-in instance-key variable. Do not place `{{ params.NAME }}` in Compose or use the older Document `meta.environment` form.
 
 `testing_defaults` provides sample parameter values for test tooling. The current v0.3.24 local runner does not apply channel bindings correctly; supply these values explicitly when checking Compose with Docker. See [the contribution checks](../CONTRIBUTING.md#check-your-work).
