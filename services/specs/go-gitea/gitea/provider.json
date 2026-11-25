@@ -1,0 +1,10 @@
+{
+  "contact_email": "security@gitea.io",
+  "display_name": "Gitea (The Gitea Authors)",
+  "homepage": "https://about.gitea.com",
+  "logo": "https://avatars.githubusercontent.com/u/12724356",
+  "name": "go-gitea",
+  "status": "ready",
+  "terms_of_service": "https://github.com/go-gitea/gitea/blob/main/LICENSE",
+  "time_created": "2026-11-25T00:00:00Z"
+}
