@@ -9,7 +9,7 @@
       "Hand-drawn style shapes, arrows, text and freehand drawing",
       "Export to PNG, SVG or an .excalidraw file, and import them again",
       "Dark mode and a shape library kept in the browser",
-      "Installable as a web app and usable offline after the first load",
+      "Ships as an installable web app (service worker)",
       "No settings, no sign-in and no data kept on the server"
     ],
     "links": {

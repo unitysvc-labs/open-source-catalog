@@ -12,7 +12,7 @@ The instance is a static website served by nginx. The drawing happens in the vis
 
 ## Use it
 
-Pick a tool (rectangle, arrow, text, freehand and others), draw, and use the menu to export as PNG or SVG, or to save an `.excalidraw` file you can open again later with **Open**. The page can be installed as a web app, and works offline after its first load.
+Pick a tool (rectangle, arrow, text, freehand and others), draw, and use the menu to export as PNG or SVG, or to save an `.excalidraw` file you can open again later with **Open**. The page ships as an installable web app with a service worker; we did not test installing it or using it offline.
 
 ## What does not work
 
