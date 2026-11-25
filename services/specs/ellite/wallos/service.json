@@ -1,0 +1,11 @@
+{
+  "display_name": "Wallos Subscription Tracker",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.wallos.volumes[0]: volume 'db' at /var/www/html/db is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.wallos.volumes[1]: volume 'logos' at /var/www/html/images/uploads/logos is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "ellite/wallos",
+  "service_id": "62e340fa-d8c4-4301-9d7d-4191a5ad7a04",
+  "status": "created",
+  "time_created": "2026-11-25T18:23:54.798968Z"
+}
