@@ -1,0 +1,22 @@
+# Wallos, one private instance per enrollment. The time zone is bound from the channel's `environment`
+# in offering.json; nothing in this file is secret.
+services:
+  wallos:
+    image: bellamy/wallos:5.11.3@sha256:84c3b218e144a1292b2be6ad2f0b9d620277e860d307c3cfa5aff3ee629aae17
+    ports:
+      - 80
+    volumes:
+      # The SQLite database and the uploaded logos. The channel decides whether these volumes persist, in
+      # the wallos folder of the customer's home (offering.json, `volumes`); under plain Docker they are
+      # ordinary named volumes.
+      - db:/var/www/html/db
+      - logos:/var/www/html/images/uploads/logos
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:80/health.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+volumes:
+  db:
+  logos:

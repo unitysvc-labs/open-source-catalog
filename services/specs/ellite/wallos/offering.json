@@ -1,0 +1,108 @@
+{
+  "capabilities": [
+    "subscription-tracking | Records recurring subscriptions with price, currency, billing cycle, category and payment method in a web interface, and shows upcoming payments and monthly or yearly totals."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Wallos image in a separate container for each enrollment, with its own HTTPS address. Wallos is a self-hosted personal subscription tracker: you enter your recurring subscriptions with their price, currency, billing cycle, category and payment method, and it shows what is due next and what they cost per month and per year. Everything is kept in the instance's own SQLite database and uploaded logos, stored in the `wallos` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and choose the time zone Wallos uses for payment dates. Then open `https://<instance>/` and register at once: the first account Wallos sees becomes its administrator, and registration closes after that. You can run one Wallos instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Wallos documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Subscriptions with price, currency, billing cycle, category and payment method",
+      "Upcoming payments and monthly or yearly cost totals",
+      "Uploaded logos for subscriptions and payment methods",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/ellite/Wallos",
+      "homepage": "https://wallosapp.com",
+      "source_code": "https://github.com/ellite/Wallos"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "wallos",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted subscription tracker: record recurring subscriptions and see upcoming payments and totals in a web interface, with data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Wallos's database and uploaded logos in the wallos folder of your home, so your subscriptions and account are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=wallos/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Wallos instance; its database and logos are kept in the wallos folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "wallos"
+        }
+      ],
+      "environment": {
+        "wallos": {
+          "TZ": "{{ params.TZ }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "TZ": {
+              "default": "UTC",
+              "description": "The time zone Wallos uses for payment dates and reminders, as an IANA name such as Europe/Lisbon or America/Toronto. Changing it restarts the instance.",
+              "minLength": 1,
+              "title": "Time zone",
+              "type": "string"
+            }
+          },
+          "required": [
+            "TZ"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "TZ": "UTC"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "db": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 82,
+          "mode": "rw",
+          "source": "{{ home.path }}/wallos/db",
+          "type": "persist",
+          "uid": 82
+        },
+        "logos": {
+          "gid": 82,
+          "mode": "rw",
+          "source": "{{ home.path }}/wallos/logos",
+          "type": "persist",
+          "uid": 82
+        }
+      }
+    }
+  }
+}
