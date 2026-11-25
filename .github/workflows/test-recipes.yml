@@ -79,8 +79,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install unitysvc-sellers
-        # 0.3.26 added `specs upload --wait-for-test`.
-        run: pip install "unitysvc-sellers>=0.3.26"
+        # 0.3.26 added `specs upload --wait-for-test`; 0.3.27 runs the platform's check on a recipe whose upload
+        # queued no tests (an unchanged one), so a re-run is never a pass without a container check.
+        run: pip install "unitysvc-sellers>=0.3.27"
 
       - name: Restore the production upload state
         working-directory: .
