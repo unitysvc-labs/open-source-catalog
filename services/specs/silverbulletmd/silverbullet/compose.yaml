@@ -1,0 +1,35 @@
+# SilverBullet, one private instance per enrollment. The SB_USER sign-in is bound from the channel's
+# `environment` in offering.json. This is the slim image (no Chromium), so the Runtime API is not available.
+services:
+  silverbullet:
+    image: ghcr.io/silverbulletmd/silverbullet:3.0.0-slim@sha256:c221f3017ee7f29f38299f046c2746d50b768f12473c6b720b495c96b79b2712
+    # On a data folder with nothing in it, SilverBullet starts an open setup wizard where the first visitor
+    # becomes the administrator. To keep that wizard from ever being open, write one starter page first: a
+    # folder holding a page but no spaces.json is a single-space install, which SilverBullet serves behind the
+    # SB_USER sign-in until it is migrated (see usage.md). A folder that already has data is left untouched.
+    entrypoint:
+      - /sbin/tini
+      - --
+      - /bin/bash
+      - -c
+      - |
+        if [ -z "$(ls -A /data 2>/dev/null)" ]; then
+          mkdir -p /data
+          printf '# Welcome\n\nThis is your SilverBullet space.\n' > /data/index.md
+        fi
+        exec /docker-entrypoint.sh
+    ports:
+      - 3000
+    volumes:
+      # The server's configuration (users.json, spaces.json, server.json), the space's pages and attachments,
+      # and the search index. The channel decides whether this volume persists, in the silverbullet folder of
+      # the customer's home (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:3000/.instance"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
