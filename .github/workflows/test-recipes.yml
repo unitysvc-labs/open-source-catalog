@@ -26,9 +26,12 @@ on:
         description: The commit to test (a reviewed commit of a fork's pull request).
         required: true
 
-# One run at a time: two runs would upload the same recipes.
+# One run at a time per pull request: a new push waits for the run before it, because a run is
+# uploading to production and must not be cut off. Pull requests are independent (each one's recipes
+# are its own), so they do not queue behind each other; a single shared group would keep only one
+# pending run and cancel the others.
 concurrency:
-  group: test-recipes
+  group: test-recipes-${{ github.event.pull_request.number || inputs.ref }}
   cancel-in-progress: false
 
 permissions:
