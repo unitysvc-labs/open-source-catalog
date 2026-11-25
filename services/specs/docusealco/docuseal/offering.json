@@ -1,0 +1,103 @@
+{
+  "capabilities": [
+    "document-signing | Lets you build fillable PDF forms with a field editor and send them to signers, who fill and e-sign them on any device; signed PDFs carry an electronic signature and an audit trail.",
+    "pdf-form-builder | Places signature, date, text, file, checkbox and other fields on an uploaded PDF in a visual editor."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official DocuSeal image (the open-source edition) in a separate container for each enrollment, with its own HTTPS address and its own SQLite database. DocuSeal is a document-signing tool: upload a PDF, place fields (signature, date, text, checkbox, file and more) in the visual editor, and send it to one or several signers, who fill and sign it on any device. Completed documents get an electronic signature and an audit trail, and the instance has users, an API and webhooks. Some DocuSeal features are paid Pro features and are not in this image's free edition (for example white-label, user roles, reminders, SMS, conditional fields, bulk send, SSO/SAML, and creating templates from PDF, DOCX or HTML through the API); see How to use this service.\n\nEnroll in the base channel and keep or replace the generated secret key. The first visit to the instance address shows a setup form that creates the administrator account: open it at once, because whoever submits it first becomes the administrator. Enter the instance address itself as the App URL; DocuSeal uses it in the links of emails and signing requests. To send emails you configure your own SMTP server in the DocuSeal settings. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. The documents and the database are kept for the enrollment while it exists, and are removed from your view with it. DocuSeal is licensed AGPL-3.0 with an additional term that keeps the DocuSeal attribution in its interface. See the upstream DocuSeal documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Visual PDF form builder with 12 field types",
+      "Several signers per document, with signing on phones and desktops",
+      "Electronic signature of the completed PDF, with signature verification",
+      "Users, an API and webhooks (free-edition features only)",
+      "Your own SQLite database and documents, kept for the life of the enrollment"
+    ],
+    "links": {
+      "documentation": "https://www.docuseal.com/docs",
+      "homepage": "https://www.docuseal.com",
+      "source_code": "https://github.com/docusealco/docuseal"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "docuseal",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted document-signing server: build fillable PDF forms and send them to be filled and e-signed on any device, with your own database and documents.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps DocuSeal's database and your uploaded and signed documents in the storage of this enrollment, so they are still there when the instance is stopped or restarted.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private DocuSeal server (open-source edition); its database and documents are kept in the storage of this enrollment.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "docuseal"
+        }
+      ],
+      "environment": {
+        "docuseal": {
+          "SECRET_KEY_BASE": "{{ params.SECRET_KEY_BASE }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "SECRET_KEY_BASE": {
+              "default": "{{ token_urlsafe(64) }}",
+              "description": "The key DocuSeal uses for sessions and to encrypt its stored settings and its signing certificate. Generated for this enrollment; keep it or enter your own (at least 64 characters). Save it. Changing it after the first start makes the existing data unreadable: DocuSeal can no longer sign in or open its settings. It is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 64,
+              "title": "Secret key",
+              "type": "string"
+            }
+          },
+          "required": [
+            "SECRET_KEY_BASE"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "SECRET_KEY_BASE": "local-test-secret-key-only-0123456789-0123456789-0123456789-0123456789"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 2000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/docuseal",
+          "type": "persist",
+          "uid": 2000
+        }
+      }
+    }
+  }
+}
