@@ -1,0 +1,31 @@
+# HedgeDoc 1.x, one private instance per enrollment. The session secret and the two access switches are bound
+# from the channel's `environment` in offering.json; the values below are the instance's fixed, non-secret
+# settings. CMD_DOMAIN is left unset on purpose: the instance's address is not known before it exists, and a
+# wrong domain makes HedgeDoc redirect to it (see usage.md).
+services:
+  hedgedoc:
+    image: quay.io/hedgedoc/hedgedoc:1.12.0@sha256:1df4cbc99611ccc9761fd46b08b91e4fc787e9adc5b3f190d1b897a29b825452
+    # The image starts as root and drops to this user itself; starting as it directly needs no root.
+    user: "10000:10000"
+    ports:
+      - 3000
+    environment:
+      CMD_DB_URL: sqlite:///data/hedgedoc.sqlite
+      # The platform's HTTPS front end terminates TLS: secure session cookies and proxy trust need this.
+      CMD_PROTOCOL_USESSL: "true"
+    volumes:
+      # The SQLite database, and the uploaded images. The channel decides whether these volumes persist, in the
+      # hedgedoc folder of the customer's home (offering.json, `volumes`); under plain Docker they are ordinary
+      # named volumes. The uploads folder is fixed by HedgeDoc and is served at /uploads, so the database lives
+      # in a separate volume.
+      - db:/data
+      - uploads:/hedgedoc/public/uploads
+    healthcheck:
+      test: [CMD, node, /hedgedoc/healthcheck.mjs]
+      interval: 10s
+      timeout: 6s
+      retries: 3
+      start_period: 40s
+volumes:
+  db:
+  uploads:
