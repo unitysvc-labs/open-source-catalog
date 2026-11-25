@@ -1,0 +1,24 @@
+# Filestash, one private instance per enrollment. It takes no bound settings: the administrator
+# password is set in the browser on first use (see usage.md). Only the Filestash container is used;
+# the upstream compose file's second container (an office-document server) is not part of this recipe.
+services:
+  filestash:
+    image: machines/filestash:latest@sha256:434215e915f584474e66d9ff932dc050ac774170bb518d825ad836685e1a321b
+    # The image's own user, filestash (uid 1000), given as numbers.
+    user: "1000:1000"
+    ports:
+      - 8334
+    volumes:
+      # config/config.json (admin password hash, secret key, storage entries), the SQLite databases in db/
+      # (metadata, shared links, workflows), logs, certs and plugins. The channel decides whether this volume
+      # persists, in the filestash folder of the customer's home (offering.json, `volumes`); under plain
+      # Docker it is an ordinary named volume.
+      - state:/app/data/state
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:8334/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  state:

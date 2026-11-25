@@ -1,0 +1,84 @@
+{
+  "capabilities": [
+    "web-file-manager | Lists, uploads, downloads, previews and shares files held on storage servers such as FTP, SFTP, S3 and WebDAV, through a web interface."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Filestash image in a separate container for each enrollment, with its own HTTPS address. Filestash is a web file manager: you connect it to storage you already have (FTP, SFTP, S3, WebDAV, SMB, Dropbox, Google Drive and others) and then browse, upload, download, preview and share files from a browser. Its own settings (the administrator password, the storage entries you add, shared links and its small SQLite databases) are kept in the `filestash` folder of your home, so they survive stopping the instance and removing it and enrolling again. It does not hold your files: they stay on the storage you connect. The office-document editor that the upstream Docker example adds as a second container is not included, so documents cannot be edited in the browser.\n\nEnroll in the base channel, open the instance address and set the administrator password straight away: there is no password until someone sets one, and the first visitor to `/admin` sets it. Then add your storage in the administrator console. The storage details you enter there are saved as plain text in the instance's `config.json`, and the instance address is reachable by anyone who has it, so read Credentials and security in How to use this service before you enter any. You can run one Filestash instance at a time. See How to use this service for full setup and limitations.\n\nFilestash is released under the AGPL-3.0; some features listed on the project's pricing page need a paid plan (see the guide). You pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps your settings in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Filestash documentation for software-specific help.",
+  "details": {
+    "features": [
+      "Browse, upload, download, preview and share files from a web browser",
+      "Connects to FTP, SFTP, S3, WebDAV, SMB, Dropbox, Google Drive and other storage you already use",
+      "Your files stay on your own storage; only Filestash's settings are kept in your home",
+      "Administrator console for storage and authentication settings",
+      "Settings and shared links are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://www.filestash.app/docs/",
+      "homepage": "https://www.filestash.app",
+      "source_code": "https://github.com/mickael-kerjean/filestash"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "filestash",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A web file manager: browse, upload, preview and share files on FTP, SFTP, S3, WebDAV and other storage you connect. Settings are kept in your home. Set the admin password first.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Filestash's settings (the administrator password, your storage entries and shared links) in the filestash folder of your home, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=filestash/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Filestash instance; its settings are kept in the filestash folder of your home between runs and enrollments. It takes no enrollment settings: you set the administrator password in the browser.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8334,
+          "service": "filestash"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "state": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/filestash",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
