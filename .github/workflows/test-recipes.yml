@@ -1,0 +1,140 @@
+name: Test Recipes
+
+# Proves a pull request's recipes run on the platform before they are merged:
+#
+#   1. validate   the recipes (the same schema check the other workflows run)
+#   2. upload     only the recipes whose expanded content changed, using the upload state of the last
+#                 production upload (`specs upload --state`, the same comparison the merge upload uses)
+#   3. test       each uploaded recipe through the platform's own check: it starts the recipe's
+#                 container on a cluster that takes `test` work, fetches its entries over HTTPS and
+#                 stops it (`services run-tests`). A recipe whose image cannot be pulled or whose
+#                 container does not start and answer fails here.
+#
+# The recipes are uploaded to production but are NOT published: `enable-testing` makes a draft routable
+# for tests and does not submit it for review or make it visible. A merge still publishes through
+# "Upload Data to Production". The pull request's own state is never saved as the production state.
+#
+# Seller credentials are needed, so this runs for branches of this repository only. A maintainer tests
+# a fork's pull request by running this workflow by hand on the commit they reviewed.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The commit to test (a reviewed commit of a fork's pull request).
+        required: true
+
+# One run at a time: two runs would upload the same recipes and share one test instance.
+concurrency:
+  group: test-recipes
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # to find the production upload state
+
+jobs:
+  test:
+    # A fork's pull request gets no secrets. The check says so instead of passing silently.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: services
+    env:
+      UNITYSVC_SELLER_API_KEY: ${{ secrets.UNITYSVC_SELLER_PRODUCTION_API_KEY }}
+      UNITYSVC_SELLER_API_URL: ${{ secrets.UNITYSVC_SELLER_PRODUCTION_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install unitysvc-sellers
+        # 0.3.24 added `specs upload --state`.
+        run: pip install "unitysvc-sellers>=0.3.24"
+
+      - name: Validate
+        run: usvc_seller specs validate
+
+      - name: Restore the production upload state
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p .upload-state
+          run_id="$(gh api "repos/$REPO/actions/artifacts?name=upload-state-production&per_page=10" \
+            --jq '[.artifacts[] | select(.expired | not)][0].workflow_run.id // empty' 2>/dev/null || true)"
+          if [ -n "$run_id" ] && gh run download "$run_id" --repo "$REPO" -n upload-state-production -D .upload-state; then
+            echo "Restored the upload state of run $run_id."
+          else
+            echo "::warning::No production upload state; every recipe will be uploaded and tested."
+            rm -f .upload-state/state.json
+          fi
+          [ -f .upload-state/state.json ] && cp .upload-state/state.json .upload-state/before.json || echo '{"services":{}}' > .upload-state/before.json
+
+      - name: Upload the recipes that changed
+        # Not submitted, so nothing enters review; the state file is a working copy and is not saved.
+        run: usvc_seller specs upload --state "$GITHUB_WORKSPACE/.upload-state/state.json"
+
+      - name: Find the recipes this run uploaded
+        id: changed
+        working-directory: .
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          def load(name):
+              try:
+                  return json.load(open(f".upload-state/{name}.json")).get("services", {})
+              except OSError:
+                  return {}
+          before, after = load("before"), load("state")
+          sent = sorted(n for n, r in after.items() if r != before.get(n))
+          print("names=" + json.dumps(sent))
+          PY
+
+      - name: Run the platform check on each
+        env:
+          NAMES: ${{ steps.changed.outputs.names }}
+        run: |
+          set -uo pipefail
+          failed=0
+          {
+            echo "## Recipe checks"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$(jq length <<<"$NAMES")" = 0 ]; then
+            echo "No recipe changed since the last production upload; nothing to test." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          for name in $(jq -r '.[]' <<<"$NAMES"); do
+            echo "::group::$name"
+            # A new recipe is a draft: make it routable for the check. A change to a live service is a
+            # revision the check reaches directly, and enable-testing has nothing to do for it.
+            usvc_seller services enable-testing "$name" --yes || echo "enable-testing did not apply to $name (a revision of a live service?)"
+            usvc_seller services run-tests "$name" --force || true
+            result="$(usvc_seller services show-test-results "$name" --format json)"
+            echo "$result" | jq '{passed, runs: [.runs[] | {document_title, channel_name, status, exit_code}], not_run}'
+            if jq -e '.passed == true and (.not_run | length == 0)' <<<"$result" >/dev/null; then
+              echo "- ✅ \`$name\`" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "- ❌ \`$name\`: $(jq -c '[.runs[] | select(.status != "success") | {channel_name, status, error}]' <<<"$result")" >> "$GITHUB_STEP_SUMMARY"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$failed"
+
+  fork:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::notice::This pull request is from a fork, so the platform check cannot use seller credentials. A maintainer runs 'Test Recipes' by hand on the reviewed commit before merging."
