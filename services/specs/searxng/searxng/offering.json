@@ -1,0 +1,89 @@
+{
+  "capabilities": [
+    "metasearch | Sends a web search query to many search engines at once and returns the merged results as an HTML page, without tracking the person searching."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official SearXNG image in a separate container for each enrollment, with its own HTTPS address. SearXNG is a free metasearch engine: you type a query, it forwards it to many search engines (general web, images, news, maps, science, files and more), merges the results and shows them in one page, without ads and without a profile of you. The search engines see the platform's network address, not yours. It runs as a single container and needs no database; nothing is stored between runs.\n\nEnroll in the base channel. A secret key is generated for you (it signs internal links; it is not a password) and a contact URL is pre-filled, which some engines, such as Wikipedia and Wikidata, require. Open the instance address in a browser and search. SearXNG has no sign-in: anyone who knows the instance address can search through it, so share the address only with people you trust. The search engines may also block or rate-limit a cloud address, so some engines can return no results. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream SearXNG documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Merges results from many search engines in one page, with no ads",
+      "Search categories: general, images, videos, news, maps, music, files, science and more",
+      "No tracking or profile of the person searching; the engines see the platform's address",
+      "Preferences kept in your browser, and an OpenSearch entry for adding it as a browser search engine",
+      "One container, no database, nothing stored between runs"
+    ],
+    "links": {
+      "documentation": "https://docs.searxng.org",
+      "homepage": "https://searxng.org",
+      "source_code": "https://github.com/searxng/searxng"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "searxng",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private metasearch engine: one search page that queries many search engines and merges the results, with no ads or tracking. No sign-in, nothing stored between runs.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private SearXNG metasearch instance with no sign-in; nothing is persisted.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "searxng"
+        }
+      ],
+      "environment": {
+        "searxng": {
+          "SEARXNG_CONTACT_URL": "{{ params.SEARXNG_CONTACT_URL }}",
+          "SEARXNG_SECRET": "{{ params.SEARXNG_SECRET }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "SEARXNG_CONTACT_URL": {
+              "default": "https://github.com/unitysvc-labs/open-source-catalog",
+              "description": "A web page or a mailto: address where the operator of this instance can be reached. Engines such as Wikipedia, Wikidata and OpenStreetMap require one and send it in the request header, so they answer only when it is set. The default points at the catalog this recipe comes from; replace it with your own address if you want those engines to be able to contact you.",
+              "maxLength": 300,
+              "minLength": 1,
+              "title": "Contact URL",
+              "type": "string"
+            },
+            "SEARXNG_SECRET": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. SearXNG uses it to sign internal links (for example the image proxy). It is not a sign-in password and gives no access control. Links signed with an earlier secret stop working if you change it.",
+              "format": "password",
+              "minLength": 16,
+              "title": "Secret key",
+              "type": "string"
+            }
+          },
+          "required": [
+            "SEARXNG_SECRET",
+            "SEARXNG_CONTACT_URL"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "SEARXNG_CONTACT_URL": "https://github.com/unitysvc-labs/open-source-catalog",
+          "SEARXNG_SECRET": "local-test-secret-only-0123456789"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}
