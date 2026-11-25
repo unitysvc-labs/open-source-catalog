@@ -1,0 +1,14 @@
+# Slash, one private instance per enrollment. It needs no environment: the first account registered becomes
+# the administrator (see usage.md). The image runs as root and has no curl or wget, so there is no healthcheck.
+services:
+  slash:
+    image: yourselfhosted/slash:1.0.0-rc.3@sha256:c34a45a0197f1822cf7bd1796ead899efb77b7ff8b926f825ad82362fdc3d093
+    ports:
+      - 5231
+    volumes:
+      # The SQLite database (slash_prod.db). The channel decides whether this volume persists, in the slash
+      # folder of the customer's home (offering.json, `volumes`); under plain Docker it is an ordinary named
+      # volume.
+      - data:/var/opt/slash
+volumes:
+  data:
