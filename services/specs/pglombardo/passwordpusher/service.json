@@ -1,0 +1,10 @@
+{
+  "display_name": "Password Pusher",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.pwpush.volumes[0]: volume 'data' at /opt/PasswordPusher/storage becomes scratch space (an emptyDir the instance gets at that path, counted in ephemeral-storage): its data survives a container restart but not a replacement of the instance"
+  ],
+  "name": "pglombardo/passwordpusher",
+  "service_id": "22bfe0a6-809b-40c0-9e97-5131d2ee189d",
+  "status": "created",
+  "time_created": "2026-11-25T20:48:27.831437Z"
+}
