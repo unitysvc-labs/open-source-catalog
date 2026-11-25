@@ -1,0 +1,150 @@
+{
+  "capabilities": [
+    "git-hosting | Hosts Git repositories that you clone, fetch and push over HTTPS, with issues, pull requests, wikis and a package registry in the web interface. Git over SSH is not available.",
+    "code-review | Pull requests with line comments, reviews and merge controls in the web interface and the API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Gitea rootless server image in a separate container for each enrollment, with its own HTTPS address. Gitea is a self-hosted Git service: repositories, issues, pull requests, wikis, releases, a package registry, organizations and teams, and a REST API, all in one small server. Its data (SQLite database, repositories, attachments and configuration) is kept in the `gitea` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, create a repository, and clone or push it over HTTPS with the same credentials or with an access token. Public self-registration is switched off; the administrator creates other users. Only one HTTP entry is exposed: Git over SSH is not available, so use HTTPS remotes. You can run one Gitea instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Gitea documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Git repositories over HTTPS, with issues, pull requests, wikis and releases",
+      "Organizations, teams and access tokens, and a REST API",
+      "A package registry and a built-in web code browser",
+      "One administrator account created for you; public registration is off",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.gitea.com",
+      "homepage": "https://about.gitea.com",
+      "source_code": "https://github.com/go-gitea/gitea"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "gitea",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted Git service: repositories, issues, pull requests and wikis over HTTPS (no Git over SSH), with its data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Gitea's database, repositories and configuration in the gitea folder of your home, so your users, repositories and issues are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=gitea/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Gitea server; its users, repositories and issues are kept in the gitea folder of your home between runs and enrollments. HTTPS only, no Git over SSH.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "gitea"
+        }
+      ],
+      "environment": {
+        "gitea": {
+          "ADMIN_EMAIL": "{{ params.ADMIN_EMAIL }}",
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "ADMIN_USERNAME": "{{ params.ADMIN_USERNAME }}",
+          "GITEA__security__INTERNAL_TOKEN": "{{ params.INTERNAL_TOKEN }}",
+          "GITEA__security__SECRET_KEY": "{{ params.SECRET_KEY }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The administrator's email address, used for the account and for avatars. Gitea sends no mail from this instance. Used only when the administrator is first created.",
+              "maxLength": 254,
+              "minLength": 5,
+              "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+              "title": "Administrator email",
+              "type": "string"
+            },
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Gitea first creates the administrator; if that user already exists this value is ignored and the existing password still applies. Change the password in Gitea's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "ADMIN_USERNAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. It is used only when Gitea first creates its database: your data lives in your home, so if the user already exists (an earlier enrollment, or a later restart) this value is ignored and the existing users still apply.",
+              "maxLength": 40,
+              "minLength": 2,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "INTERNAL_TOKEN": {
+              "default": "{{ token_urlsafe(48) }}",
+              "description": "Generated for this enrollment. Gitea's own components use it to talk to each other. Keep it; there is no need to enter your own.",
+              "format": "password",
+              "minLength": 24,
+              "title": "Internal token",
+              "type": "string"
+            },
+            "SECRET_KEY": {
+              "default": "{{ token_urlsafe(32) }}",
+              "description": "Generated for this enrollment. Gitea encrypts two-factor secrets and similar values in its database with it. Keep it: if you replace it later, values already encrypted with the old key can no longer be read.",
+              "format": "password",
+              "minLength": 16,
+              "title": "Secret key",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ADMIN_USERNAME",
+            "ADMIN_EMAIL",
+            "ADMIN_PASSWORD",
+            "SECRET_KEY",
+            "INTERNAL_TOKEN"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_EMAIL": "admin@example.com",
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "ADMIN_USERNAME": "admin",
+          "INTERNAL_TOKEN": "local-test-internal-token-only-0123456789abcdef",
+          "SECRET_KEY": "local-test-secret-key-only-0123456789"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/gitea",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
