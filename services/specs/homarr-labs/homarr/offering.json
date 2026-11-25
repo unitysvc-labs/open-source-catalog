@@ -1,0 +1,102 @@
+{
+  "capabilities": [
+    "dashboard | Serves a customizable web dashboard with boards of app tiles, bookmarks and widgets that you arrange and edit in the browser, with user accounts and permissions."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Homarr image in a separate container for each enrollment, with its own HTTPS address. Homarr is a self-hosted dashboard: you build boards from app tiles, bookmarks, search and widgets (clock, weather, RSS feeds, notes, calendars and more), and you can add integrations for other self-hosted tools. It has users, groups and permissions, and keeps everything in an SQLite database and an embedded Redis, both stored in the `homarr` folder of your home, so your boards survive stopping the instance and even removing it and enrolling again. The Docker integration is not available, because no Docker socket is provided.\n\nEnroll in the base channel and keep the generated encryption seed, which Homarr turns into the key that encrypts integration secrets in its database. Then open `https://<instance>/` at once: the first visitor is guided through a setup wizard that creates the administrator, so create yours before anyone else. You can run one Homarr instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Homarr documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Boards of app tiles, bookmarks, search and widgets, edited in the browser",
+      "Users, groups and permissions, with a setup wizard that creates the administrator",
+      "Integrations for other self-hosted tools, with their secrets encrypted in the database",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://homarr.dev/docs/getting-started/installation/docker",
+      "homepage": "https://homarr.dev",
+      "source_code": "https://github.com/homarr-labs/homarr"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "homarr",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted dashboard: build boards of app tiles, bookmarks and widgets in the browser, with users and permissions and data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Homarr's database and its embedded Redis dump in the homarr folder of your home, so your boards, users and settings are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=homarr/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Homarr dashboard; its database is kept in the homarr folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 7575,
+          "service": "homarr"
+        }
+      ],
+      "environment": {
+        "homarr": {
+          "ENCRYPTION_SEED": "{{ params.ENCRYPTION_SEED }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ENCRYPTION_SEED": {
+              "default": "{{ token_urlsafe(32) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. Homarr turns it into the key (SECRET_ENCRYPTION_KEY, 64 hexadecimal characters) that encrypts integration secrets in its database. Your data lives in your home, so a later enrollment must use the same seed to read secrets stored earlier: save it, it is also shown in the enrollment's instance details. Changing it restarts the instance.",
+              "format": "password",
+              "minLength": 24,
+              "title": "Encryption seed",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ENCRYPTION_SEED"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ENCRYPTION_SEED": "local-test-seed-only-0123456789"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "appdata": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/homarr",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
