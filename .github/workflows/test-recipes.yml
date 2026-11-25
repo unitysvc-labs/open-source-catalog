@@ -1,8 +1,9 @@
 name: Test Recipes
 
-# Proves a pull request's recipes run on the platform before they are merged. Validation is the job
-# of "Validate Data", "Format Check" and "Check Channel Binding", which run on every pull request.
+# Proves a pull request's recipes run on the platform before they are merged:
 #
+#   0. validate   the same three checks as ever (data, format, channel binding); the recipes are not
+#                 uploaded unless all three pass
 #   1. upload     only the recipes whose expanded content changed, using the upload state of the last
 #                 production upload (`specs upload --state`, the same comparison the merge upload uses)
 #   2. test       each uploaded recipe through the platform's own check: it starts the recipe's
@@ -36,7 +37,23 @@ permissions:
   actions: read # to find the production upload state
 
 jobs:
+  validate-data:
+    uses: unitysvc-labs/.github/.github/workflows/seller-validate-data.yml@main
+
+  format-check:
+    uses: unitysvc-labs/.github/.github/workflows/seller-format-check.yml@main
+
+  check-channel-binding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run --no-project --with unitysvc-sellers python scripts/check_channel_binding.py
+
   test:
+    needs: [validate-data, format-check, check-channel-binding]
     # A fork's pull request gets no secrets. The check says so instead of passing silently.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest

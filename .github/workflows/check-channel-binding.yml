@@ -5,14 +5,9 @@ name: Check Channel Binding
 # when an Authorization header is a literal, or when a container setting uses
 # customer_secrets instead of an enrollment parameter (issue #52).
 
+# Pull requests run this inside "Test Recipes", which uploads only after it passes.
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - "services/**"
-      - "scripts/check_channel_binding.py"
-      - ".github/workflows/check-channel-binding.yml"
   push:
     branches: [main]
     paths:
