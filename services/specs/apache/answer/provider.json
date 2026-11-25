@@ -1,0 +1,9 @@
+{
+  "contact_email": "dev@answer.apache.org",
+  "display_name": "Apache Answer (Apache Software Foundation and contributors)",
+  "homepage": "https://answer.apache.org",
+  "name": "apache",
+  "status": "ready",
+  "terms_of_service": "https://github.com/apache/answer/blob/main/LICENSE",
+  "time_created": "2026-11-25T00:00:00Z"
+}
