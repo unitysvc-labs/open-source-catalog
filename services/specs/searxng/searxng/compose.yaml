@@ -1,0 +1,23 @@
+# SearXNG, one private instance per enrollment. The secret and the contact URL are bound from the channel's
+# `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+# The image has no curl, but busybox's wget works, so the healthcheck uses it. SearXNG keeps nothing that is
+# worth saving (its generated settings.yml is rebuilt on every start, and the cache folder stays empty
+# unless favicons are switched on), so nothing is persisted and there is no volume. The image starts as root
+# (its entrypoint does not drop privileges); it also works as user 977, but the platform does not apply
+# `user` yet, so none is set.
+services:
+  searxng:
+    image: searxng/searxng:2026.11.23-a7163d091@sha256:a7fc607aa6723f5a8982105bcc5ffba4d1b9fc7c6922a31a88d6e4cba49ef12a
+    ports:
+      - 8080
+    environment:
+      # The limiter (bot protection) needs a Valkey/Redis server; this recipe has none, so it stays off.
+      SEARXNG_LIMITER: "false"
+      # "Public instance" mode is for sites that serve strangers; this is a private instance.
+      SEARXNG_PUBLIC_INSTANCE: "false"
+    healthcheck:
+      test: [CMD, busybox, wget, -q, -O, /dev/null, "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
