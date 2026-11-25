@@ -33,7 +33,7 @@ Each application's keys and tokens are enrollment parameters with appropriate de
 - The pull request's working copy of the upload state is not saved, so the merge upload still sends the recipes.
 - The tests need a cluster that takes `test` work (`usvc_admin clusters set-placement`); the external cluster is the intended one.
 - Seller credentials are needed, so a fork's pull request is not tested automatically. A maintainer runs **Test Recipes** by hand on the reviewed commit; that run commits no sidecar.
-- Runs are serialized (one concurrency group), because they share the production seller account.
+- Runs of one pull request are serialized, so a push waits for the run before it; different pull requests run side by side, since each uploads its own recipes.
 - A pull request closed without merging leaves its services in review or rejected; nothing removes them yet.
 
 ## Repository history
