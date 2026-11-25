@@ -52,7 +52,7 @@ Start with [`services/specs/kadxy/weixin-ilink-gateway`](services/specs/kadxy/we
 | `compose.yaml` | The offering's instance spec, or use an upstream commit-pinned URL |
 | `usage.md` | Setup, authentication, a first-use example, cost, stopping and storage limitations |
 
-Do not add a `service.json` for a new recipe or edit an existing identity sidecar. Labs records the backend-generated ID after publication.
+Do not add a `service.json` for a new recipe or edit an existing identity sidecar. The Test Recipes workflow commits the backend-generated ID of a new recipe to your pull request after its first upload.
 
 ### Names and marketplace copy
 

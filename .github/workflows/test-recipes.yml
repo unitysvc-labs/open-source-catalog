@@ -1,0 +1,150 @@
+name: Test Recipes
+
+# Judges a pull request before it is merged, so a recipe the platform rejects is found here and not in a
+# second pull request that repairs the first. It is the production upload run on the pull request:
+#
+#   0. validate   the same three checks as ever (data, format, channel binding); nothing is uploaded
+#                 unless all three pass
+#   1. upload     only the recipes whose expanded content changed, using the upload state of the last
+#                 production upload (`specs upload --submit --state`), and fail if an upload fails
+#   2. sidecars   commit the `service.json` of a recipe that has none to the pull request's branch
+#   3. wait       `--wait-for-test`: until the platform's activation tests have decided each uploaded
+#                 service; `active` or `review` passes, `rejected`, an error or no decision in time fails
+#
+# It does not publish: nothing is made visible; "Upload Data to Production" still does that on merge.
+# A recipe that passes here is left in review or active, and one that fails is left rejected.
+#
+# Seller credentials are needed, so this runs for branches of this repository only. A maintainer tests
+# a fork's pull request by running this workflow by hand on the commit they reviewed (no sidecar commit).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The commit to test (a reviewed commit of a fork's pull request).
+        required: true
+
+# One run at a time: two runs would upload the same recipes.
+concurrency:
+  group: test-recipes
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate-data:
+    uses: unitysvc-labs/.github/.github/workflows/seller-validate-data.yml@main
+
+  format-check:
+    uses: unitysvc-labs/.github/.github/workflows/seller-format-check.yml@main
+
+  check-channel-binding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run --no-project --with unitysvc-sellers python scripts/check_channel_binding.py
+
+  test:
+    needs: [validate-data, format-check, check-channel-binding]
+    # A fork's pull request gets no secrets. The "fork" job says so instead of passing silently.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write # the sidecar commit
+      actions: read # to find the production upload state
+    defaults:
+      run:
+        working-directory: services
+    env:
+      UNITYSVC_SELLER_API_KEY: ${{ secrets.UNITYSVC_SELLER_PRODUCTION_API_KEY }}
+      UNITYSVC_SELLER_API_URL: ${{ secrets.UNITYSVC_SELLER_PRODUCTION_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The branch, not the detached commit, so the sidecar commit can be pushed to it.
+          ref: ${{ inputs.ref || github.head_ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install unitysvc-sellers
+        # 0.3.26 added `specs upload --wait-for-test`.
+        run: pip install "unitysvc-sellers>=0.3.26"
+
+      - name: Restore the production upload state
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p .upload-state
+          run_id="$(gh api "repos/$REPO/actions/artifacts?name=upload-state-production&per_page=10" \
+            --jq '[.artifacts[] | select(.expired | not)][0].workflow_run.id // empty' 2>/dev/null || true)"
+          if [ -n "$run_id" ] && gh run download "$run_id" --repo "$REPO" -n upload-state-production -D .upload-state; then
+            echo "Restored the upload state of run $run_id."
+          else
+            echo "::warning::No production upload state; every recipe will be uploaded and tested."
+            rm -f .upload-state/state.json
+          fi
+
+      - name: Upload the recipes that changed and wait for the platform's decision
+        id: upload
+        # The state file is a working copy and is not saved, so the merge upload still sends the recipes.
+        # The step does not fail the job here: the sidecars of what was uploaded are committed either way,
+        # so the next push targets the same services.
+        continue-on-error: true
+        run: |
+          usvc_seller specs upload --submit \
+            --state "$GITHUB_WORKSPACE/.upload-state/state.json" \
+            --wait-for-test 40m \
+            --report "$GITHUB_WORKSPACE/recipe-test-report.md"
+
+      - name: Commit the new sidecars to the pull request
+        # Only for a branch of this repository: the upload wrote a service.json for each new recipe.
+        if: github.event_name == 'pull_request'
+        working-directory: .
+        run: |
+          git add services/specs/*/*/service.json
+          if git diff --cached --quiet; then
+            echo "No new sidecar."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Record the service ids of the uploaded recipes"
+            git push
+          fi
+
+      - name: Show the report
+        if: always()
+        working-directory: .
+        run: |
+          if [ -f recipe-test-report.md ]; then cat recipe-test-report.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recipe-test-report
+          path: recipe-test-report.md
+          if-no-files-found: ignore
+
+      - name: Fail if the upload or the platform's tests failed
+        if: steps.upload.outcome == 'failure'
+        run: |
+          echo "::error::The upload failed or the platform did not accept a recipe; see the upload step and the report."
+          exit 1
+
+  fork:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::notice::This pull request is from a fork, so the platform check cannot use seller credentials. A maintainer runs 'Test Recipes' by hand on the reviewed commit before merging."

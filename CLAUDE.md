@@ -14,7 +14,7 @@ define the service-data format; these files define catalog-specific requirements
 Add `services/specs/<provider>/<software_name>/` with `provider.json`,
 `offering.json`, `listing.json`, an application `usage.md`, and either a local
 `compose.yaml` or an upstream commit-pinned Compose URL. Keep published names
-stable. Do not add or edit backend-written `service.json` identity sidecars.
+stable. Do not add or edit backend-written `service.json` identity sidecars; the Test Recipes workflow commits a new recipe's to the pull request.
 
 - `listing.name`: `<provider>/<software_name>`, matching the catalog path.
 - `offering.name`: the bare `<software_name>`.

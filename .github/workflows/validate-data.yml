@@ -1,12 +1,8 @@
 name: Validate Data
 
+# Pull requests run this inside "Test Recipes", which uploads only after it passes.
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - "services/**"
-      - ".github/workflows/validate-data.yml"
   push:
     branches: [main]
     paths:
