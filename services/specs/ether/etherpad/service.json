@@ -1,0 +1,10 @@
+{
+  "display_name": "Etherpad Collaborative Editor",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.etherpad.volumes[0]: volume 'data' at /opt/etherpad-lite/var is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "ether/etherpad",
+  "service_id": "0c470876-f75f-4f4d-92af-867fc11c28f1",
+  "status": "created",
+  "time_created": "2026-11-25T18:29:25.728441Z"
+}
