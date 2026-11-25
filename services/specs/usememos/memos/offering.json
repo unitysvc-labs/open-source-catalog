@@ -1,0 +1,76 @@
+{
+  "capabilities": [
+    "note-taking | Stores short Markdown notes with tags, attachments and search in a web interface, and exposes them through a REST API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Memos image in a separate container for each enrollment, with its own HTTPS address. Memos is a lightweight, self-hosted note-taking app: write short notes in Markdown, organise them with tags, attach files, search them, and reach them from the web interface or the REST API. Everything is kept in the instance's own SQLite database and attachment folder, stored in the `memos` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel; it asks for no settings. Open the instance address and register an account straight away: the first account registered on a new instance becomes its administrator, so anyone who reaches the address before you could take that role. You can run one Memos instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Memos documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Markdown notes with tags, pinning, search and file attachments",
+      "Web interface and a REST API with access tokens",
+      "Multiple users, with the first account as administrator",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://usememos.com/docs",
+      "homepage": "https://usememos.com",
+      "source_code": "https://github.com/usememos/memos"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "memos",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted note-taking app: write Markdown notes with tags and attachments in a web interface or over a REST API, with data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Memos's database and attachments in the memos folder of your home, so your notes and users are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=memos/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Memos server; its notes, attachments and users are kept in the memos folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5230,
+          "service": "memos"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 10001,
+          "mode": "rw",
+          "source": "{{ home.path }}/memos",
+          "type": "persist",
+          "uid": 10001
+        }
+      }
+    }
+  }
+}
