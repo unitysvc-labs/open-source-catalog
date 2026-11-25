@@ -1,0 +1,125 @@
+{
+  "capabilities": [
+    "password-manager | Stores each user's logins, notes and files in an encrypted vault and syncs it to Bitwarden-compatible clients; unofficial and unaffiliated with Bitwarden."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the Vaultwarden server image in a separate container for each enrollment, with its own HTTPS address. Vaultwarden is an unofficial, community-written server that speaks the Bitwarden client API: you use the web vault it serves and the official Bitwarden browser extensions, desktop and mobile apps, pointed at your instance address. It is not a Bitwarden product and is not affiliated with Bitwarden, Inc. Vaults are encrypted by the client with a key derived from each user's master password, so the server stores ciphertext. The database, the server's RSA keys and attachments are kept in the `vaultwarden` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel. Keep or replace the generated admin token, and say whether people may sign up freely. Sign-ups are closed by default: you add users from the admin page at `https://<instance>/admin` (sign in with the admin token), then each invited person registers at the instance address with the invited email. The instance address is not known until the instance exists, so set the Instance address parameter to it after the first start. You can run one Vaultwarden instance at a time. See How to use this service for full setup, what protects your secrets and the limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Vaultwarden wiki and issue tracker for software-specific help; do not report problems to Bitwarden.",
+  "details": {
+    "features": [
+      "Bitwarden-compatible server: use the official web, browser, desktop and mobile clients",
+      "Logins, notes, cards and identities, file attachments and Sends, encrypted by the client",
+      "Organizations with shared collections, and two-step login with authenticator apps",
+      "Admin page for inviting, disabling and deleting users",
+      "Unofficial: not a Bitwarden product and not affiliated with Bitwarden, Inc.",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/dani-garcia/vaultwarden/wiki",
+      "homepage": "https://github.com/dani-garcia/vaultwarden",
+      "source_code": "https://github.com/dani-garcia/vaultwarden"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "vaultwarden",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, unofficial Bitwarden-compatible password manager server: your own vault in the Bitwarden apps, encrypted by the client, with its data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Vaultwarden's database, its RSA keys and your attachments in the vaultwarden folder of your home, so your vault and users are still there when you stop, remove or re-enroll the instance. The vault contents are encrypted by your Bitwarden client; the keys that unlock them never reach the platform.",
+          "object": "service:home",
+          "options": "path=vaultwarden/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Vaultwarden server; its database, RSA keys and attachments are kept in the vaultwarden folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "vaultwarden"
+        }
+      ],
+      "environment": {
+        "vaultwarden": {
+          "ADMIN_TOKEN": "{{ params.ADMIN_TOKEN }}",
+          "DOMAIN": "{{ params.DOMAIN }}",
+          "SIGNUPS_ALLOWED": "{{ params.SIGNUPS_ALLOWED }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_TOKEN": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "The password of the admin page at /admin, which is how you invite users while sign-ups are closed. Generated for this enrollment; keep it or enter your own. A plain token works, but Vaultwarden logs a notice that it is insecure, because the token is stored as typed. For a stronger form paste an Argon2 PHC string (starting with $argon2id$) made with `vaultwarden hash` (docker run --rm -it vaultwarden/server /vaultwarden hash); then you sign in with the password you hashed, not with the string. Save it; a generated token is also shown in the enrollment's instance details. Changes apply when the instance restarts. If you later save settings on the admin page, Vaultwarden keeps them in its data folder and they take precedence over these parameters.",
+              "format": "password",
+              "minLength": 20,
+              "title": "Admin token",
+              "type": "string"
+            },
+            "DOMAIN": {
+              "default": "https://instance.invalid",
+              "description": "The address of this instance, for example https://abc123.example.app (shown in the enrollment's instance details), with no trailing slash. Vaultwarden builds links and the WebAuthn (passkey, security-key) origin from it, so replace the placeholder with your instance address after the instance is created, then save; changing it restarts the instance and keeps your data, and the sessions of your signed-in devices are expected to end, so you sign in again. With the placeholder https://instance.invalid the server still accepts sign-ups, sign-ins and stored items, but security-key and passkey (WebAuthn) two-step login and the links Vaultwarden builds are expected not to work until you set the real address. The platform needs a value here.",
+              "pattern": "^https?://[^/\\s]+(/[^\\s]*)?$",
+              "title": "Instance address (DOMAIN)",
+              "type": "string"
+            },
+            "SIGNUPS_ALLOWED": {
+              "default": "false",
+              "description": "Whether anyone who can reach the address may create an account. The default, false, is safer for a password vault: add users yourself from the admin page (Users, then Invite User), and each invited person registers with that email. Set true only briefly, to create your own account, then set it back to false; changing it restarts the instance and keeps your data.",
+              "enum": [
+                "false",
+                "true"
+              ],
+              "title": "Allow open sign-ups",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ADMIN_TOKEN",
+            "DOMAIN",
+            "SIGNUPS_ALLOWED"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_TOKEN": "local-test-admin-token-only",
+          "DOMAIN": "https://instance.invalid",
+          "SIGNUPS_ALLOWED": "false"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/vaultwarden",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
