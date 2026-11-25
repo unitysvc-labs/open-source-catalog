@@ -1,0 +1,25 @@
+# Spoolman, one private instance per enrollment. The nightly-backup and log-level settings are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  spoolman:
+    image: ghcr.io/donkie/spoolman:0.27.1@sha256:1ebb4f6a62c2e72a07f18b07ebfdbd96322f5bc2eb72570af3088f68d7c393b1
+    ports:
+      - 8000
+    environment:
+      # SQLite, in the data folder below (also the image's default).
+      SPOOLMAN_DB_TYPE: sqlite
+      SPOOLMAN_DIR_DATA: /home/app/.local/share/spoolman
+    volumes:
+      # The database (spoolman.db), its nightly backups, the log and the SpoolmanDB cache. The channel decides
+      # whether this volume persists, in the spoolman folder of the customer's home (offering.json, `volumes`);
+      # under plain Docker it is an ordinary named volume.
+      - data:/home/app/.local/share/spoolman
+    healthcheck:
+      # The image has no curl or wget; it has Python.
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:

@@ -1,0 +1,122 @@
+{
+  "capabilities": [
+    "filament-spool-inventory | Records 3D-printer filament vendors, filaments and spools, and tracks remaining weight, through a web interface and a REST API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Spoolman image in a separate container for each enrollment, with its own HTTPS address. Spoolman is a self-hosted inventory for 3D-printer filament: record vendors, filaments and spools, track how much of each spool is left, and read or update the data from the web interface or the REST API (printer software such as Moonraker can report usage to it). It can import filament definitions from the community SpoolmanDB catalog. Everything is kept in the instance's own SQLite database, stored in the `spoolman` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel; the settings (nightly backup, log level) have working defaults. Open the instance address to use the web interface. Spoolman has no authentication at all: anyone who has the instance address can read and change your data, and nothing in the app or in UnitySVC adds a login. Keep the address private. You can run one Spoolman instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Spoolman wiki and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Vendors, filaments and spools with remaining-weight tracking",
+      "Web interface and REST API for printer software and scripts",
+      "Filament definitions imported from the community SpoolmanDB catalog",
+      "Nightly backups of the SQLite database",
+      "No login: anyone with the instance address has full access",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/Donkie/Spoolman/wiki",
+      "homepage": "https://github.com/Donkie/Spoolman",
+      "source_code": "https://github.com/Donkie/Spoolman"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "spoolman",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted inventory of 3D-printer filament spools with a web interface and REST API, data kept in your home. Spoolman has no login: keep the address private.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Spoolman's database, nightly backups and cache in the spoolman folder of your home, so your spools, filaments and vendors are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=spoolman/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Spoolman server; its inventory is kept in the spoolman folder of your home between runs and enrollments. Spoolman has no login: anyone with the instance address can read and change it.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8000,
+          "service": "spoolman"
+        }
+      ],
+      "environment": {
+        "spoolman": {
+          "SPOOLMAN_AUTOMATIC_BACKUP": "{{ params.SPOOLMAN_AUTOMATIC_BACKUP }}",
+          "SPOOLMAN_LOGGING_LEVEL": "{{ params.SPOOLMAN_LOGGING_LEVEL }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "SPOOLMAN_AUTOMATIC_BACKUP": {
+              "default": "TRUE",
+              "description": "Whether Spoolman copies its SQLite database into a backups folder every night (it keeps the five newest). The backups are stored in your home with the rest of the data. Changing this restarts the instance.",
+              "enum": [
+                "TRUE",
+                "FALSE"
+              ],
+              "title": "Nightly database backup",
+              "type": "string"
+            },
+            "SPOOLMAN_LOGGING_LEVEL": {
+              "default": "INFO",
+              "description": "How much Spoolman writes to its log. Leave it at INFO unless you are looking for a problem.",
+              "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+              ],
+              "title": "Log level",
+              "type": "string"
+            }
+          },
+          "required": [
+            "SPOOLMAN_AUTOMATIC_BACKUP",
+            "SPOOLMAN_LOGGING_LEVEL"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "SPOOLMAN_AUTOMATIC_BACKUP": "TRUE",
+          "SPOOLMAN_LOGGING_LEVEL": "INFO"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/spoolman",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
