@@ -1,0 +1,100 @@
+{
+  "capabilities": [
+    "feed-generation | Turns web pages and online services that publish no feed into RSS, Atom, JSON, HTML, MRSS or plain-text feeds, through bridges requested with an HTTP GET."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official RSS-Bridge image in a separate container for each enrollment, with its own HTTPS address. RSS-Bridge is a PHP application that makes feeds for websites that have none. It ships with hundreds of bridges (547 in this version); you open the instance, pick a bridge, fill in its form, and get a feed address in Atom, RSS (MRSS), JSON, HTML or plain text that any feed reader can subscribe to. When a reader asks for the feed, the instance fetches the target site itself and converts what it finds.\n\nEnroll in the base channel and keep or replace the generated sign-in password. The instance is protected by HTTP basic authentication, with the user name and password you set, and every bridge is enabled unless you narrow the list in the enrollment form. Open `https://<instance>/` and sign in, or put the credentials in the feed address (`https://user:password@<instance>/?action=display&bridge=...`) for readers that support it. Nothing is persisted: the instance keeps only a cache that is lost when it stops. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream RSS-Bridge documentation and issue tracker for software-specific help; a bridge can stop working when its target site changes.",
+  "details": {
+    "features": [
+      "Hundreds of bridges for sites and services that publish no feed",
+      "Feeds in Atom, RSS (MRSS), JSON, HTML or plain text",
+      "Optional list of enabled bridges, set when you enroll",
+      "Sign-in protected, with a generated password",
+      "Nothing to keep: a disposable cache only"
+    ],
+    "links": {
+      "documentation": "https://rss-bridge.github.io/rss-bridge/",
+      "homepage": "https://rss-bridge.org",
+      "source_code": "https://github.com/RSS-Bridge/rss-bridge"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "rss-bridge",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private RSS-Bridge instance that makes RSS, Atom and JSON feeds for websites that have none, with a generated sign-in password and an optional list of enabled bridges.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private RSS-Bridge instance, sign-in protected; its cache is disposable and nothing is persisted.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "rss-bridge"
+        }
+      ],
+      "environment": {
+        "rss-bridge": {
+          "RSSBRIDGE_authentication_password": "{{ params.RSSBRIDGE_authentication_password }}",
+          "RSSBRIDGE_authentication_username": "{{ params.RSSBRIDGE_authentication_username }}",
+          "RSSBRIDGE_system_enabled_bridges": "{{ params.RSSBRIDGE_system_enabled_bridges }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "RSSBRIDGE_authentication_password": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. Every request to the instance must carry it. Save it; it is also shown in the enrollment's instance details. Changing it restarts the instance.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Sign-in password",
+              "type": "string"
+            },
+            "RSSBRIDGE_authentication_username": {
+              "default": "admin",
+              "description": "The user name for the instance's HTTP basic authentication.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Sign-in name",
+              "type": "string"
+            },
+            "RSSBRIDGE_system_enabled_bridges": {
+              "default": "*",
+              "description": "Which bridges the instance offers: `*` for all of them, or a comma-separated list of bridge names such as `Youtube,Reddit,FeedMerge` (the names upstream lists in its configuration file). Anything else is hidden and refused. Changing it restarts the instance.",
+              "minLength": 1,
+              "title": "Enabled bridges",
+              "type": "string"
+            }
+          },
+          "required": [
+            "RSSBRIDGE_authentication_username",
+            "RSSBRIDGE_authentication_password",
+            "RSSBRIDGE_system_enabled_bridges"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "RSSBRIDGE_authentication_password": "local-test-password-only",
+          "RSSBRIDGE_authentication_username": "admin",
+          "RSSBRIDGE_system_enabled_bridges": "*"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+# RSS-Bridge, one private instance per enrollment. The sign-in and the list of enabled bridges are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+# The image has no curl or wget, so there is no healthcheck. It keeps only a disposable cache (/app/cache), so
+# nothing is persisted.
+services:
+  rss-bridge:
+    image: rssbridge/rss-bridge:2026-09-30@sha256:fbb324d75613b90dad7394c385cee361a31f38e04f1ee9089a4758795b1104c3
+    ports:
+      - 80
+    environment:
+      # Upstream's own switch for HTTP basic authentication; the user name and password come from the channel.
+      RSSBRIDGE_authentication_enable: "true"
