@@ -1,0 +1,48 @@
+# Calibre-Web-Automated, one private instance per enrollment. The administrator password is bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+# The image is a LinuxServer-style image: it must start as root (its s6 init needs it), then runs the web
+# app as the user PUID/PGID name. A fresh /config would get a built-in administrator with a published
+# password, so the entrypoint below first lets CWA create its own app.db, replaces the administrator's
+# password with the bound one and only then starts the image's init. If any step fails the new app.db is
+# removed and the container stops, so the instance never starts with the default password. When /config
+# already holds an app.db (a restore, or a restart) nothing is changed. The script has no dollar sign, so
+# neither Docker Compose nor the platform rewrites it.
+services:
+  cwa:
+    image: crocodilestick/calibre-web-automated:v4.0.8@sha256:5e00373854247750cc3e4479b492ae09293ff5e06ed10177f226634d97888679
+    entrypoint:
+      - bash
+      - -c
+      - |
+        if [ ! -f /config/app.db ]; then
+          (
+            set -e
+            cd /app/calibre-web-automated
+            CALIBRE_DBPATH=/config python3 cps.py -d > /dev/null 2>&1
+            python3 -c "import os,sqlite3;from werkzeug.security import generate_password_hash as g;c=sqlite3.connect('/config/app.db');n=c.execute('update user set password=? where name=?',(g(os.environ['CWA_ADMIN_PASSWORD']),'admin')).rowcount;assert n==1;c.execute(\"update settings set config_kepubifypath='/usr/bin/kepubify' where config_kepubifypath is null or length(config_kepubifypath)=0\");c.commit();c.close()"
+          ) || { rm -f /config/app.db /config/app.db-shm /config/app.db-wal; echo "first-run setup failed" >&2; exit 1; }
+        fi
+        exec /init
+    ports:
+      - 8083
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: UTC
+    volumes:
+      # Settings and users (app.db), logs and the kept originals of imported books.
+      - config:/config
+      # The Calibre library: metadata.db and one folder per author.
+      - library:/calibre-library
+      # Books dropped here are imported and removed; scratch space only.
+      - ingest:/cwa-book-ingest
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:8083/login"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+volumes:
+  config:
+  library:
+  ingest:
