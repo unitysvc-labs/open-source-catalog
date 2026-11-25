@@ -22,13 +22,19 @@ Each application's keys and tokens are enrollment parameters with appropriate de
 
 ## Testing a pull request on the platform
 
-`.github/workflows/test-recipes.yml` runs for every pull request from a branch of this repository. It uploads to production the ones whose expanded content changed (`specs upload --state`, against the upload state of the last production upload, so the comparison is the one the merge upload uses), and runs the platform's own check on each with `services run-tests`: the platform starts the recipe's container for the service's ops enrollment on a cluster that takes `test` work, fetches its entries over HTTPS and stops it. An image that cannot be pulled, a container that does not start, or an entry that does not answer fails the check.
+`.github/workflows/test-recipes.yml` judges a pull request before it is merged, so a recipe the platform rejects is found there and not in a second pull request that repairs the first. It is the production upload, run on the pull request:
 
-- The recipes are uploaded, not published: they are not submitted for review or made visible, and the pull request's working copy of the state is not saved, so the merge upload still sends them. A recipe that already exists gets a pending revision.
-- The ops enrollment stays active; only the instance is stopped after the check.
-- At least one cluster must take `test` placement (`usvc_admin clusters set-placement`); the external cluster is the intended one. With none, the check fails as a platform fault.
-- Seller credentials are needed, so a fork's pull request is not tested automatically. A maintainer runs **Test Recipes** by hand on the reviewed commit.
-- Runs are serialized (one concurrency group), because they share the production seller account and one test instance per service.
+1. The three validation workflows (data, format, channel binding) run first; nothing is uploaded unless they pass.
+2. It uploads the recipes whose expanded content changed (`specs upload --submit --state`, against the upload state of the last production upload, the comparison the merge upload uses). A failed upload fails the check.
+3. A new recipe gets its `service.json` committed to the pull request's branch.
+4. It waits (up to 40 minutes) for the platform's activation tests to decide each uploaded service. `active` or `review` passes; `rejected`, or no decision in time, fails. A change to a live service is a pending revision, and its status is the one read. The report (`recipe-test-report.md`) is in the step summary and kept as an artifact.
+
+- It does not publish. Visibility is set only by "Upload Data to Production" on merge. A recipe that passes is left in review or active; one that fails is left rejected.
+- The pull request's working copy of the upload state is not saved, so the merge upload still sends the recipes.
+- The tests need a cluster that takes `test` work (`usvc_admin clusters set-placement`); the external cluster is the intended one.
+- Seller credentials are needed, so a fork's pull request is not tested automatically. A maintainer runs **Test Recipes** by hand on the reviewed commit; that run commits no sidecar.
+- Runs are serialized (one concurrency group), because they share the production seller account.
+- A pull request closed without merging leaves its services in review or rejected; nothing removes them yet.
 
 ## Repository history
 

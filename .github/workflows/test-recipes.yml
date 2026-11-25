@@ -1,22 +1,21 @@
 name: Test Recipes
 
-# Proves a pull request's recipes run on the platform before they are merged:
+# Judges a pull request before it is merged, so a recipe the platform rejects is found here and not in a
+# second pull request that repairs the first. It is the production upload run on the pull request:
 #
-#   0. validate   the same three checks as ever (data, format, channel binding); the recipes are not
-#                 uploaded unless all three pass
+#   0. validate   the same three checks as ever (data, format, channel binding); nothing is uploaded
+#                 unless all three pass
 #   1. upload     only the recipes whose expanded content changed, using the upload state of the last
-#                 production upload (`specs upload --state`, the same comparison the merge upload uses)
-#   2. test       each uploaded recipe through the platform's own check: it starts the recipe's
-#                 container on a cluster that takes `test` work, fetches its entries over HTTPS and
-#                 stops it (`services run-tests`). A recipe whose image cannot be pulled or whose
-#                 container does not start and answer fails here.
+#                 production upload (`specs upload --submit --state`), and fail if an upload fails
+#   2. sidecars   commit the `service.json` of a recipe that has none to the pull request's branch
+#   3. wait       until the platform's activation tests have decided each uploaded service: `active` or
+#                 `review` passes, `rejected` (or no decision in time) fails the pull request
 #
-# The recipes are uploaded to production but are NOT published: `enable-testing` makes a draft routable
-# for tests and does not submit it for review or make it visible. A merge still publishes through
-# "Upload Data to Production". The pull request's own state is never saved as the production state.
+# It does not publish: nothing is made visible; "Upload Data to Production" still does that on merge.
+# A recipe that passes here is left in review or active, and one that fails is left rejected.
 #
 # Seller credentials are needed, so this runs for branches of this repository only. A maintainer tests
-# a fork's pull request by running this workflow by hand on the commit they reviewed.
+# a fork's pull request by running this workflow by hand on the commit they reviewed (no sidecar commit).
 
 on:
   pull_request:
@@ -27,14 +26,13 @@ on:
         description: The commit to test (a reviewed commit of a fork's pull request).
         required: true
 
-# One run at a time: two runs would upload the same recipes and share one test instance.
+# One run at a time: two runs would upload the same recipes.
 concurrency:
   group: test-recipes
   cancel-in-progress: false
 
 permissions:
   contents: read
-  actions: read # to find the production upload state
 
 jobs:
   validate-data:
@@ -54,10 +52,13 @@ jobs:
 
   test:
     needs: [validate-data, format-check, check-channel-binding]
-    # A fork's pull request gets no secrets. The check says so instead of passing silently.
+    # A fork's pull request gets no secrets. The "fork" job says so instead of passing silently.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    permissions:
+      contents: write # the sidecar commit
+      actions: read # to find the production upload state
     defaults:
       run:
         working-directory: services
@@ -67,7 +68,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+          # The branch, not the detached commit, so the sidecar commit can be pushed to it.
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - uses: actions/setup-python@v5
         with:
@@ -95,56 +97,85 @@ jobs:
           [ -f .upload-state/state.json ] && cp .upload-state/state.json .upload-state/before.json || echo '{"services":{}}' > .upload-state/before.json
 
       - name: Upload the recipes that changed
-        # Not submitted, so nothing enters review; the state file is a working copy and is not saved.
-        run: usvc_seller specs upload --state "$GITHUB_WORKSPACE/.upload-state/state.json"
+        # The state file is a working copy and is not saved, so the merge upload still sends them.
+        run: usvc_seller specs upload --submit --state "$GITHUB_WORKSPACE/.upload-state/state.json"
 
       - name: Find the recipes this run uploaded
         id: changed
         working-directory: .
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os
+          import json
           def load(name):
               try:
                   return json.load(open(f".upload-state/{name}.json")).get("services", {})
               except OSError:
                   return {}
           before, after = load("before"), load("state")
-          sent = sorted(n for n, r in after.items() if r != before.get(n))
-          print("names=" + json.dumps(sent))
+          print("names=" + json.dumps(sorted(n for n, r in after.items() if r != before.get(n))))
           PY
 
-      - name: Run the platform check on each
+      - name: Commit the new sidecars to the pull request
+        # Only for a branch of this repository: the upload wrote a service.json for each new recipe.
+        if: github.event_name == 'pull_request'
+        working-directory: .
+        run: |
+          git add services/specs/*/*/service.json
+          if git diff --cached --quiet; then
+            echo "No new sidecar."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Record the service ids of the uploaded recipes"
+            git push
+          fi
+
+      - name: Wait for the platform's decision on each
         env:
           NAMES: ${{ steps.changed.outputs.names }}
+          WAIT_MINUTES: "40"
         run: |
           set -uo pipefail
-          failed=0
-          {
-            echo "## Recipe checks"
-            echo
-          } >> "$GITHUB_STEP_SUMMARY"
+          report=../recipe-test-report.md
+          { echo "## Recipe checks"; echo; } > "$report"
           if [ "$(jq length <<<"$NAMES")" = 0 ]; then
-            echo "No recipe changed since the last production upload; nothing to test." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "No recipe changed since the last production upload; nothing to test." | tee -a "$report"
             exit 0
           fi
+          deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
+          failed=0
           for name in $(jq -r '.[]' <<<"$NAMES"); do
             echo "::group::$name"
-            # A new recipe is a draft: make it routable for the check. A change to a live service is a
-            # revision the check reaches directly, and enable-testing has nothing to do for it.
-            usvc_seller services enable-testing "$name" --yes || echo "enable-testing did not apply to $name (a revision of a live service?)"
-            usvc_seller services run-tests "$name" --force || true
-            result="$(usvc_seller services show-test-results "$name" --format json)"
-            echo "$result" | jq '{passed, runs: [.runs[] | {document_title, channel_name, status, exit_code}], not_run}'
-            if jq -e '.passed == true and (.not_run | length == 0)' <<<"$result" >/dev/null; then
-              echo "- ✅ \`$name\`" >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "- ❌ \`$name\`: $(jq -c '[.runs[] | select(.status != "success") | {channel_name, status, error}]' <<<"$result")" >> "$GITHUB_STEP_SUMMARY"
-              failed=1
-            fi
+            while :; do
+              row="$(usvc_seller services list "$name" --format json | jq -c --arg n "$name" '[.[] | select(.name == $n)][0]')"
+              # A change to a live service is a pending revision; its status is the one that matters.
+              status="$(jq -r 'if .pending_revision_status then .pending_revision_status else .status end' <<<"$row")"
+              echo "$name: $status"
+              case "$status" in active | review | rejected) break ;; esac
+              if [ "$(date +%s)" -ge "$deadline" ]; then status="no decision in $WAIT_MINUTES minutes"; break; fi
+              sleep 30
+            done
+            case "$status" in
+              active | review)
+                echo "- ✅ \`$name\`: $status" >> "$report" ;;
+              *)
+                failed=1
+                echo "- ❌ \`$name\`: $status. $(jq -r '.status_message // ""' <<<"$row")" >> "$report"
+                usvc_seller services show-test-results "$name" --format json \
+                  | jq -r '.runs[] | select(.status != "success") | "  - \(.document_title) on \(.channel_name): \(.status), exit \(.exit_code), \(.error // "")"' >> "$report" ;;
+            esac
             echo "::endgroup::"
           done
+          cat "$report" >> "$GITHUB_STEP_SUMMARY"
           exit "$failed"
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recipe-test-report
+          path: recipe-test-report.md
+          if-no-files-found: ignore
 
   fork:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
