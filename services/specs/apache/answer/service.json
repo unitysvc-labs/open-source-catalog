@@ -1,0 +1,10 @@
+{
+  "display_name": "Apache Answer Q&A Platform",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.answer.volumes[0]: volume 'data' at /data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "apache/answer",
+  "service_id": "b4738ff3-9f0c-497e-bc14-9ba745be93ec",
+  "status": "created",
+  "time_created": "2026-11-25T18:25:02.676072Z"
+}
