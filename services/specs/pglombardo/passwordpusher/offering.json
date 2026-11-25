@@ -1,0 +1,78 @@
+{
+  "capabilities": [
+    "secret-sharing | Turns a password, text note or web address into a one-time link that expires after a set number of views or days, so the recipient opens it in a browser without an account."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Password Pusher image in a separate container for each enrollment, with its own HTTPS address. Password Pusher is a web app for handing someone a secret without leaving it in a chat or an email: you paste a password, a note or a web address, choose how many views and how many days the link may live, and send the person the link. The secret is stored encrypted, shown to the recipient, and deleted when the link expires or runs out of views. The instance runs in Password Pusher's anonymous-only mode: there are no accounts or sign-in, and file uploads, which need an account, are not available. It keeps its small SQLite database in temporary storage, so pushes are lost when the instance is stopped; they are short-lived by design.\n\nEnroll in the base channel and keep or replace the generated secret, which the instance turns into its encryption keys. Open `https://<instance>/` and push, or push from a script with the JSON API. Anyone who knows the instance address can create pushes, so share the address only with the people who should use it; they cannot read other people's pushes without the secret link. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream Password Pusher documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Password, text and URL pushes that expire after a set number of views and days",
+      "Optional passphrase and optional retrieval step before the secret is shown",
+      "Pushes are stored encrypted and deleted when they expire",
+      "Web interface and a JSON API for creating and retrieving pushes",
+      "Nothing is kept after the instance stops"
+    ],
+    "links": {
+      "documentation": "https://docs.pwpush.com/",
+      "homepage": "https://pwpush.com",
+      "source_code": "https://github.com/pglombardo/PasswordPusher"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "passwordpusher",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted Password Pusher: share a password or note through a link that expires after a set number of views or days. No accounts, nothing kept after you stop.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private Password Pusher server in anonymous-only mode; temporary storage, so pushes are lost when the instance stops.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5100,
+          "service": "pwpush"
+        }
+      ],
+      "environment": {
+        "pwpush": {
+          "SECRET_KEY_BASE": "{{ params.SECRET_KEY_BASE }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "SECRET_KEY_BASE": {
+              "default": "{{ token_urlsafe(48) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. Password Pusher uses it to sign its cookies, and the instance derives the key that encrypts stored pushes from it, instead of Password Pusher's built-in key that every installation shares. You never type it. Changing it restarts the instance, and pushes already stored cannot be read afterwards.",
+              "format": "password",
+              "minLength": 32,
+              "title": "Instance secret",
+              "type": "string"
+            }
+          },
+          "required": [
+            "SECRET_KEY_BASE"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "SECRET_KEY_BASE": "local-test-secret-key-base-only-0123456789"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable"
+    }
+  }
+}
