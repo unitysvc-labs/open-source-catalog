@@ -1,0 +1,20 @@
+# TriliumNext Notes, one private instance per enrollment. Trilium has no environment setting for its
+# password: the first visitor to the address sets it in the browser (see usage.md).
+services:
+  trilium:
+    image: triliumnext/trilium:v0.107.0@sha256:739ba0f0488f506549f7c21dc9e792decd99382cc759f01d5ec1abba32e87da8
+    ports:
+      - 8080
+    volumes:
+      # The SQLite database (document.db), config.ini, the session secret and logs. The channel decides
+      # whether this volume persists, in the trilium folder of the customer's home (offering.json,
+      # `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/home/node/trilium-data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:8080/api/setup/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:
