@@ -1,0 +1,30 @@
+# 2FAuth, one private instance per enrollment. The encryption key and the instance address are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  2fauth:
+    image: 2fauth/2fauth:9.0.3@sha256:fb421b40072f9b1412fa954798bc2e2acb755dd312ce6b21c1d004ce15c2a562
+    # The image already runs as this user; the channel gives the same uid and gid to the restored data.
+    user: "1000:1000"
+    ports:
+      - 8000
+    environment:
+      # The image's default database is SQLite, kept in /2fauth (the data volume below).
+      DB_CONNECTION: sqlite
+      # Log to the container's output instead of daily files that would grow in the data volume.
+      LOG_CHANNEL: stderr
+      # The instance is reached through the platform's HTTPS front end; trust its forwarded scheme and host so
+      # that generated links use https.
+      TRUSTED_PROXIES: "*"
+    volumes:
+      # The SQLite database, the OAuth signing keys, uploaded icons and sessions. The channel decides whether
+      # this volume persists, in the 2fauth folder of the customer's home (offering.json, `volumes`); under
+      # plain Docker it is an ordinary named volume.
+      - data:/2fauth
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+volumes:
+  data:
