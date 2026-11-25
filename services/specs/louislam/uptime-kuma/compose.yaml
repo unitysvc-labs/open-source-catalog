@@ -1,0 +1,26 @@
+# Uptime Kuma, one private instance per enrollment. It needs no bound parameters: the administrator is created
+# on the web setup page by whoever opens the address first (see usage.md); Uptime Kuma has no variable that
+# presets it. The slim image has no Chromium (so no "real browser" monitors) and no embedded MariaDB.
+# The image runs as root (its default; a separate -rootless tag exists).
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.12-slim@sha256:f2a9bc853deb2a6f37df229649f96d62efc3cb24e38b08eee79234f76613d063
+    ports:
+      - 3001
+    environment:
+      # Version 2 asks on first start which database to use (SQLite, embedded MariaDB or an external one).
+      # This fixes the answer to SQLite, so the setup page goes straight to creating the administrator.
+      UPTIME_KUMA_DB_TYPE: sqlite
+    volumes:
+      # The SQLite database (kuma.db), uploads and screenshots. The channel decides whether this volume
+      # persists, in the uptime-kuma folder of the customer's home (offering.json, `volumes`); under plain
+      # Docker it is an ordinary named volume.
+      - data:/app/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:3001/api/entry-page"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+volumes:
+  data:

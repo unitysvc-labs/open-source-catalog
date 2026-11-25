@@ -1,0 +1,75 @@
+{
+  "capabilities": [
+    "uptime-monitoring | Checks websites, APIs, ports, DNS records and other targets on a schedule while the instance runs, shows their status and history, and sends alerts when one goes down."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Uptime Kuma image (the slim 2.x variant, using SQLite) in a separate container for each enrollment, with its own HTTPS address. Uptime Kuma is a self-hosted monitoring tool: add monitors for HTTP(S) pages, TCP ports, ping, DNS, keywords and other checks, see their status and response times in a dashboard, publish status pages, and get notified through many channels such as email, Discord, Telegram and Slack. Its data is kept in the instance's own SQLite database, stored in the `uptime-kuma` folder of your home, so your monitors and history survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and open the instance address as soon as it is ready. The first time, Uptime Kuma shows a setup page where you create the administrator; whoever opens the address first creates that account, so do it yourself right away. There is no preset password. You can run one Uptime Kuma instance at a time. See How to use this service for full setup and limitations.\n\nA monitoring tool only watches while it runs: when you stop the instance, checks and alerts stop with it. You pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Uptime Kuma documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "HTTP(S), keyword, JSON query, TCP port, ping, DNS and other monitor types",
+      "Response-time charts, uptime percentages and certificate expiry checks",
+      "Public status pages and maintenance windows",
+      "Notifications through 90+ services such as email, Discord, Telegram and Slack",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/louislam/uptime-kuma/wiki",
+      "homepage": "https://kuma.pet",
+      "source_code": "https://github.com/louislam/uptime-kuma"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "uptime-kuma",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted monitoring tool: watch websites, APIs and ports, see uptime and response times, and get alerts, with data kept in your home. Checks run only while the instance runs.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Uptime Kuma's database in the uptime-kuma folder of your home, so your monitors, history and settings are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=uptime-kuma/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Uptime Kuma instance; its monitors, history and settings are kept in the uptime-kuma folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3001,
+          "service": "uptime-kuma"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/uptime-kuma",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
