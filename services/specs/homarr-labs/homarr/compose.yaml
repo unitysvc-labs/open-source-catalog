@@ -1,0 +1,32 @@
+# Homarr, one private instance per enrollment. The encryption seed is bound from the channel's `environment`
+# in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:v2.14.0@sha256:742940b00ed13e8649ddfd81532ad8f4140ad413ed0591f464ff6e4f7ff3c276
+    # Homarr needs SECRET_ENCRYPTION_KEY to be exactly 64 hexadecimal characters, and the platform can only
+    # generate URL-safe tokens. So the channel binds a generated seed (ENCRYPTION_SEED) and this command turns
+    # it into the key (its SHA-256, 64 hex characters) before starting Homarr's own start script. It uses
+    # backticks and `printenv` rather than a dollar sign, so Compose and the platform leave it untouched.
+    command:
+      - sh
+      - -c
+      - export SECRET_ENCRYPTION_KEY=`printenv ENCRYPTION_SEED | sha256sum | cut -c1-64` && exec sh run.sh
+    ports:
+      - 7575
+    environment:
+      # The image starts as root and, with these set, drops to this user after fixing the data folder's owner.
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      # The SQLite database (db/), the embedded Redis dump (redis/) and trusted certificates. The channel
+      # decides whether this volume persists, in the homarr folder of the customer's home (offering.json,
+      # `volumes`); under plain Docker it is an ordinary named volume.
+      - appdata:/appdata
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:7575/api/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+volumes:
+  appdata:
