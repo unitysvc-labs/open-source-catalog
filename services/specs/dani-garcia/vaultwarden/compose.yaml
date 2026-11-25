@@ -1,0 +1,25 @@
+# Vaultwarden, one private instance per enrollment. The instance address, the admin token and the
+# sign-up switch are bound from the channel's `environment` in offering.json; the values below are the
+# instance's fixed, non-secret settings.
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.37.5-alpine@sha256:bbe684a02d6b0db54256ff88eac9754f4519284a7b26314afc241fd7d0918191
+    ports:
+      - 80
+    environment:
+      # Keep the SQLite database in one file. In WAL mode recent changes sit in db.sqlite3-wal, which the
+      # platform does not copy to the customer's home, so a copy of the database alone would miss them.
+      ENABLE_DB_WAL: "false"
+    volumes:
+      # The database (db.sqlite3), the server's RSA keys (rsa_key.pem), attachments, Sends and the icon cache.
+      # The channel decides whether this volume persists, in the vaultwarden folder of the customer's home
+      # (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:80/alive"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
