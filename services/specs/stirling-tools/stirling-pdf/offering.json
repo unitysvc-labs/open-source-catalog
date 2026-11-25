@@ -1,0 +1,58 @@
+{
+  "capabilities": [
+    "pdf-toolkit | Merges, splits, rotates and reorders PDF files sent through its web interface or REST API. This ultra-lite build has no OCR, no Office, HTML or ebook conversion and no login."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Stirling-PDF ultra-lite image in a separate container for each enrollment, with its own HTTPS address. Stirling-PDF is a self-hosted PDF toolkit: open the web page to merge, split, rotate and reorder PDF files, or call its REST API (`/api/v1/...`, with interactive documentation in the app) from scripts. Files are processed in the instance's memory and temporary disk and are not kept: the service stores nothing and asks for no access to your home.\n\nEnroll in the base channel, which has no settings, and open the instance address. **There is no sign-in.** The ultra-lite build has no login at all, so anyone who knows the address can use every tool and the API, and use the instance you pay for. Keep the address private. This build also leaves out OCR, Office, HTML and ebook conversions, which only the larger upstream images include. See How to use this service for details, limitations and licensing notes.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream Stirling-PDF documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Merge, split, rotate and reorder PDF files",
+      "Web interface and a REST API for scripts",
+      "No settings, no sign-in and no files kept on the instance",
+      "Anonymous usage statistics switched off"
+    ],
+    "links": {
+      "documentation": "https://docs.stirlingpdf.com",
+      "homepage": "https://www.stirlingpdf.com",
+      "source_code": "https://github.com/Stirling-Tools/Stirling-PDF"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "stirling-pdf",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private web toolkit for PDF files: merge, split, rotate, reorder and edit PDFs in a browser or over a REST API. Ultra-lite build: no OCR or Office conversion, no sign-in, keeps no files.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private Stirling-PDF (ultra-lite) web page and API. It has no settings, no sign-in and keeps no files.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "stirling-pdf"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "small",
+      "type": "enrollable"
+    }
+  }
+}

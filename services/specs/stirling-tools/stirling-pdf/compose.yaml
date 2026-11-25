@@ -1,0 +1,16 @@
+# Stirling-PDF (ultra-lite image), one private instance per enrollment. It takes no settings and keeps no
+# files, so there are no volumes. The image starts as root and its init script runs the app as uid 1000.
+services:
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:3.5.0-ultra-lite@sha256:352d0e8cbaca82ac59989875456935a33a554882f15466b5d6f93142ff9b0043
+    ports:
+      - 8080
+    environment:
+      # Upstream's documented switch for anonymous usage statistics (PostHog, Scarf); off here.
+      SYSTEM_ENABLEANALYTICS: "false"
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:8080/api/v1/info/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
