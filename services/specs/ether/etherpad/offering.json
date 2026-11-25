@@ -1,0 +1,145 @@
+{
+  "capabilities": [
+    "collaborative-text-editing | Lets several people edit the same text document (a pad) at once in a web browser and see each other's changes as they type, with a revision history and export of the text."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Etherpad image in a separate container for each enrollment, with its own HTTPS address. Etherpad is a real-time collaborative editor: anyone with a pad's address edits the same document together in the browser, sees each other's changes as they type, and can use the revision history and export the text. A pad is created the moment someone opens its address. Everything is kept in Etherpad's default file database, stored in the `etherpad` folder of your home, so your pads survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Open `https://<instance>/` to create a pad, and `https://<instance>/admin-auth/` to reach the admin pages with the user name `admin`. By default anyone who knows the address can create and edit pads; an optional setting makes Etherpad ask everyone to sign in. You can run one Etherpad instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Etherpad documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Real-time editing of a shared document by many people",
+      "Revision history with a time slider, and export of the text",
+      "Admin pages for settings and plugins",
+      "Your pads are kept in your home, across stops, restarts and re-enrollment",
+      "Optional sign-in requirement for everyone who opens a pad"
+    ],
+    "links": {
+      "documentation": "https://etherpad.org/doc/",
+      "homepage": "https://etherpad.org",
+      "source_code": "https://github.com/ether/etherpad"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "etherpad",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted real-time collaborative text editor: share a pad's address and edit together in the browser, with your pads kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Etherpad's database in the etherpad folder of your home, so your pads are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=etherpad/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Etherpad server; its pads are kept in the etherpad folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 9001,
+          "service": "etherpad"
+        }
+      ],
+      "environment": {
+        "etherpad": {
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "ADMIN_SECRET": "{{ params.ADMIN_SECRET }}",
+          "REQUIRE_AUTHENTICATION": "{{ params.REQUIRE_AUTHENTICATION }}",
+          "USER_PASSWORD": "{{ params.USER_PASSWORD }}",
+          "USER_SECRET": "{{ params.USER_SECRET }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the password of the Etherpad user `admin`, who opens the admin pages at /admin-auth/. Save it; it is also shown in the enrollment's instance details. Etherpad reads it at every start, so a change you save takes effect when the instance next starts.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "ADMIN_SECRET": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for the admin pages, in place of a shipped placeholder it warns about. You never type it.",
+              "format": "password",
+              "minLength": 16,
+              "title": "Admin sign-in secret",
+              "type": "string"
+            },
+            "REQUIRE_AUTHENTICATION": {
+              "default": "false",
+              "description": "Choose `true` to make Etherpad ask for a user name and password before anyone can open any pad. Then sign in as `user` with the user password below (or as `admin` with the administrator password). With `false`, anyone who knows the address can create and edit pads.",
+              "enum": [
+                "false",
+                "true"
+              ],
+              "title": "Require sign-in to open pads",
+              "type": "string"
+            },
+            "USER_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the password of the Etherpad user `user`, who may open and edit pads but not use the admin pages. It is only asked for when sign-in is required above. Share it with the people who should edit.",
+              "format": "password",
+              "minLength": 12,
+              "title": "User password",
+              "type": "string"
+            },
+            "USER_SECRET": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for users, in place of a shipped placeholder it warns about. You never type it.",
+              "format": "password",
+              "minLength": 16,
+              "title": "User sign-in secret",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ADMIN_PASSWORD",
+            "ADMIN_SECRET",
+            "USER_SECRET",
+            "REQUIRE_AUTHENTICATION",
+            "USER_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "ADMIN_SECRET": "local-test-admin-secret-only",
+          "REQUIRE_AUTHENTICATION": "false",
+          "USER_PASSWORD": "local-test-user-pass",
+          "USER_SECRET": "local-test-user-secret-only"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "gid": 5001,
+          "mode": "rw",
+          "source": "{{ home.path }}/etherpad",
+          "type": "persist",
+          "uid": 5001
+        }
+      }
+    }
+  }
+}
