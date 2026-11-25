@@ -1,0 +1,79 @@
+{
+  "capabilities": [
+    "audiobook-streaming | Streams audiobooks and podcasts from a library to a web player and the Audiobookshelf apps, tracks listening progress per user, and fetches book metadata and covers."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Audiobookshelf image in a separate container for each enrollment, with its own HTTPS address. Audiobookshelf is a self-hosted audiobook and podcast server: you add libraries, it reads the audio files and their tags, and users listen in the web player or the Audiobookshelf mobile apps with their progress, bookmarks and users kept per account. Its database (users, libraries, progress) and generated metadata (covers, backups) are kept in the `audiobookshelf` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel; it asks for no settings. Open the instance address and create the root account at once: the first account created on a new instance becomes its administrator, so anyone who reaches the address before you could take that role. The media folders `/audiobooks` and `/podcasts` are temporary scratch space of about 1 GiB in total and are NOT kept between runs; see How to use this service for what that means. You can run one Audiobookshelf instance at a time.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the database in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Audiobookshelf documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Audiobook and podcast libraries with web player, chapters, bookmarks and per-user progress",
+      "Metadata and cover lookup, and ffmpeg transcoding for players that need it",
+      "Multiple users, with the first account as administrator",
+      "Database and metadata kept in your home, across stops, restarts and re-enrollment; media files are temporary"
+    ],
+    "links": {
+      "documentation": "https://www.audiobookshelf.org/docs",
+      "homepage": "https://www.audiobookshelf.org",
+      "source_code": "https://github.com/advplyr/audiobookshelf"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "audiobookshelf",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted audiobook and podcast server: web player and apps, per-user progress, and a database kept in your home. Media files are temporary (about 1 GiB).",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Audiobookshelf's database and generated metadata in the audiobookshelf folder of your home, so your users, libraries and listening progress are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=audiobookshelf/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Audiobookshelf server; its database and metadata are kept in the audiobookshelf folder of your home between runs and enrollments. The media folders are temporary.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "audiobookshelf"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "config": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/audiobookshelf/config",
+          "type": "persist"
+        },
+        "metadata": {
+          "mode": "rw",
+          "source": "{{ home.path }}/audiobookshelf/metadata",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
