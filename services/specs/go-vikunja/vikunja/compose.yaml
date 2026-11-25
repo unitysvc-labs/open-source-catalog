@@ -1,0 +1,27 @@
+# Vikunja, one private instance per enrollment. The signing secret and the registration switch are bound
+# from the channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+# The image has no shell, curl or wget, so the healthcheck runs Vikunja's own `healthcheck` command.
+services:
+  vikunja:
+    image: vikunja/vikunja:2.8.0@sha256:35d937baf3b5d5803bed6b9e11d007448b7b536df9e4346dc35551e1072636c3
+    ports:
+      - 3456
+    environment:
+      # The frontend and the API are served from the same address, so cross-origin headers are not needed.
+      # Left on, Vikunja refuses to start without VIKUNJA_SERVICE_PUBLICURL, which is not known in advance.
+      VIKUNJA_CORS_ENABLE: "false"
+    volumes:
+      # The SQLite database (vikunja.db) and the task attachments. The channel decides whether these volumes
+      # persist, in the vikunja folder of the customer's home (offering.json, `volumes`); under plain Docker
+      # they are ordinary named volumes.
+      - db:/db
+      - files:/app/vikunja/files
+    healthcheck:
+      test: [CMD, /app/vikunja/vikunja, healthcheck]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  db:
+  files:
