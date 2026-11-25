@@ -1,0 +1,23 @@
+# Actual Budget sync server, one private instance per enrollment. It needs no environment: the first visitor
+# sets the server password in the browser (see usage.md). The image runs as root unless told otherwise, so it
+# is started as the `actual` user (1001) the image itself defines. The image has no curl or wget; its own
+# health-check script uses Node.
+services:
+  actual:
+    image: actualbudget/actual-server:26.11.0@sha256:06cf186569cf58d93e12659ff1a517b65b5b0ebee7050a3991d4bd8a1d398da6
+    user: "1001:1001"
+    ports:
+      - 5006
+    volumes:
+      # server-files/ (account.sqlite: the password hash and sessions) and user-files/ (each budget's
+      # uploaded file and its sync database). The channel decides whether this volume persists, in the actual
+      # folder of the customer's home (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/data
+    healthcheck:
+      test: [CMD, node, /app/scripts/health-check.js]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:

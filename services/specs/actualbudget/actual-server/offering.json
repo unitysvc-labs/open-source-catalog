@@ -1,0 +1,77 @@
+{
+  "capabilities": [
+    "budget-sync | Syncs Actual Budget budget files between the web app and other devices, and serves the Actual web app itself, behind a server password."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Actual Budget server image in a separate container for each enrollment, with its own HTTPS address. Actual is a local-first personal finance app: envelope budgeting, accounts and transactions, reports, and import of bank files. The server stores each budget and syncs it between browsers and devices, and it also serves the Actual web app, so opening the instance address gives you the full app. Everything is kept in the instance's own SQLite files, stored in the `actual` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel; it asks for no settings. Open the instance address and set the server password straight away: the first visitor to a new instance chooses the password, so anyone who reaches the address before you could set it. Then create or import a budget. Automatic bank synchronisation (GoCardless, SimpleFIN and others) is not configured here. You can run one Actual instance at a time. See How to use this service for full setup, and for what protects your data and what does not.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Actual documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Envelope budgeting, accounts, transactions, schedules and reports in a web app",
+      "Syncs a budget between browsers and devices through the server",
+      "Optional end-to-end encryption of the budget, set in the app",
+      "Import from other budgeting apps and from bank files",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://actualbudget.org/docs/",
+      "homepage": "https://actualbudget.org",
+      "source_code": "https://github.com/actualbudget/actual"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "actual-server",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private Actual Budget server: the local-first personal finance app and its sync server, protected by a server password you set, with data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps your budgets and the server password in the actual folder of your home, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=actual/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Actual Budget server and web app; its budgets and server password are kept in the actual folder of your home between runs and enrollments. Set the password on first visit.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5006,
+          "service": "actual"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1001,
+          "mode": "rw",
+          "source": "{{ home.path }}/actual",
+          "type": "persist",
+          "uid": 1001
+        }
+      }
+    }
+  }
+}
