@@ -5,7 +5,7 @@
     "upstream_access_config.base: environment.ntfy.NTFY_AUTH_USERS: contains a variable reference, kept as written; only {{ params.NAME }} is bound per instance, how any other secret is bound is not decided yet (unitysvc-core#105, open 4)"
   ],
   "name": "binwiederhier/ntfy-sh",
-  "service_id": "320e8d12-0ebf-4bd1-a1fb-868b8f357744",
+  "service_id": "08aac018-114e-45f2-b795-887191e9449b",
   "status": "updated",
   "time_created": "2026-11-21T06:56:58.578050Z"
 }
