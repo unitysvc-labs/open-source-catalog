@@ -1,0 +1,19 @@
+# FreshRSS (SQLite), one private instance per enrollment. The administrator and the passwords are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  freshrss:
+    image: freshrss/freshrss:1.31.0@sha256:31b0acfcb8e11600aa6ce697ff8d9d7ea620c85d766e5e764f487b433d20d066
+    ports:
+      - 80
+    environment:
+      # Built-in cron job: refreshes every feed twice an hour (at minutes 17 and 47).
+      CRON_MIN: "17,47"
+    volumes:
+      # Configuration, users, the SQLite databases and caches. The channel decides whether these volumes
+      # persist, in the freshrss folder of the customer's home (offering.json, `volumes`); under plain Docker
+      # they are ordinary named volumes.
+      - data:/var/www/FreshRSS/data
+      - extensions:/var/www/FreshRSS/extensions
+volumes:
+  data:
+  extensions:

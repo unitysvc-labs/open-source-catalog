@@ -1,0 +1,137 @@
+{
+  "capabilities": [
+    "rss-aggregation | Subscribes to RSS and Atom feeds, refreshes them on a schedule and lets you read, search and organize the articles in a web interface.",
+    "feed-reader-api | Serves the Google Reader compatible and Fever APIs so mobile and desktop feed-reader apps can sync with the instance using its API password."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official FreshRSS image in a separate container for each enrollment, with its own HTTPS address. FreshRSS is a self-hosted RSS and Atom feed aggregator: subscribe to feeds, organize them in categories, read, star and search articles, and import or export your subscriptions as OPML. A built-in job refreshes every feed twice an hour. The Google Reader compatible and Fever APIs are switched on, so feed-reader apps can sync with the instance. Everything is kept in the instance's own SQLite database, stored in the `freshrss` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated passwords. Sign in at `https://<instance>/` with the administrator name and password, and add your feeds. The separate API password is the one feed-reader apps use. The three settings only take effect the first time FreshRSS starts on an empty data folder; afterwards the existing account is kept. You can run one FreshRSS instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream FreshRSS documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Feeds in categories, with search, labels, favorites and OPML import and export",
+      "Feeds refreshed automatically twice an hour by the built-in cron job",
+      "Google Reader compatible and Fever APIs for feed-reader apps",
+      "Extensions folder you can fill with FreshRSS extensions",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://freshrss.github.io/FreshRSS/",
+      "homepage": "https://freshrss.org",
+      "source_code": "https://github.com/FreshRSS/FreshRSS"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "freshrss",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted RSS and Atom feed reader: subscribe to feeds, read them in a web interface or sync feed-reader apps, with data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps FreshRSS's configuration, users, databases and extensions in the freshrss folder of your home, so your feeds and articles are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=freshrss/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private FreshRSS reader; its feeds, articles and users are kept in the freshrss folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "freshrss"
+        }
+      ],
+      "environment": {
+        "freshrss": {
+          "FRESHRSS_INSTALL": "--api-enabled --default-user={{ params.FRESHRSS_ADMIN_USER }} --language=en",
+          "FRESHRSS_USER": "--user={{ params.FRESHRSS_ADMIN_USER }} --password={{ params.FRESHRSS_ADMIN_PASSWORD }} --api-password={{ params.FRESHRSS_API_PASSWORD }} --no-default-feeds"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "FRESHRSS_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the account's password only when FreshRSS first creates it on an empty data folder; if the account already exists this value is ignored and the existing password still applies. Change the password in FreshRSS's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "maxLength": 72,
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_.+-]+$",
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "FRESHRSS_ADMIN_USER": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. It is used only when FreshRSS first runs on an empty data folder; if the data already exists (an earlier enrollment, or a later restart) this value is ignored and the existing users still apply.",
+              "maxLength": 39,
+              "minLength": 2,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "FRESHRSS_API_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "The password feed-reader apps use with the Google Reader compatible or Fever API, separate from the web password. Generated for this enrollment; keep it or enter your own. It applies only when FreshRSS first creates the account; if the account already exists this value is ignored. Change it in FreshRSS's own profile settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "maxLength": 72,
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_.+-]+$",
+              "title": "API password",
+              "type": "string"
+            }
+          },
+          "required": [
+            "FRESHRSS_ADMIN_USER",
+            "FRESHRSS_ADMIN_PASSWORD",
+            "FRESHRSS_API_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "FRESHRSS_ADMIN_PASSWORD": "local-test-password-only",
+          "FRESHRSS_ADMIN_USER": "admin",
+          "FRESHRSS_API_PASSWORD": "local-test-api-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/freshrss/data",
+          "type": "persist"
+        },
+        "extensions": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/freshrss/extensions",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
