@@ -1,0 +1,14 @@
+# IT-Tools, one private instance per enrollment. It is a static website served by nginx (port 80): it takes
+# no settings and keeps no data on the server, so there are no volumes. The image runs nginx as root (the master
+# process; its workers run as `nginx`) and has curl.
+services:
+  it-tools:
+    image: corentinth/it-tools:2024.10.22-7ca5933@sha256:8b8128748339583ca951af03dfe02a9a4d7363f61a216226fc28030731a5a61f
+    ports:
+      - 80
+    healthcheck:
+      test: [CMD, curl, -fsS, "http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

@@ -1,0 +1,57 @@
+{
+  "capabilities": [
+    "developer-toolbox | Web page of small developer utilities (encoders, hashes, converters, generators, parsers, calculators) that run in the visitor's browser; no server calls were found in the source."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the self-hosted build of IT-Tools in a separate container for each enrollment, with its own HTTPS address. IT-Tools is a collection of handy tools for developers and people working in IT, on one web page: encoders and decoders, hash and token generators, format converters (JSON, YAML, TOML, XML), regex and cron helpers, network calculators, a QR code generator and many more. The container only serves the web page. In the IT-Tools source for the pinned version the tools compute in the visitor's browser and none of them calls a server; this was checked by UnitySVC Labs, it is not a promise from the IT-Tools project.\n\nEnroll in the base channel, which has no settings, and open the instance address in a browser. There is no sign-in: anyone who knows the address can open the page and use the tools, which is harmless because the page holds no data, but you may not want strangers consuming the instance you pay for, so keep the address private. The server keeps no data, so the service stores nothing and asks for no access to your home. See How to use this service for details and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream IT-Tools repository and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "More than 80 developer tools on one page: encoders, hashes, converters, generators, parsers, calculators",
+      "Tools compute in the visitor's browser; no server calls found in the pinned source",
+      "No settings, no sign-in and no data kept on the server"
+    ],
+    "links": {
+      "documentation": "https://github.com/CorentinTh/it-tools#readme",
+      "homepage": "https://it-tools.tech",
+      "source_code": "https://github.com/CorentinTh/it-tools"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "it-tools",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private web page of 80+ developer tools: encoders, hashes, converters, generators, parsers and calculators. No settings, no sign-in, nothing stored on the server.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private IT-Tools web page. It has no settings, no sign-in and keeps no data.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "it-tools"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}
