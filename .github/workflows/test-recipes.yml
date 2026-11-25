@@ -26,9 +26,12 @@ on:
         description: The commit to test (a reviewed commit of a fork's pull request).
         required: true
 
-# One run at a time: two runs would upload the same recipes.
+# One run at a time per pull request: a new push waits for the run before it, because a run is
+# uploading to production and must not be cut off. Pull requests are independent (each one's recipes
+# are its own), so they do not queue behind each other; a single shared group would keep only one
+# pending run and cancel the others.
 concurrency:
-  group: test-recipes
+  group: test-recipes-${{ github.event.pull_request.number || inputs.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -76,8 +79,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install unitysvc-sellers
-        # 0.3.26 added `specs upload --wait-for-test`.
-        run: pip install "unitysvc-sellers>=0.3.26"
+        # 0.3.26 added `specs upload --wait-for-test`; 0.3.27 runs the platform's check on a recipe whose upload
+        # queued no tests (an unchanged one), so a re-run is never a pass without a container check.
+        run: pip install "unitysvc-sellers>=0.3.27"
 
       - name: Restore the production upload state
         working-directory: .
@@ -108,17 +112,31 @@ jobs:
             --report "$GITHUB_WORKSPACE/recipe-test-report.md"
 
       - name: Commit the new sidecars to the pull request
-        # Only for a branch of this repository: the upload wrote a service.json for each new recipe.
+        # Only for a branch of this repository. A sidecar is committed when it is new or names another
+        # service_id; a rewrite that changes only its volatile fields (the ingest outcome, "created" then
+        # "unchanged") is discarded. The commit changes no recipe content, so it skips CI: a run for a commit
+        # pushed by the bot would otherwise wait for approval, and an approved one would upload again.
         if: github.event_name == 'pull_request'
         working-directory: .
         run: |
-          git add services/specs/*/*/service.json
+          for f in services/specs/*/*/service.json; do
+            [ -f "$f" ] || continue
+            if git cat-file -e "HEAD:$f" 2>/dev/null; then
+              old="$(git show "HEAD:$f" | jq -r '.service_id // empty')"
+              new="$(jq -r '.service_id // empty' "$f")"
+              if [ "$old" = "$new" ]; then
+                git checkout -- "$f"
+                continue
+              fi
+            fi
+            git add "$f"
+          done
           if git diff --cached --quiet; then
             echo "No new sidecar."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Record the service ids of the uploaded recipes"
+            git commit -m "Record the service ids of the uploaded recipes [skip ci]"
             git push
           fi
 
