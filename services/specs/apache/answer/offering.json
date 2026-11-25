@@ -1,0 +1,158 @@
+{
+  "capabilities": [
+    "question-and-answer-site | Hosts a Q&A community: users post questions, answer, comment, vote and tag, with an admin interface for moderation and settings, over a web interface and a REST API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Apache Answer image in a separate container for each enrollment, with its own HTTPS address. Apache Answer is a self-hosted Q&A platform for communities, help centers and team knowledge bases: people sign up, ask questions, write answers, comment, vote and tag, and administrators moderate content and change the site's settings. The instance is installed automatically at its first start, so nobody can claim it through the web installer; the administrator account comes from the enrollment settings. Everything is kept in the instance's own SQLite database, stored in the `answer` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel, keep or replace the generated administrator password, and sign in at `https://<instance>/` with the administrator email and password. Then set the site address in the admin settings and review who may register. You can run one Answer instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. This recipe is unofficial: the Apache Software Foundation was not asked to take part and does not endorse or support it. See the upstream Apache Answer documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Questions, answers, comments, votes, tags and reputation",
+      "Admin interface for moderation, users, branding and settings",
+      "Installs itself at the first start, with the administrator you choose",
+      "Plugin-capable and available in dozens of languages",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://answer.apache.org/docs/",
+      "homepage": "https://answer.apache.org",
+      "source_code": "https://github.com/apache/answer"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "answer",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted Q&A community site (Apache Answer): questions, answers, votes and moderation in a web interface, with data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Answer's database, settings and uploaded files in the answer folder of your home, so your questions, users and settings are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=answer/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Apache Answer site; its database, settings and uploads are kept in the answer folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "answer"
+        }
+      ],
+      "environment": {
+        "answer": {
+          "ADMIN_EMAIL": "{{ params.ADMIN_EMAIL }}",
+          "ADMIN_NAME": "{{ params.ADMIN_NAME }}",
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "CONTACT_EMAIL": "{{ params.CONTACT_EMAIL }}",
+          "SITE_NAME": "{{ params.SITE_NAME }}",
+          "SITE_URL": "{{ params.SITE_URL }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The administrator signs in with this email address. Created at the first installation only; if the data already exists (an earlier enrollment or a restart) it is ignored.",
+              "minLength": 3,
+              "pattern": "^[^@\\s]+@[^@\\s]+$",
+              "title": "Administrator email",
+              "type": "string"
+            },
+            "ADMIN_NAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created at the first installation only.",
+              "maxLength": 30,
+              "minLength": 4,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only at the first installation; if the data already exists it is ignored and the existing password still applies. Change the password in Answer's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "maxLength": 32,
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "CONTACT_EMAIL": {
+              "default": "admin@example.com",
+              "description": "Public contact address of the site. Used only at the first installation; change it later in the admin settings.",
+              "minLength": 3,
+              "pattern": "^[^@\\s]+@[^@\\s]+$",
+              "title": "Contact email",
+              "type": "string"
+            },
+            "SITE_NAME": {
+              "default": "My Q&A",
+              "description": "The name of the Q&A site, shown in the page header. Used only at the first installation; change it later in the admin settings.",
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Site name",
+              "type": "string"
+            },
+            "SITE_URL": {
+              "default": "https://instance.invalid",
+              "description": "The public address of the site, used by Answer for links it writes into emails and pages. The enrollment's address is not known before the instance exists, so the default is a placeholder; after the first start copy the instance address from the instance details into Admin > General > Site URL. Used only at the first installation.",
+              "minLength": 8,
+              "pattern": "^https?://[^\\s]+$",
+              "title": "Site address",
+              "type": "string"
+            }
+          },
+          "required": [
+            "SITE_NAME",
+            "SITE_URL",
+            "CONTACT_EMAIL",
+            "ADMIN_NAME",
+            "ADMIN_EMAIL",
+            "ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_EMAIL": "admin@example.com",
+          "ADMIN_NAME": "admin",
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "CONTACT_EMAIL": "admin@example.com",
+          "SITE_NAME": "Test Q&A",
+          "SITE_URL": "https://instance.invalid"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/answer",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}

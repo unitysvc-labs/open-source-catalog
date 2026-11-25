@@ -1,0 +1,28 @@
+# Apache Answer, one private instance per enrollment. The first-start installation and the administrator
+# account are bound from the channel's `environment` in offering.json; the values below are the instance's
+# fixed, non-secret settings.
+services:
+  answer:
+    image: apache/answer:2.0.3@sha256:0863470d8293294b899f8b39a373df6d6250c3f3e412ea0e483924b41e23428f
+    ports:
+      - 80
+    environment:
+      # Install without the web wizard: anyone who reached /install first would otherwise configure the instance.
+      AUTO_INSTALL: "true"
+      DB_TYPE: sqlite3
+      DB_FILE: /data/answer.db
+      LANGUAGE: en_US
+      EXTERNAL_CONTENT_DISPLAY: always_display
+    volumes:
+      # SQLite database, configuration (conf/config.yaml), uploads, cache and language files. The channel decides
+      # whether this volume persists, in the answer folder of the customer's home (offering.json, `volumes`);
+      # under plain Docker it is an ordinary named volume.
+      - data:/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:
