@@ -1,0 +1,75 @@
+{
+  "capabilities": [
+    "web-page-change-detection | Checks the web pages you list on a schedule, keeps snapshots, shows what changed, and can send a notification when a page changes."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official changedetection.io image in a separate container for each enrollment, with its own HTTPS address. changedetection.io watches web pages: you add a URL, it fetches the page on a schedule, compares it with the last snapshot and shows the difference. You can restrict a watch to part of a page with CSS, XPath or JSON filters, ignore text, and send a notification (through Apprise) when something changes. Settings, watches and snapshots are kept as files in the `changedetection` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel; it needs no settings. **The application has no password at first, and the instance address is public, so open Settings and set a password straight away.** Anyone who reaches the address before that can see and change every watch. Pages are fetched with plain HTTP requests: this recipe has no headless browser, so pages that need JavaScript to show their content are not supported. You can run one instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream changedetection.io documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Scheduled checks of any web page, with a visual and text difference between snapshots",
+      "Filters by CSS selector, XPath or JSON path, and text to ignore or trigger on",
+      "Notifications through Apprise when a page changes",
+      "Plain HTTP fetching; no headless browser is included",
+      "Your watches and snapshots are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/dgtlmoon/changedetection.io/wiki",
+      "homepage": "https://changedetection.io",
+      "source_code": "https://github.com/dgtlmoon/changedetection.io"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "changedetection-io",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private web page change monitor: watch pages on a schedule, see what changed and get notified, with watches and snapshots kept in your home. Set a password in Settings first.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps your changedetection.io settings, watches and page snapshots in the changedetection folder of your home, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=changedetection/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private changedetection.io instance; its settings, watches and snapshots are kept in the changedetection folder of your home between runs and enrollments. It has no password until you set one.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5000,
+          "service": "changedetection"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/changedetection",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
