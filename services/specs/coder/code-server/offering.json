@@ -1,0 +1,99 @@
+{
+  "capabilities": [
+    "browser-code-editor | Serves VS Code in a web browser, with a file explorer, extensions from Open VSX and an integrated terminal that runs shell commands inside the container."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official code-server image (VS Code in the browser, from Coder) in a separate container for each enrollment, with its own HTTPS address. You get the VS Code editor in a browser tab: a file explorer, the integrated terminal, extensions from the Open VSX registry, and a workspace folder that is kept in your home. The terminal is a real shell in the container, with git, curl and a passwordless sudo; the container is not privileged, and it is yours alone.\n\nEnroll in the base channel and keep or replace the generated password. Open `https://<instance>/`, enter the password, and the editor opens on the `project` folder. Anyone who knows the password has a full shell in the container, so treat it like a root password. You can run one instance at a time. See How to use this service for full setup, what is kept and what is lost.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Only the `project` folder is stored; settings, extensions and installed tools are lost when the instance stops. Labs adds no markup and receives no seller payout. See the code-server documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "VS Code in a browser tab, with an integrated terminal and git",
+      "Extensions from the Open VSX registry",
+      "Password sign-in, set by you at enrollment",
+      "Your project folder is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://coder.com/docs/code-server",
+      "homepage": "https://coder.com/docs/code-server",
+      "source_code": "https://github.com/coder/code-server"
+    },
+    "protocols": [
+      "http",
+      "websocket"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "code-server",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private VS Code in your browser, with a terminal and extensions; your project folder is kept in your home. Anyone with the password has a full shell in the container.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps the files of your project folder in the code-server folder of your home, so your code is still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=code-server/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private code-server instance on the small size; the project folder is kept in the code-server folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "code-server"
+        }
+      ],
+      "environment": {
+        "code-server": {
+          "PASSWORD": "{{ params.PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. code-server asks for it on its sign-in page, and anyone who has it gets a full shell in the container, so keep it private. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Sign-in password",
+              "type": "string"
+            }
+          },
+          "required": [
+            "PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "project": {
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/code-server/project",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}

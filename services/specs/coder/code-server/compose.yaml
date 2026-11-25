@@ -1,0 +1,25 @@
+# code-server (VS Code in the browser), one private instance per enrollment. The sign-in password is bound
+# from the channel's `environment` in offering.json (code-server reads it from $PASSWORD).
+services:
+  code-server:
+    image: ghcr.io/coder/code-server:4.146.0@sha256:fc708b18f6c613b5a9d00f1d1801e58376d3df9c5b5de77f5c02d67b711f99c9
+    # The image's entrypoint already passes `--bind-addr 0.0.0.0:8080 .`; the extra flags switch off telemetry
+    # and the GitHub update check, and the `.` is the working directory, the customer's project folder.
+    command:
+      - --disable-telemetry
+      - --disable-update-check
+    working_dir: /home/coder/project
+    ports:
+      - 8080
+    volumes:
+      # The customer's workspace. The channel decides whether this volume persists, in the code-server folder
+      # of the customer's home (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - project:/home/coder/project
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  project:
