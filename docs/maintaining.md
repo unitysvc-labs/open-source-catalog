@@ -27,7 +27,7 @@ Each application's keys and tokens are enrollment parameters with appropriate de
 1. The three validation workflows (data, format, channel binding) run first; nothing is uploaded unless they pass.
 2. It uploads the recipes whose expanded content changed (`specs upload --submit --state`, against the upload state of the last production upload, the comparison the merge upload uses). A failed upload fails the check.
 3. A new recipe gets its `service.json` committed to the pull request's branch.
-4. It waits (up to 40 minutes) for the platform's activation tests to decide each uploaded service. `active` or `review` passes; `rejected`, or no decision in time, fails. A change to a live service is a pending revision, and its status is the one read. The report (`recipe-test-report.md`) is in the step summary and kept as an artifact.
+4. It waits (`--wait-for-test 40m`) for the platform's activation tests on each uploaded service. `active` or `review` passes; `rejected`, an error, or no decision in time fails the check, with the platform's message in the report (`recipe-test-report.md`, in the step summary and kept as an artifact). The sidecars of what was uploaded are committed even when the check fails, so the next push targets the same services.
 
 - It does not publish. Visibility is set only by "Upload Data to Production" on merge. A recipe that passes is left in review or active; one that fails is left rejected.
 - The pull request's working copy of the upload state is not saved, so the merge upload still sends the recipes.

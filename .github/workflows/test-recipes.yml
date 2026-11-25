@@ -8,8 +8,8 @@ name: Test Recipes
 #   1. upload     only the recipes whose expanded content changed, using the upload state of the last
 #                 production upload (`specs upload --submit --state`), and fail if an upload fails
 #   2. sidecars   commit the `service.json` of a recipe that has none to the pull request's branch
-#   3. wait       until the platform's activation tests have decided each uploaded service: `active` or
-#                 `review` passes, `rejected` (or no decision in time) fails the pull request
+#   3. wait       `--wait-for-test`: until the platform's activation tests have decided each uploaded
+#                 service; `active` or `review` passes, `rejected`, an error or no decision in time fails
 #
 # It does not publish: nothing is made visible; "Upload Data to Production" still does that on merge.
 # A recipe that passes here is left in review or active, and one that fails is left rejected.
@@ -76,8 +76,8 @@ jobs:
           python-version: "3.12"
 
       - name: Install unitysvc-sellers
-        # 0.3.24 added `specs upload --state`.
-        run: pip install "unitysvc-sellers>=0.3.24"
+        # 0.3.26 added `specs upload --wait-for-test`.
+        run: pip install "unitysvc-sellers>=0.3.26"
 
       - name: Restore the production upload state
         working-directory: .
@@ -94,26 +94,18 @@ jobs:
             echo "::warning::No production upload state; every recipe will be uploaded and tested."
             rm -f .upload-state/state.json
           fi
-          [ -f .upload-state/state.json ] && cp .upload-state/state.json .upload-state/before.json || echo '{"services":{}}' > .upload-state/before.json
 
-      - name: Upload the recipes that changed
-        # The state file is a working copy and is not saved, so the merge upload still sends them.
-        run: usvc_seller specs upload --submit --state "$GITHUB_WORKSPACE/.upload-state/state.json"
-
-      - name: Find the recipes this run uploaded
-        id: changed
-        working-directory: .
+      - name: Upload the recipes that changed and wait for the platform's decision
+        id: upload
+        # The state file is a working copy and is not saved, so the merge upload still sends the recipes.
+        # The step does not fail the job here: the sidecars of what was uploaded are committed either way,
+        # so the next push targets the same services.
+        continue-on-error: true
         run: |
-          python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import json
-          def load(name):
-              try:
-                  return json.load(open(f".upload-state/{name}.json")).get("services", {})
-              except OSError:
-                  return {}
-          before, after = load("before"), load("state")
-          print("names=" + json.dumps(sorted(n for n, r in after.items() if r != before.get(n))))
-          PY
+          usvc_seller specs upload --submit \
+            --state "$GITHUB_WORKSPACE/.upload-state/state.json" \
+            --wait-for-test 40m \
+            --report "$GITHUB_WORKSPACE/recipe-test-report.md"
 
       - name: Commit the new sidecars to the pull request
         # Only for a branch of this repository: the upload wrote a service.json for each new recipe.
@@ -130,44 +122,11 @@ jobs:
             git push
           fi
 
-      - name: Wait for the platform's decision on each
-        env:
-          NAMES: ${{ steps.changed.outputs.names }}
-          WAIT_MINUTES: "40"
+      - name: Show the report
+        if: always()
+        working-directory: .
         run: |
-          set -uo pipefail
-          report=../recipe-test-report.md
-          { echo "## Recipe checks"; echo; } > "$report"
-          if [ "$(jq length <<<"$NAMES")" = 0 ]; then
-            echo "No recipe changed since the last production upload; nothing to test." | tee -a "$report"
-            exit 0
-          fi
-          deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
-          failed=0
-          for name in $(jq -r '.[]' <<<"$NAMES"); do
-            echo "::group::$name"
-            while :; do
-              row="$(usvc_seller services list "$name" --format json | jq -c --arg n "$name" '[.[] | select(.name == $n)][0]')"
-              # A change to a live service is a pending revision; its status is the one that matters.
-              status="$(jq -r 'if .pending_revision_status then .pending_revision_status else .status end' <<<"$row")"
-              echo "$name: $status"
-              case "$status" in active | review | rejected) break ;; esac
-              if [ "$(date +%s)" -ge "$deadline" ]; then status="no decision in $WAIT_MINUTES minutes"; break; fi
-              sleep 30
-            done
-            case "$status" in
-              active | review)
-                echo "- ✅ \`$name\`: $status" >> "$report" ;;
-              *)
-                failed=1
-                echo "- ❌ \`$name\`: $status. $(jq -r '.status_message // ""' <<<"$row")" >> "$report"
-                usvc_seller services show-test-results "$name" --format json \
-                  | jq -r '.runs[] | select(.status != "success") | "  - \(.document_title) on \(.channel_name): \(.status), exit \(.exit_code), \(.error // "")"' >> "$report" ;;
-            esac
-            echo "::endgroup::"
-          done
-          cat "$report" >> "$GITHUB_STEP_SUMMARY"
-          exit "$failed"
+          if [ -f recipe-test-report.md ]; then cat recipe-test-report.md >> "$GITHUB_STEP_SUMMARY"; fi
 
       - name: Keep the report
         if: always()
@@ -176,6 +135,12 @@ jobs:
           name: recipe-test-report
           path: recipe-test-report.md
           if-no-files-found: ignore
+
+      - name: Fail if the upload or the platform's tests failed
+        if: steps.upload.outcome == 'failure'
+        run: |
+          echo "::error::The upload failed or the platform did not accept a recipe; see the upload step and the report."
+          exit 1
 
   fork:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
