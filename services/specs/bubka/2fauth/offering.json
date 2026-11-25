@@ -1,0 +1,114 @@
+{
+  "capabilities": [
+    "otp-authenticator | Stores two-factor accounts and generates their one-time codes (TOTP, HOTP and Steam Guard) in a web interface and a REST API; secrets can be encrypted in the database."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official 2FAuth image in a separate container for each enrollment, with its own HTTPS address. 2FAuth is a self-hosted manager for two-factor authentication accounts: add an account by scanning a QR code, pasting an otpauth link or typing the secret, organize accounts in groups, and read the current one-time code in a web interface that works on a phone or a desktop. It supports TOTP, HOTP and Steam Guard codes, import and export, several users, security-key sign-in and a REST API. Everything is kept in the instance's own SQLite database, stored in the `2fauth` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel. The form generates an encryption key (`APP_KEY`); save it, because the encrypted secrets can be read only with the same key, and enter it again if you enroll again. Open the instance address and register: the first account becomes the administrator, and registration stays open for anyone who knows the address until you turn it off in the administration settings. Turn on encryption of stored secrets there too; it is off by default. See How to use this service for full setup, what protects your secrets and what does not.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream 2FAuth documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "TOTP, HOTP and Steam Guard codes, with groups and search",
+      "Add accounts from a QR code, an otpauth link or a form",
+      "Optional encryption of stored secrets with your own key",
+      "Several user accounts, with registration you can turn off",
+      "Import, export and a REST API",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.2fauth.app/",
+      "homepage": "https://2fauth.app",
+      "source_code": "https://github.com/Bubka/2FAuth"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "2fauth",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted manager for two-factor authentication accounts: generate TOTP and HOTP codes in a web interface, with data kept in your home and optional encryption of the secrets.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps 2FAuth's database, signing keys and icons in the 2fauth folder of your home, so your accounts and users are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=2fauth/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private 2FAuth instance; its database and keys are kept in the 2fauth folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8000,
+          "service": "2fauth"
+        }
+      ],
+      "environment": {
+        "2fauth": {
+          "APP_KEY": "{{ params.APP_KEY }}",
+          "APP_URL": "{{ params.APP_URL }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "APP_KEY": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "The encryption key of this 2FAuth instance: exactly 32 characters (letters, digits, - and _), or a Laravel key of the form base64:<44 characters>. Generated for this enrollment; keep it or enter your own. It signs sessions and sign-in tokens and encrypts stored secrets when encryption is turned on. It must stay the same for as long as you use the data: if it changes, everyone is signed out and, when encryption is on, the stored secrets cannot be read. Because your data lives in your home and outlasts the enrollment, SAVE THIS KEY (it is also shown in the enrollment's instance details) and enter the same value when you enroll again; a new enrollment otherwise generates a different key.",
+              "format": "password",
+              "minLength": 32,
+              "pattern": "^([A-Za-z0-9_-]{32}|base64:[A-Za-z0-9+/]{43}=)$",
+              "title": "Encryption key (APP_KEY)",
+              "type": "string"
+            },
+            "APP_URL": {
+              "default": "https://instance.invalid",
+              "description": "The address of this instance, for example https://abc123.example.app (shown in the enrollment's instance details). The sign-in and the code generator work without it; 2FAuth uses it to build links and for security-key (WebAuthn) sign-in and single sign-on, which do not work until it matches the address you use. Replace the placeholder with your instance address after the instance is created, then save; changing it restarts the instance and keeps your data. The placeholder https://instance.invalid is not a real address, because the platform needs a value here.",
+              "title": "Instance address (APP_URL)",
+              "type": "string"
+            }
+          },
+          "required": [
+            "APP_KEY",
+            "APP_URL"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "APP_KEY": "local-test-appkey-32chars-abcdef",
+          "APP_URL": "https://instance.invalid"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/2fauth",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
