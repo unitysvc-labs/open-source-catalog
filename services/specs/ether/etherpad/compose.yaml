@@ -1,0 +1,23 @@
+# Etherpad, one private instance per enrollment. The passwords and secrets are bound from the channel's
+# `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  etherpad:
+    image: etherpad/etherpad:3.3.22@sha256:a6c5adbdf315beac5062e01059fd3021f2f790bfaf1669372a72bb300527b323
+    ports:
+      - 9001
+    environment:
+      # Without this, Etherpad writes a "DirtyDB is used" warning into the text of every new pad.
+      SUPPRESS_ERRORS_IN_PAD_TEXT: "true"
+    volumes:
+      # The default `dirty` database (dirty.db) and Etherpad's plugin list. The channel decides whether this
+      # volume persists, in the etherpad folder of the customer's home (offering.json, `volumes`); under plain
+      # Docker it is an ordinary named volume. The image runs as uid 5001.
+      - data:/opt/etherpad-lite/var
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:9001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+volumes:
+  data:
