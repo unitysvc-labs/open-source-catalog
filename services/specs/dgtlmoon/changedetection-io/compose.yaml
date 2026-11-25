@@ -1,0 +1,20 @@
+# changedetection.io, one private instance per enrollment. The application keeps all its state (settings,
+# watches and page snapshots) as files in /datastore.
+services:
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io:0.70.4@sha256:b6aae2572a0bf1a671b1b202365ddcfe16a31fa8a60be89df606705731b55f8b
+    ports:
+      - 5000
+    volumes:
+      # The channel decides whether this volume persists, in the changedetection folder of the customer's home
+      # (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/datastore
+    healthcheck:
+      # The image has no curl or wget, but it has Python.
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:
