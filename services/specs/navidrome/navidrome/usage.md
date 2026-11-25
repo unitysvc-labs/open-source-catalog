@@ -34,7 +34,7 @@ Navidrome checks every request itself: the web interface and the Subsonic API bo
 
 ## Privacy
 
-Upstream's anonymous usage statistics (`ND_ENABLEINSIGHTSCOLLECTOR`) are switched off in this recipe. The enrollment setting **Allow external lookups** (`ND_ENABLEEXTERNALSERVICES`) is on by default, as in Navidrome: it looks up artist pictures and biographies at Deezer, which tells that service the artist names in your library, and loads a login background image. Set it to `false` to switch off all external lookups. With the setting off, a local check made no such requests. Last.fm and ListenBrainz are only used if a user configures them.
+Upstream's anonymous usage statistics (`ND_ENABLEINSIGHTSCOLLECTOR`) are switched off in this recipe. The enrollment setting **Allow external lookups** (`ND_ENABLEEXTERNALSERVICES`) is on by default, as in Navidrome: it looks up artist pictures and biographies at Deezer, which tells that service the artist names in your library, and loads a login background image. Set it to `false` to switch off all external lookups. With the setting off, a local check logged no such lookups. Last.fm and ListenBrainz are only used if a user configures them.
 
 ## What is kept, and what is lost
 
