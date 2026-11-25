@@ -1,0 +1,127 @@
+{
+  "capabilities": [
+    "observability-dashboards | Builds, stores and shares dashboards whose panels query connected data sources, through a web interface and an HTTP API.",
+    "alert-rules | Evaluates alert rules against data sources and sends notifications to contact points such as email or webhooks."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Grafana (open-source edition) image in a separate container for each enrollment, with its own HTTPS address. Grafana is a dashboard and alerting tool: you connect data sources (Prometheus, Loki, SQL databases, cloud services, the built-in TestData source and many others), build dashboards and alert rules on top of them, and share them through the web interface or the HTTP API. This service does not include any metrics or logs; you bring the data sources. Grafana's database (SQLite), your dashboards, data source settings, users and installed plugins are kept in the `grafana` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, add a data source and build a dashboard. Public sign-up and anonymous access are switched off. You can run one Grafana instance at a time. Because the instance's address is not known until it exists, the optional Public address setting can be filled in afterwards. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. Grafana is released under AGPL-3.0; see the upstream Grafana documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Dashboards with many panel types, templating and annotations",
+      "Data sources for Prometheus, Loki, SQL databases, cloud services and more, with a built-in TestData source for trying it out",
+      "Alert rules with contact points and notification policies",
+      "A full HTTP API for dashboards, data sources and users",
+      "Your dashboards and settings are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://grafana.com/docs/grafana/latest/",
+      "homepage": "https://grafana.com",
+      "source_code": "https://github.com/grafana/grafana"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "grafana",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private Grafana for dashboards and alerts: connect your own data sources, build dashboards and alert rules, and keep them in your home across stops and re-enrollment.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Grafana's database, plugins and settings in the grafana folder of your home, so your dashboards, data sources and users are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=grafana/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Grafana server; its dashboards, data sources and users are kept in the grafana folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "grafana"
+        }
+      ],
+      "environment": {
+        "grafana": {
+          "GF_SECURITY_ADMIN_PASSWORD": "{{ params.GF_SECURITY_ADMIN_PASSWORD }}",
+          "GF_SECURITY_ADMIN_USER": "{{ params.GF_SECURITY_ADMIN_USER }}",
+          "GF_SERVER_ROOT_URL": "{{ params.GF_SERVER_ROOT_URL }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "GF_SECURITY_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Grafana first creates its database; if the database already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in Grafana's own profile settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "GF_SECURITY_ADMIN_USER": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. It is used only when Grafana first creates its database: your data lives in your home, so if the database already exists this value is ignored and the existing users still apply.",
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@.+_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "GF_SERVER_ROOT_URL": {
+              "default": "http://localhost:3000/",
+              "description": "The address people use to open this Grafana, for example https://<enrollment-code>.<apps-domain>/ (shown in the instance details once it exists, so leave the default at first and edit it afterwards). Grafana puts it into links in alert notifications, emails and sharing, and uses it for single sign-on callbacks. Signing in and the dashboards work with the default; those links and callbacks point at the wrong place until you set it. A change takes effect when the instance restarts.",
+              "format": "uri",
+              "minLength": 8,
+              "title": "Public address",
+              "type": "string"
+            }
+          },
+          "required": [
+            "GF_SECURITY_ADMIN_USER",
+            "GF_SECURITY_ADMIN_PASSWORD",
+            "GF_SERVER_ROOT_URL"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "GF_SECURITY_ADMIN_PASSWORD": "local-test-password-only",
+          "GF_SECURITY_ADMIN_USER": "admin",
+          "GF_SERVER_ROOT_URL": "http://localhost:3000/"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 0,
+          "mode": "rw",
+          "source": "{{ home.path }}/grafana",
+          "type": "persist",
+          "uid": 472
+        }
+      }
+    }
+  }
+}

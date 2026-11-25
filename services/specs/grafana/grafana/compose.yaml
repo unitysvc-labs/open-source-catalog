@@ -1,0 +1,31 @@
+# Grafana (open-source edition), one private instance per enrollment. The administrator, its password and the
+# public address are bound from the channel's `environment` in offering.json; the values below are fixed settings.
+services:
+  grafana:
+    image: grafana/grafana:13.3.2@sha256:81556409ba48b2b922e0adb69a2511337d8ba7578f11962eefa6149a2d815101
+    ports:
+      - 3000
+    environment:
+      # Anyone who can reach the address could otherwise create an account, or browse without signing in.
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # No usage statistics, update checks or Gravatar lookups from the instance.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      # The image would otherwise download about 240 MB of newer plugins from grafana.com into the data folder on
+      # first start. The plugins built into the pinned image are enough; more can be installed from the web interface.
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    volumes:
+      # The SQLite database (grafana.db) and any plugins you install. The channel decides whether this volume
+      # persists, in the grafana folder of the customer's home (offering.json, `volumes`); under plain Docker
+      # it is an ordinary named volume. The image runs as uid 472.
+      - data:/var/lib/grafana
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+volumes:
+  data:
