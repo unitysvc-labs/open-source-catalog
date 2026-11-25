@@ -35,6 +35,7 @@ Each application's keys and tokens are enrollment parameters with appropriate de
 - Seller credentials are needed, so a fork's pull request is not tested automatically. A maintainer runs **Test Recipes** by hand on the reviewed commit; that run commits no sidecar.
 - Runs of one pull request are serialized, so a push waits for the run before it; different pull requests run side by side, since each uploads its own recipes.
 - A pull request closed without merging leaves its services in review or rejected; nothing removes them yet.
+- Production uploads run one at a time (a concurrency group). Each run restores the newest saved upload state and saves its own; overlapping runs would each save a state that lacks what the others sent, and the last to finish would win. A run sends everything that differs from the state, so an older queued run that GitHub replaces with a newer one loses nothing.
 
 ## Repository history
 
