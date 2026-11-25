@@ -22,7 +22,7 @@ Each application's keys and tokens are enrollment parameters with appropriate de
 
 ## Testing a pull request on the platform
 
-`.github/workflows/test-recipes.yml` runs for every pull request from a branch of this repository. It validates the recipes, uploads to production the ones whose expanded content changed (`specs upload --state`, against the upload state of the last production upload, so the comparison is the one the merge upload uses), and runs the platform's own check on each with `services run-tests`: the platform starts the recipe's container for the service's ops enrollment on a cluster that takes `test` work, fetches its entries over HTTPS and stops it. An image that cannot be pulled, a container that does not start, or an entry that does not answer fails the check.
+`.github/workflows/test-recipes.yml` runs for every pull request from a branch of this repository. It uploads to production the ones whose expanded content changed (`specs upload --state`, against the upload state of the last production upload, so the comparison is the one the merge upload uses), and runs the platform's own check on each with `services run-tests`: the platform starts the recipe's container for the service's ops enrollment on a cluster that takes `test` work, fetches its entries over HTTPS and stops it. An image that cannot be pulled, a container that does not start, or an entry that does not answer fails the check.
 
 - The recipes are uploaded, not published: they are not submitted for review or made visible, and the pull request's working copy of the state is not saved, so the merge upload still sends them. A recipe that already exists gets a pending revision.
 - The ops enrollment stays active; only the instance is stopped after the check.

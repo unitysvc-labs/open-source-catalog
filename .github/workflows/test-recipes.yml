@@ -1,11 +1,11 @@
 name: Test Recipes
 
-# Proves a pull request's recipes run on the platform before they are merged:
+# Proves a pull request's recipes run on the platform before they are merged. Validation is the job
+# of "Validate Data", "Format Check" and "Check Channel Binding", which run on every pull request.
 #
-#   1. validate   the recipes (the same schema check the other workflows run)
-#   2. upload     only the recipes whose expanded content changed, using the upload state of the last
+#   1. upload     only the recipes whose expanded content changed, using the upload state of the last
 #                 production upload (`specs upload --state`, the same comparison the merge upload uses)
-#   3. test       each uploaded recipe through the platform's own check: it starts the recipe's
+#   2. test       each uploaded recipe through the platform's own check: it starts the recipe's
 #                 container on a cluster that takes `test` work, fetches its entries over HTTPS and
 #                 stops it (`services run-tests`). A recipe whose image cannot be pulled or whose
 #                 container does not start and answer fails here.
@@ -59,9 +59,6 @@ jobs:
       - name: Install unitysvc-sellers
         # 0.3.24 added `specs upload --state`.
         run: pip install "unitysvc-sellers>=0.3.24"
-
-      - name: Validate
-        run: usvc_seller specs validate
 
       - name: Restore the production upload state
         working-directory: .
