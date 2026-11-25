@@ -2,12 +2,17 @@ name: Upload Data to Production
 
 # Thin caller — logic lives in the shared reusable workflow so a fix lands
 # once for all unitysvc-services-* repos. See unitysvc-labs/.github.
-# Production uploads run manually or after a pull request is merged.
+# Production uploads run manually or on a push to main that changes services/.
 
 on:
-  pull_request:
-    types: [closed]
+  # A push to main, not the pull request's closed event: for a pull_request event GitHub reads the PR's head
+  # commit, which for a recipe pull request is the bot's sidecar commit ("[skip ci]"), so the upload never ran.
+  # The push event reads the squash commit that landed on main.
+  push:
     branches: [main]
+    paths:
+      - "services/**"
+      - ".github/workflows/upload-to-production.yml"
   workflow_dispatch:
     inputs:
       full:
@@ -21,19 +26,16 @@ on:
 # overlap (several pull requests merged together) each save a state that lacks what the others sent, and the last
 # to finish wins: ten merges left a state with 6 of 16 services, and every pull request check then re-tested the
 # missing ones. Queued, a run sees the state the one before it saved. A run sends everything that differs from the
-# state, not only its own pull request's recipes, so when GitHub drops an older queued run for a newer one nothing
-# is lost. A pull request closed without merging gets a group of its own: its job is skipped, and it must not
-# take the place of a queued upload.
+# state, not only one commit's recipes, so when GitHub drops an older queued run for a newer one nothing is lost.
 concurrency:
-  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true) && 'upload-production' || format('not-an-upload-{0}', github.run_id) }}
+  group: upload-production
   cancel-in-progress: false
 
 jobs:
   upload:
-    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     uses: unitysvc-labs/.github/.github/workflows/seller-upload-production.yml@main
     with:
-      # Only a manual run can ask for a full resync; a merged pull request sends what changed.
+      # Only a manual run can ask for a full resync; a push to main sends what changed.
       full: ${{ github.event_name == 'workflow_dispatch' && inputs.full }}
     secrets: inherit
     permissions:
