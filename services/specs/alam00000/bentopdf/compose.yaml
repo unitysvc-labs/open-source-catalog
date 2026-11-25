@@ -1,0 +1,14 @@
+# BentoPDF self-hosted build, one private instance per enrollment. It is a static website served by nginx
+# (port 8080, uid 101): it takes no settings and keeps no data on the server, so there are no volumes.
+services:
+  bentopdf:
+    image: ghcr.io/alam00000/bentopdf-simple:v2.8.12@sha256:f96da8c4a347880b891d66aa2ebfa6b63f76277dafcfcdfa40c8e6b92c59ef44
+    ports:
+      - 8080
+    healthcheck:
+      # The image has no curl and no `wget` on PATH; BusyBox's wget applet is there.
+      test: [CMD, busybox, wget, -q, -O, /dev/null, "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
