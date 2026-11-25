@@ -1,0 +1,113 @@
+{
+  "capabilities": [
+    "push-notifications | Receives messages over a REST API and pushes them in real time to the web interface and to client apps subscribed to the server."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Gotify server image in a separate container for each enrollment, with its own HTTPS address. Gotify is a self-hosted notification server: create an application to get a token, send messages to it with a plain HTTP request, and read them live in the web interface or in the Gotify apps. It has users, applications and clients, message priorities, and a WebSocket stream. Everything is kept in the instance's own SQLite database, stored in the `gotify` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, create an application, and send a message with its token. Public self-registration is switched off. You can run one Gotify instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Gotify documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Messages with titles, priorities and markdown, sent over a REST API",
+      "Applications with their own tokens, and clients that read the stream",
+      "Live web interface and a WebSocket stream",
+      "Apps for Android and a command-line client",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://gotify.net/docs/",
+      "homepage": "https://gotify.net",
+      "source_code": "https://github.com/gotify/server"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "gotify",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted push-notification server: send messages over a REST API and read them in a web interface or the Gotify apps, with data kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Gotify's database and uploaded images in the gotify folder of your home, so your messages, applications and users are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=gotify/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Gotify server; its messages, applications and users are kept in the gotify folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "gotify"
+        }
+      ],
+      "environment": {
+        "gotify": {
+          "GOTIFY_DEFAULTUSER_NAME": "{{ params.GOTIFY_DEFAULTUSER_NAME }}",
+          "GOTIFY_DEFAULTUSER_PASS": "{{ params.GOTIFY_DEFAULTUSER_PASS }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "GOTIFY_DEFAULTUSER_NAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. It is used only when Gotify first creates its database: your data lives in your home, so if the database already exists (an earlier enrollment, or a later restart) this value is ignored and the existing users still apply.",
+              "maxLength": 150,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@.+_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "GOTIFY_DEFAULTUSER_PASS": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Gotify first creates its database; if the database already exists this value is ignored and the existing password still applies. Change the password in Gotify's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            }
+          },
+          "required": [
+            "GOTIFY_DEFAULTUSER_NAME",
+            "GOTIFY_DEFAULTUSER_PASS"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "GOTIFY_DEFAULTUSER_NAME": "admin",
+          "GOTIFY_DEFAULTUSER_PASS": "local-test-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/gotify",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}

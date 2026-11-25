@@ -1,0 +1,23 @@
+# Gotify, one private instance per enrollment. The administrator and its password are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  gotify:
+    image: gotify/server:3.1.1@sha256:44fc5bbd1c0618878e33073d38c2c13126b48f245c3fe12236b1da48eb203b86
+    ports:
+      - 80
+    environment:
+      # Anyone who can reach the address could otherwise register an account.
+      GOTIFY_REGISTRATION: "false"
+    volumes:
+      # The database (gotify.db) and uploaded application images. The channel decides whether this volume
+      # persists, in the gotify folder of the customer's home (offering.json, `volumes`); under plain Docker
+      # it is an ordinary named volume.
+      - data:/app/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
