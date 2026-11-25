@@ -1,0 +1,11 @@
+{
+  "display_name": "2FAuth Two-Factor Authentication Manager",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.2fauth.volumes[0]: volume 'data' at /2fauth is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.2fauth.user: `user` is accepted but the agent's manifest has no field for it yet; it is not applied"
+  ],
+  "name": "bubka/2fauth",
+  "service_id": "dec638af-c5e2-44d6-8523-952bd9b05e38",
+  "status": "created",
+  "time_created": "2026-11-25T20:41:30.378777Z"
+}
