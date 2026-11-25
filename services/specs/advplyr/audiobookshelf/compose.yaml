@@ -1,0 +1,28 @@
+# Audiobookshelf, one private instance per enrollment. It needs no environment: the first account created
+# through the web page becomes the root user (see usage.md). The image runs as root and has no curl or wget,
+# so the healthcheck uses the node binary that is in the image.
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:2.38.0@sha256:60064c23f32fd9099fd39e82c5132c51701d1221135bbca04cd099b589e1edc3
+    ports:
+      - 80
+    volumes:
+      # The SQLite database (users, libraries, listening progress) and the generated metadata (covers, backups,
+      # logs). The channel decides whether these volumes persist, in the audiobookshelf folder of the customer's
+      # home (offering.json, `volumes`); under plain Docker they are ordinary named volumes.
+      - config:/config
+      - metadata:/metadata
+      # The media folders. They are NOT persisted by the channel: they are temporary, small scratch space.
+      - audiobooks:/audiobooks
+      - podcasts:/podcasts
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:80/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  config:
+  metadata:
+  audiobooks:
+  podcasts:
