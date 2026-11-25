@@ -1,0 +1,14 @@
+# Excalidraw official image, one private instance per enrollment. It is a static website served by nginx
+# (port 80): it takes no settings and keeps no data on the server, so there are no volumes. The image
+# publishes only the `latest` tag (built 2026-05-06), so it is pinned by its multi-arch index digest.
+services:
+  excalidraw:
+    image: excalidraw/excalidraw@sha256:f7ee194addd607bf831d2af0f0a34463dd4225e426cf35199ef0b12a803398e9
+    ports:
+      - 80
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

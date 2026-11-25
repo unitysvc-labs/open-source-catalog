@@ -1,0 +1,59 @@
+{
+  "capabilities": [
+    "whiteboard | Draws hand-drawn style diagrams and sketches in the visitor's browser and exports them as PNG, SVG or an .excalidraw file; single user, drawings are kept in the browser."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Excalidraw image in a separate container for each enrollment, with its own HTTPS address. Excalidraw is a virtual whiteboard for sketching hand-drawn style diagrams: shapes, arrows, text, freehand drawing and images, a shape library, dark mode, and export to PNG, SVG or an .excalidraw file. The container only serves the web page; the drawing happens entirely in the visitor's browser, and the server keeps no data, so the service stores nothing and asks for no access to your home.\n\nEnroll in the base channel, which has no settings, and open the instance address in a browser. There is no sign-in: anyone who knows the address can open the page, which is harmless because the page holds no data, but keep the address private if you do not want strangers using the instance you pay for. This is a single-user whiteboard. The official image is built to use excalidraw.com's hosted services for live collaboration, shareable links, the public library site and AI features, and the instance does not run any of them, so do not count on those features. Your drawings stay in the browser you used, not on the instance: clearing the browser's site data deletes them, so export what you want to keep. See How to use this service for details and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream Excalidraw documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Hand-drawn style shapes, arrows, text and freehand drawing",
+      "Export to PNG, SVG or an .excalidraw file, and import them again",
+      "Dark mode and a shape library kept in the browser",
+      "Installable as a web app and usable offline after the first load",
+      "No settings, no sign-in and no data kept on the server"
+    ],
+    "links": {
+      "documentation": "https://docs.excalidraw.com",
+      "homepage": "https://excalidraw.com",
+      "source_code": "https://github.com/excalidraw/excalidraw"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "excalidraw",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private Excalidraw whiteboard for hand-drawn style diagrams, exported as PNG, SVG or file. Single user; drawings live in your browser. No settings, no sign-in, no live collaboration.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private Excalidraw web page. It has no settings, no sign-in and keeps no data on the server.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "excalidraw"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}
