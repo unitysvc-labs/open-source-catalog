@@ -1,0 +1,123 @@
+{
+  "capabilities": [
+    "music-streaming | Streams a music library you provide to a web player and to Subsonic-compatible apps, with on-the-fly transcoding.",
+    "subsonic-api | Serves the Subsonic and OpenSubsonic API so existing mobile and desktop music apps can connect with a user name and password."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Navidrome server image in a separate container for each enrollment, with its own HTTPS address. Navidrome is a self-hosted music streaming server: it scans a folder of audio files, builds a library of artists, albums and playlists, and plays it in a web interface or in any Subsonic-compatible app, transcoding on the fly when needed. It has multiple users, favourites, ratings, shared links and an optional scrobbling to Last.fm or ListenBrainz.\n\nYour music library comes from your own UnitySVC home: put the files in the `navidrome/music` folder of your home, and the instance copies them in each time it starts. Navidrome's database (users, playlists, play counts) is kept in `navidrome/data`. Because the platform copies whole files, the library has to be small enough to copy at every start and to fit in the instance's temporary disk (1 GiB on the `nano` size) together with the database; files over 1 GiB are not stored. This is a small personal library, not a large collection. Enroll in the base channel, open the address at once and create the first account: it becomes the administrator. You can run one Navidrome instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Navidrome documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Web player and Subsonic/OpenSubsonic API for many mobile and desktop apps",
+      "Reads MP3, FLAC, Ogg, M4A and other common formats, with on-the-fly transcoding",
+      "Multiple users, playlists, favourites, ratings and shared links",
+      "The first account you create becomes the administrator",
+      "Your library and database are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://www.navidrome.org/docs/",
+      "homepage": "https://www.navidrome.org",
+      "source_code": "https://github.com/navidrome/navidrome"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "navidrome",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted music streaming server: play a small library kept in your home from a web player or Subsonic-compatible apps, with your database kept between runs.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Reads your music from navidrome/music in your home and keeps Navidrome's database (users, playlists, play counts) in navidrome/data, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=navidrome/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Navidrome server; it plays the music in the navidrome/music folder of your home and keeps its database in navidrome/data between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 4533,
+          "service": "navidrome"
+        }
+      ],
+      "environment": {
+        "navidrome": {
+          "ND_ENABLEEXTERNALSERVICES": "{{ params.ND_ENABLEEXTERNALSERVICES }}",
+          "ND_SESSIONTIMEOUT": "{{ params.ND_SESSIONTIMEOUT }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ND_ENABLEEXTERNALSERVICES": {
+              "default": "true",
+              "description": "Navidrome's default is true: it asks Deezer (and Last.fm or ListenBrainz, if you configure them) for artist pictures and biographies, which tells them the artist names in your library, and it loads a random login background image. Set to false to switch off all of these external lookups.",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "title": "Allow external lookups",
+              "type": "string"
+            },
+            "ND_SESSIONTIMEOUT": {
+              "default": "48h",
+              "description": "How long an idle web session stays signed in, for example 24h, 48h or 168h (one week). Navidrome's default is 48h.",
+              "pattern": "^[0-9]+(h|m)$",
+              "title": "Idle session timeout",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ND_ENABLEEXTERNALSERVICES",
+            "ND_SESSIONTIMEOUT"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ND_ENABLEEXTERNALSERVICES": "false",
+          "ND_SESSIONTIMEOUT": "48h"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/navidrome/data",
+          "type": "persist",
+          "uid": 1000
+        },
+        "music": {
+          "gid": 1000,
+          "mode": "ro",
+          "source": "{{ home.path }}/navidrome/music",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}

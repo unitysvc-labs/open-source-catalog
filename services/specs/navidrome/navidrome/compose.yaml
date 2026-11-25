@@ -1,0 +1,30 @@
+# Navidrome, one private instance per enrollment. The session timeout and the external-lookup switch are bound
+# from the channel's `environment` in offering.json; the values below are the instance's fixed settings. The first
+# account created at the first visit becomes the administrator (see usage.md), so there is no password to bind.
+services:
+  navidrome:
+    image: navidrome/navidrome:0.64.2@sha256:38dc2727bfcfd5ede290f8ada114fc90368146f265ae4701ddddbcbe2a44ee52
+    # The image runs as root unless told otherwise; upstream's own Docker guide sets a non-root user.
+    user: "1000:1000"
+    ports:
+      - 4533
+    environment:
+      # Upstream's documented switch for its anonymous usage statistics (default true).
+      ND_ENABLEINSIGHTSCOLLECTOR: "false"
+      # The transcoding and image caches are rebuilt on demand: keep them out of the persisted data folder.
+      ND_CACHEFOLDER: /tmp/navidrome-cache
+    volumes:
+      # The SQLite database. The channel decides whether this volume persists, in the navidrome folder of the
+      # customer's home (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/data
+      # The music library, read only. The channel restores it from the customer's home before Navidrome starts.
+      - music:/music:ro
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:4533/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
+  music:
