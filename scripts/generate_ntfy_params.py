@@ -5,7 +5,9 @@ Every ntfy environment variable the container accepts is an enrollment parameter
 service owns (EXCLUDED: where ntfy listens, its TLS, its storage files and database, its cluster mode,
 and the authentication that NTFY_ACCESS_TOKEN provisions). Each parameter's default is the value ntfy
 itself defaults to, so an enrollment that changes nothing runs the stock configuration, and every
-variable is always set (the channel environment cannot omit one).
+variable is always set (the channel environment cannot omit one). An option that ntfy leaves unset by
+default is not a parameter at all: the platform treats an empty value as missing and will not start the
+instance, and a placeholder would switch the feature on.
 
 Usage (rewrites the `params` and `environment` of the base channel in offering.json):
 
@@ -112,24 +114,33 @@ def default_of(row: dict[str, str]) -> str:
     return value
 
 
-def build(rows: list[dict[str, str]]) -> tuple[dict, dict]:
+def build(rows: list[dict[str, str]]) -> tuple[dict, dict, list[str]]:
     properties: dict[str, dict] = {}
     environment: dict[str, str] = {}
+    skipped: list[str] = []
     for row in rows:
         env = row["env"]
         if env in EXCLUDED:
             continue
+        default = default_of(row)
+        if default == "":
+            # The platform treats an empty parameter value as missing (`missing_parameter`) and refuses
+            # to start the instance, and the channel environment cannot leave a variable out. So an option
+            # whose ntfy default is unset (SMTP sender, Stripe, Twilio, web push, a base URL, ...) cannot be
+            # a parameter: it needs a value to mean anything, and a placeholder would switch the feature on.
+            skipped.append(env)
+            continue
         prop: dict = {
             "type": "string",
             "title": row["option"],
-            "default": default_of(row),
+            "default": default,
             "description": f"{row['description']} (NTFY option {row['option']}; format: {row['format']}).",
         }
         if "bool" in row["format"].lower():
             prop["enum"] = ["true", "false"]
         properties[env] = prop
         environment[env] = "{{ params." + env + " }}"
-    return properties, environment
+    return properties, environment, skipped
 
 
 def main() -> None:
@@ -142,7 +153,7 @@ def main() -> None:
         if args.docs
         else urllib.request.urlopen(DOCS_URL.format(version=args.version)).read().decode()  # noqa: S310
     )
-    properties, environment = build(parse(markdown))
+    properties, environment, skipped = build(parse(markdown))
 
     offering = json.loads(OFFERING.read_text())
     channel = offering["upstream_access_config"]["base"]
@@ -157,7 +168,7 @@ def main() -> None:
     }
     channel["params"]["testing_defaults"] = defaults
     OFFERING.write_text(json.dumps(offering, indent=2, ensure_ascii=False) + "\n")
-    print(f"{len(properties)} parameters, {len(EXCLUDED)} variables owned by the service")
+    print(f"{len(properties)} parameters, {len(EXCLUDED)} variables owned by the service, {len(skipped)} with no default left out")
 
 
 if __name__ == "__main__":

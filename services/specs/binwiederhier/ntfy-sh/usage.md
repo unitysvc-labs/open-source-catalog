@@ -20,11 +20,11 @@ All ntfy publishing features work: priorities, tags, click actions, scheduled de
 
 ## Server settings
 
-Every ntfy server setting is an enrollment parameter, named after its environment variable (`NTFY_CACHE_DURATION`, `NTFY_MESSAGE_SIZE_LIMIT`, `NTFY_VISITOR_REQUEST_LIMIT_BURST`, `NTFY_BASE_URL`, `NTFY_UPSTREAM_BASE_URL`, and so on), with ntfy's own default, so an enrollment that changes nothing runs the stock configuration. The [ntfy configuration reference](https://docs.ntfy.sh/config/) describes each one. Changing a parameter restarts the instance, and a value ntfy rejects stops it from starting, so change one setting at a time.
+Every ntfy server setting that has a default is an enrollment parameter, named after its environment variable (`NTFY_CACHE_DURATION`, `NTFY_MESSAGE_SIZE_LIMIT`, `NTFY_VISITOR_REQUEST_LIMIT_BURST`, and so on), with ntfy's own default, so an enrollment that changes nothing runs the stock configuration. The [ntfy configuration reference](https://docs.ntfy.sh/config/) describes each one. Changing a parameter restarts the instance, and a value ntfy rejects stops it from starting, so change one setting at a time.
 
 What you cannot change is what the service owns: the listeners and TLS (the platform serves HTTPS on port 443), the storage files and database options (storage is temporary), the cluster options, and the authentication (anonymous access is denied and the access token is the credential).
 
-Some settings need the instance's own address, which you learn after enrolling: set `NTFY_BASE_URL` to `https://<enrollment-code>.<apps-domain>` if you use attachments, web push, or `NTFY_UPSTREAM_BASE_URL` (which also lets iOS apps get instant notifications through ntfy.sh).
+Settings that ntfy leaves unset by default are not offered, because the platform cannot start an instance with an empty parameter: the base URL (and with it attachments and web push), email and SMS delivery, Stripe billing and the upstream server for instant iOS notifications.
 
 ## Limits and storage
 
