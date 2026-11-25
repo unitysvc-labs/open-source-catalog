@@ -1,0 +1,78 @@
+{
+  "capabilities": [
+    "feed-generation | Turns the content of about two thousand sites and services into RSS, Atom or JSON feeds through routes requested with an HTTP GET; routes that need a browser are not available."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official RSSHub image in a separate container for each enrollment, with its own HTTPS address. RSSHub is a Node.js application that makes feeds for sites that publish none, or only poor ones. It has routes for about two thousand sites and services (social networks, video and news sites, code hosts, forums); you build a feed address from a route such as `/github/issue/<user>/<repo>` and subscribe to it in any feed reader, in RSS (the default), Atom (`format=atom`) or JSON Feed (`format=json`). When a reader asks for the feed, the instance fetches the target site itself and converts what it finds, and it keeps the result in memory for a few minutes.\n\nEnroll in the base channel and keep or replace the generated access key. Every route needs the key, added to the address as `?key=<access key>`; a request without it is refused with 403, and only the home page is open. Nothing is persisted. This recipe does not include a browser, so routes that need one fail, and many routes are blocked by their sites when the request comes from a cloud address, which is where this instance runs. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. RSSHub uses about 420 MiB of memory when idle, so this recipe uses the `small` size. Labs adds no markup and receives no seller payout. See the upstream RSSHub documentation and issue tracker for software-specific help; a route can stop working when its target site changes.",
+  "details": {
+    "features": [
+      "Routes for about two thousand sites and services",
+      "Feeds in RSS, Atom or JSON Feed",
+      "Protected by a generated access key",
+      "Answers from a short in-memory cache; no Redis needed",
+      "Nothing to keep: no data is persisted"
+    ],
+    "links": {
+      "documentation": "https://github.com/DIYgod/RSSHub/blob/master/README.md",
+      "homepage": "https://github.com/DIYgod/RSSHub",
+      "source_code": "https://github.com/DIYgod/RSSHub"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "rsshub",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private RSSHub instance that makes RSS, Atom and JSON feeds for about two thousand sites, protected by a generated access key. Many sites block cloud addresses, and browser routes do not work.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private RSSHub instance, protected by an access key; it keeps nothing between runs.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 1200,
+          "service": "rsshub"
+        }
+      ],
+      "environment": {
+        "rsshub": {
+          "ACCESS_KEY": "{{ params.ACCESS_KEY }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ACCESS_KEY": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. Every route of the instance must carry it, as `?key=<access key>` on the address. Save it; it is also shown in the enrollment's instance details. Changing it restarts the instance.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Access key",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ACCESS_KEY"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ACCESS_KEY": "local-test-key-only"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable"
+    }
+  }
+}

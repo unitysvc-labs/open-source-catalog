@@ -1,0 +1,20 @@
+# RSSHub, one private instance per enrollment. The access key is bound from the channel's `environment` in
+# offering.json; the values below are the instance's fixed, non-secret settings.
+# One container only: the memory cache replaces upstream's Redis, and the browser-based routes (which upstream pairs
+# with a browserless container, or the chromium-bundled image) are not available. RSSHub keeps nothing to persist:
+# it writes only logs and temporary files, so there is no volume.
+services:
+  rsshub:
+    image: diygod/rsshub:2026-11-25@sha256:02d8b673a743a7d11ffd497b3330b97cc7bc96f5d6360f8d5ecae5eb8c8807d8
+    ports:
+      - 1200
+    environment:
+      # The default, stated so it is clear no Redis is needed.
+      CACHE_TYPE: memory
+    healthcheck:
+      # The home page is the one path that needs no access key; every route and /healthz need it.
+      test: [CMD, curl, -f, "http://127.0.0.1:1200/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
