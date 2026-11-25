@@ -1,0 +1,12 @@
+{
+  "display_name": "Calibre-Web-Automated E-book Library",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.cwa.volumes[0]: volume 'config' at /config is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.cwa.volumes[1]: volume 'library' at /calibre-library is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.cwa.volumes[2]: volume 'ingest' at /cwa-book-ingest becomes scratch space (an emptyDir the instance gets at that path, counted in ephemeral-storage): its data survives a container restart but not a replacement of the instance"
+  ],
+  "name": "crocodilestick/calibre-web-automated",
+  "service_id": "1541670b-2f44-4293-8dc8-3b5a037df1f0",
+  "status": "created",
+  "time_created": "2026-11-25T22:54:19.165183Z"
+}
