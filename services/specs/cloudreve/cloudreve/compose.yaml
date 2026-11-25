@@ -1,0 +1,22 @@
+# Cloudreve (Community edition, v4), one private instance per enrollment. It needs no environment: with no
+# database settings it uses SQLite in /cloudreve/data and its own in-process cache, so no PostgreSQL or Redis.
+# The first account registered becomes the administrator (see usage.md). The image runs as root.
+# The image also starts an aria2 download helper; only the web port is published.
+services:
+  cloudreve:
+    image: cloudreve/cloudreve:4.19.1@sha256:5c6c5baf7fa5bc6e1bb9a7509c09dde00e80b618d180244eb1d5f7e36b358ea2
+    ports:
+      - 5212
+    volumes:
+      # The SQLite database (cloudreve.db), the generated conf.ini and the uploaded files (uploads/). The channel
+      # decides whether this volume persists, in the cloudreve folder of the customer's home (offering.json,
+      # `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/cloudreve/data
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:5212/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:

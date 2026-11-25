@@ -1,0 +1,75 @@
+{
+  "capabilities": [
+    "file-storage-and-sharing | Stores uploaded files and folders in a web interface, previews common formats, and shares files or folders by link with optional password and expiry."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Cloudreve image (the Community edition, version 4) in a separate container for each enrollment, with its own HTTPS address. Cloudreve is a self-hosted file management and sharing system: upload files and folders in the web interface, preview them, share them by link with an optional password and expiry, and add users. This recipe stores files on the instance's own local disk with SQLite for the database; it does not use PostgreSQL or Redis. The database and the uploaded files are kept in the `cloudreve` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel; it asks for no settings. Open the instance address and register an account straight away: the first account registered on a new instance becomes its administrator, so anyone who reaches the address before you could take that role. Then set the site URL and turn off registration in the admin settings. You can run one Cloudreve instance at a time. The `nano` size is small, and all files live on the instance's 1 GiB temporary disk, so this service suits a small private file store, not a large archive. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Cloudreve documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Upload files and folders, with resumable chunked upload",
+      "Share files and folders by link, with optional password and expiry",
+      "Previews of common file types and a recycle bin",
+      "Multiple users and groups, with the first account as administrator",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.cloudreve.org",
+      "homepage": "https://cloudreve.org",
+      "source_code": "https://github.com/cloudreve/cloudreve"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "cloudreve",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted file storage and sharing system: upload files, organise them in folders and share them by link, with the files and database kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Cloudreve's database and uploaded files in the cloudreve folder of your home, so your files, shares and users are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=cloudreve/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Cloudreve server; its database and uploaded files are kept in the cloudreve folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5212,
+          "service": "cloudreve"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/cloudreve",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
