@@ -1,0 +1,136 @@
+{
+  "capabilities": [
+    "collaborative-markdown-editing | Lets several people edit the same Markdown note at once in a web browser with a live preview, keeps a revision history, and can show a note as slides or export it."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official HedgeDoc 1.x image in a separate container for each enrollment, with its own HTTPS address. HedgeDoc is a real-time collaborative Markdown editor: people open the same note in the browser, type together with a live preview, and can use revisions, diagrams, math, slide mode and exports. Everything is kept in the instance's own SQLite database and upload folder, stored in the `hedgedoc` folder of your home, so your notes survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated session secret (it is never typed by people). Open `https://<instance>/`. By default anyone who reaches the address can create notes and register an account, and HedgeDoc 1.x has no administrator account; two settings let you close anonymous use or registration. You can run one HedgeDoc instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream HedgeDoc documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Real-time editing of Markdown notes by many people with a live preview",
+      "Revision history, slide mode, diagrams and math",
+      "Note permissions (owner, signed-in users, guests) set per note",
+      "Image uploads kept in your home",
+      "Your notes are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.hedgedoc.org/",
+      "homepage": "https://hedgedoc.org",
+      "source_code": "https://github.com/hedgedoc/hedgedoc"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "hedgedoc",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted real-time collaborative Markdown editor (HedgeDoc 1.x): edit notes together in the browser, with your notes kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps HedgeDoc's database and uploaded images in the hedgedoc folder of your home, so your notes and accounts are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=hedgedoc/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private HedgeDoc server; its notes, accounts and uploads are kept in the hedgedoc folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "hedgedoc"
+        }
+      ],
+      "environment": {
+        "hedgedoc": {
+          "CMD_ALLOW_ANONYMOUS": "{{ params.CMD_ALLOW_ANONYMOUS }}",
+          "CMD_ALLOW_EMAIL_REGISTER": "{{ params.CMD_ALLOW_EMAIL_REGISTER }}",
+          "CMD_SESSION_SECRET": "{{ params.CMD_SESSION_SECRET }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "CMD_ALLOW_ANONYMOUS": {
+              "default": "true",
+              "description": "`true` (default): anyone who reaches the address can open the editor and create notes without an account. `false`: the editor needs a signed-in account. Read when HedgeDoc starts. With `false` and registration closed, nobody can sign in.",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "title": "Allow use without signing in",
+              "type": "string"
+            },
+            "CMD_ALLOW_EMAIL_REGISTER": {
+              "default": "true",
+              "description": "`true` (default): anyone who reaches the address can register an account with an email address and password (HedgeDoc 1.x has no administrator and sends no mail). `false`: the registration form is closed, so register your own account first and then close it. Read when HedgeDoc starts.",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "title": "Allow anyone to register",
+              "type": "string"
+            },
+            "CMD_SESSION_SECRET": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it. HedgeDoc signs its login cookies with it. You never type it. Changing it signs everyone out.",
+              "format": "password",
+              "minLength": 16,
+              "title": "Session secret",
+              "type": "string"
+            }
+          },
+          "required": [
+            "CMD_SESSION_SECRET",
+            "CMD_ALLOW_ANONYMOUS",
+            "CMD_ALLOW_EMAIL_REGISTER"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "CMD_ALLOW_ANONYMOUS": "true",
+          "CMD_ALLOW_EMAIL_REGISTER": "true",
+          "CMD_SESSION_SECRET": "local-test-session-secret-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "db": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 10000,
+          "mode": "rw",
+          "source": "{{ home.path }}/hedgedoc/db",
+          "type": "persist",
+          "uid": 10000
+        },
+        "uploads": {
+          "gid": 10000,
+          "mode": "rw",
+          "source": "{{ home.path }}/hedgedoc/uploads",
+          "type": "persist",
+          "uid": 10000
+        }
+      }
+    }
+  }
+}
