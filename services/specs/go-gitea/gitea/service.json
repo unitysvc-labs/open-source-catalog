@@ -1,0 +1,10 @@
+{
+  "display_name": "Gitea Self-Hosted Git Service",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.gitea.volumes[0]: volume 'data' at /var/lib/gitea is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "go-gitea/gitea",
+  "service_id": "988a7a29-539d-4603-90a9-fa1ae324c620",
+  "status": "created",
+  "time_created": "2026-11-25T22:26:08.323475Z"
+}
