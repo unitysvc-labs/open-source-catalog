@@ -1,0 +1,59 @@
+{
+  "capabilities": [
+    "pdf-toolkit | Merges, splits, reorders, edits, signs, converts and compresses PDF files in the visitor's browser; upstream states files are not uploaded to the server."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the self-hosted build of BentoPDF in a separate container for each enrollment, with its own HTTPS address. BentoPDF is a PDF toolkit that runs in the web browser: merge, split, reorder, edit, sign, OCR, convert and compress PDF files from one web page. The container only serves the web page; according to the BentoPDF project, the PDF files are processed in the visitor's browser and are never uploaded to the server. The server keeps no data, so the service stores nothing and asks for no access to your home.\n\nEnroll in the base channel, which has no settings, and open the instance address in a browser. There is no sign-in: anyone who knows the address can open the page and use the tools, which is harmless because the page holds no data, but you may not want strangers consuming the instance you pay for, so keep the address private. Some tools load their processing code (WebAssembly) from the jsDelivr CDN in the visitor's browser, so those tools need the visitor's browser to reach the internet. See How to use this service for details and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream BentoPDF documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Merge, split, reorder, rotate, edit and fill PDF files",
+      "Sign PDFs and add digital signatures",
+      "OCR, compression and conversion between PDF and other formats",
+      "Processing happens in the visitor's browser, per upstream",
+      "No settings, no sign-in and no data kept on the server"
+    ],
+    "links": {
+      "documentation": "https://github.com/alam00000/bentopdf#readme",
+      "homepage": "https://bentopdf.com",
+      "source_code": "https://github.com/alam00000/bentopdf"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "bentopdf",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private web page with a full PDF toolkit: merge, split, edit, sign, OCR and convert PDFs. Per upstream, files are processed in your browser, not uploaded. No settings, no sign-in.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private BentoPDF web page. It has no settings, no sign-in and keeps no data.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "bentopdf"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}
