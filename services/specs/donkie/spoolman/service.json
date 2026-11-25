@@ -1,0 +1,10 @@
+{
+  "display_name": "Spoolman Filament Inventory",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.spoolman.volumes[0]: volume 'data' at /home/app/.local/share/spoolman is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "donkie/spoolman",
+  "service_id": "1ea7cbf7-ea49-4454-84e5-16eeb8182858",
+  "status": "created",
+  "time_created": "2026-11-25T22:41:22.074985Z"
+}
