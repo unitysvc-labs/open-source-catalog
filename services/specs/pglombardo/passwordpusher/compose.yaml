@@ -1,0 +1,36 @@
+# Password Pusher, one private instance per enrollment. The secret is bound from the channel's `environment` in
+# offering.json; the values below are the instance's fixed, non-secret settings.
+# Nothing is persisted: the SQLite database and its WAL files live in the scratch volume below, and pushes expire
+# by design.
+services:
+  pwpush:
+    image: pglombardo/pwpush:2.17.4@sha256:3f0d7fc9d39424763b53dc40648e0f8fac3979c7236711a37579b305abc5ab04
+    # Password Pusher encrypts every push with PWPUSH_MASTER_KEY and, without one, uses a key that is the same in
+    # every installation. The key must be 64 hex characters, which a generated parameter cannot be, so it is
+    # derived here from the enrollment's SECRET_KEY_BASE (its SHA-256, 64 hex characters), and then the image's own
+    # entrypoint runs unchanged. There is no dollar sign in the command, so neither Docker Compose nor the platform
+    # rewrites it.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - export PWPUSH_MASTER_KEY=`printenv SECRET_KEY_BASE | sha256sum | cut -c1-64` && exec /usr/local/bin/docker-entrypoint
+    ports:
+      - 5100
+    environment:
+      # Anonymous-only mode: no accounts and no sign-in. This also skips the first-run administrator setup, which
+      # needs a boot code printed in the container's log.
+      PWP__DISABLE_LOGINS: "true"
+      PWP__DISABLE_SIGNUPS: "true"
+      PWP__ALLOW_ANONYMOUS: "true"
+    volumes:
+      # SQLite database (storage/db/production.sqlite3). Scratch: kept across a container restart, lost when the
+      # instance is stopped or replaced. The image runs as uid 1000.
+      - data:/opt/PasswordPusher/storage
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:5100/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+volumes:
+  data:
