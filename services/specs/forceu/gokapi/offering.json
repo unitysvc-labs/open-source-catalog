@@ -1,0 +1,87 @@
+{
+  "capabilities": [
+    "file-sharing | Accepts uploaded files in a web interface and serves them from download links that expire after a set number of days or downloads, optionally protected by a password."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Gokapi image in a separate container for each enrollment, with its own HTTPS address. Gokapi is a lightweight self-hosted file sharing server: you sign in to its admin page, upload a file, choose how many days or downloads the link stays valid and an optional password, and send the link. When the limit is reached the file is deleted. It has several users, API keys, file requests that let others upload to you, and a download page that does not need an account. Uploaded files, the database and the configuration are kept in the `gokapi` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nGokapi has no setting that creates its administrator. The first time you open the instance's address, Gokapi shows a setup wizard in which whoever arrives first chooses the administrator name and password and the public address. Enroll, open the address at once and complete the wizard yourself; see How to use this service. You can run one Gokapi instance at a time. Because the platform stores no file over 1 GiB and the temporary disk is 1 GiB, this service limits a single upload to 500 MB.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Gokapi documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Upload a file and share a download link that expires after a number of days or downloads",
+      "Optional password for a download, and an optional download page without an account",
+      "Several users, API keys, and file requests that let others upload to you",
+      "Your files, users and settings are kept in your home, across stops, restarts and re-enrollment",
+      "Upload limit of 500 MB per file on this service"
+    ],
+    "links": {
+      "documentation": "https://gokapi.readthedocs.io/en/latest/",
+      "homepage": "https://github.com/Forceu/Gokapi",
+      "source_code": "https://github.com/Forceu/Gokapi"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "gokapi",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted file sharing server: upload a file, share a link that expires after a set time or number of downloads, with your files kept in your home.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Gokapi's uploaded files, database and configuration in the gokapi folder of your home, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=gokapi/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Gokapi server; its files, users and settings are kept in the gokapi folder of your home between runs and enrollments. The first visitor chooses the administrator in the setup wizard.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 53842,
+          "service": "gokapi"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "config": {
+          "mode": "rw",
+          "source": "{{ home.path }}/gokapi/config",
+          "type": "persist"
+        },
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/gokapi/data",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}

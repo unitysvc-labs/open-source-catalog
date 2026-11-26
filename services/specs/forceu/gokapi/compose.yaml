@@ -1,0 +1,32 @@
+# Gokapi, one private instance per enrollment. Gokapi cannot be given its administrator through settings:
+# the first visitor chooses it in the setup wizard (see usage.md). The values below are the instance's
+# fixed settings.
+services:
+  gokapi:
+    image: f0rc3/gokapi:v2.2.4@sha256:43cd93b9e1f02d760923f67f6e74e1c4d4a9cccb9b08fa42ad60770333f231eb
+    ports:
+      - 53842
+    environment:
+      # The largest file Gokapi accepts, in MB. The platform stores no file over 1 GiB and the temporary
+      # disk is 1 GiB, so the upstream default of 100 GB would accept uploads that cannot be kept.
+      GOKAPI_MAX_FILESIZE: "500"
+      # Upstream refuses uploads when less than 400 MB of disk is free, which would leave little room on a
+      # 1 GiB disk.
+      GOKAPI_MIN_FREE_SPACE: "100"
+    volumes:
+      # The uploaded files and the SQLite database (gokapi.sqlite), and the configuration (config.json)
+      # that the setup wizard writes. The channel decides whether these volumes persist, in the gokapi
+      # folder of the customer's home (offering.json, `volumes`); under plain Docker they are ordinary
+      # named volumes. The image runs as root.
+      - data:/app/data
+      - config:/app/config
+    healthcheck:
+      # Answers 200 with the setup wizard's maintenance page before setup, and with the redirect page after.
+      test: [CMD, curl, -f, "http://127.0.0.1:53842/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
+  config:
