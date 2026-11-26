@@ -62,6 +62,7 @@ jobs:
     permissions:
       contents: write # the sidecar commit
       actions: read # to find the production upload state
+      statuses: write # the verdict on the head commit
     defaults:
       run:
         working-directory: services
@@ -153,6 +154,26 @@ jobs:
           name: recipe-test-report
           path: recipe-test-report.md
           if-no-files-found: ignore
+
+      - name: Report the verdict on the head commit
+        # The sidecar commit skips CI, so the branch head would show no check at all, and a failed run would look
+        # like a passed one. Post the verdict on the head commit, where the pull request displays it.
+        if: always() && github.event_name == 'pull_request'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          UPLOAD: ${{ steps.upload.outcome }}
+          JOB: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$UPLOAD" = "success" ] && [ "$JOB" = "success" ]; then
+            state=success; text="The platform accepted the recipes."
+          else
+            state=failure; text="The upload failed or the platform did not accept a recipe."
+          fi
+          gh api "repos/$REPO/statuses/$(git rev-parse HEAD)" -f state="$state" \
+            -f context="Test Recipes / platform check" -f description="$text" -f target_url="$RUN_URL"
 
       - name: Fail if the upload or the platform's tests failed
         if: steps.upload.outcome == 'failure'
