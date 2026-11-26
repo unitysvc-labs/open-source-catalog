@@ -1,0 +1,136 @@
+{
+  "capabilities": [
+    "newsletter-campaigns | Creates and schedules email campaigns with templates, per-subscriber personalization and delivery statistics.",
+    "mailing-list-management | Keeps subscribers in lists with segments, double opt-in, a public subscription form and import and export.",
+    "subscriber-database | Stores subscribers with custom attributes in PostgreSQL and exposes them through a REST API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official listmonk image together with its own PostgreSQL database in a separate stack for each enrollment, with its own HTTPS address. listmonk is a self-hosted newsletter and mailing list manager: it keeps subscribers and lists, sends campaigns built from templates with personalization, handles opt-in and unsubscribe pages, tracks opens and clicks, and has a REST API. The database and the media you upload are kept in the enrollment's storage, so they survive stopping and restarting the instance.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/admin` with the administrator name and password. listmonk sends mail through an SMTP server that you provide in its Settings; the instance does not include one. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of both containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream listmonk documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Subscribers, lists and segments with custom attributes, import and export",
+      "Campaigns with templates, scheduling, personalization and click and view tracking",
+      "Public subscription forms, double opt-in and unsubscribe pages",
+      "REST API with API users and tokens",
+      "Your data is kept in the enrollment's storage, across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://listmonk.app/docs/",
+      "homepage": "https://listmonk.app",
+      "source_code": "https://github.com/knadh/listmonk"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "listmonk",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted newsletter and mailing list manager with its own PostgreSQL database, kept in the enrollment's storage. Bring your own SMTP server to send campaigns.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps listmonk's PostgreSQL database and uploaded media in the storage of this enrollment, so your subscribers, lists and campaigns are still there when the instance is stopped or restarted.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private listmonk with its own PostgreSQL database; the subscribers, lists and campaigns are kept in this enrollment's storage between stops and restarts.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 9000,
+          "service": "app"
+        }
+      ],
+      "environment": {
+        "app": {
+          "LISTMONK_ADMIN_PASSWORD": "{{ params.LISTMONK_ADMIN_PASSWORD }}",
+          "LISTMONK_ADMIN_USER": "{{ params.LISTMONK_ADMIN_USER }}",
+          "LISTMONK_db__password": "{{ params.DB_PASSWORD }}"
+        },
+        "db": {
+          "POSTGRES_PASSWORD": "{{ params.DB_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "DB_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Password of the stack's PostgreSQL database, used by listmonk to connect to it. Keep the generated value. The database is reachable only from inside the instance.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Database password",
+              "type": "string"
+            },
+            "LISTMONK_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the Super Admin's password only when listmonk first creates its database; afterwards change it in listmonk's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "LISTMONK_ADMIN_USER": {
+              "default": "admin",
+              "description": "The Super Admin's user name, created on the first start. It is used only when listmonk first creates its database; on later starts of the same enrollment the existing users still apply.",
+              "maxLength": 100,
+              "minLength": 3,
+              "pattern": "^[A-Za-z0-9@.+_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "LISTMONK_ADMIN_USER",
+            "LISTMONK_ADMIN_PASSWORD",
+            "DB_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "DB_PASSWORD": "local-test-db-password",
+          "LISTMONK_ADMIN_PASSWORD": "local-test-password-only",
+          "LISTMONK_ADMIN_USER": "admin"
+        }
+      },
+      "resources": {
+        "app": "nano",
+        "db": "nano"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "dbdata": {
+          "gid": 70,
+          "mode": "rw",
+          "source": "{{ storage.path }}/db",
+          "type": "persist",
+          "uid": 70
+        },
+        "uploads": {
+          "gid": 0,
+          "mode": "rw",
+          "source": "{{ storage.path }}/uploads",
+          "type": "persist",
+          "uid": 0
+        }
+      }
+    }
+  }
+}
