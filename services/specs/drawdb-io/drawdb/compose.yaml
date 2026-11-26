@@ -1,0 +1,13 @@
+# drawDB, one private copy per enrollment. drawDB is a browser application: this container only serves its
+# static files with nginx, and the diagrams you draw are kept in your own browser, not on the server.
+services:
+  drawdb:
+    image: ghcr.io/drawdb-io/drawdb:v1.9.0@sha256:8239ebdde4e23b35da2e68fc6ea158bffb6e59dad09abc7d1b1234d66ce6fbd4
+    ports:
+      - 80
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
