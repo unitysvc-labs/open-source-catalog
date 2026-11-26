@@ -79,11 +79,12 @@
             },
             "ADMIN_SECRET": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for the admin pages, in place of a shipped placeholder it warns about. You never type it.",
+              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for the admin pages, in place of a shipped placeholder it warns about. You never type it. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 16,
               "title": "Admin sign-in secret",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "REQUIRE_AUTHENTICATION": {
               "default": "false",
@@ -105,11 +106,12 @@
             },
             "USER_SECRET": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for users, in place of a shipped placeholder it warns about. You never type it.",
+              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for users, in place of a shipped placeholder it warns about. You never type it. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 16,
               "title": "User sign-in secret",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

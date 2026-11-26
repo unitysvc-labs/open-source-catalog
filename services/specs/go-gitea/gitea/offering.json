@@ -98,11 +98,12 @@
             },
             "INTERNAL_TOKEN": {
               "default": "{{ token_urlsafe(48) }}",
-              "description": "Generated for this enrollment. Gitea's own components use it to talk to each other. Keep it; there is no need to enter your own.",
+              "description": "Generated for this enrollment. Gitea's own components use it to talk to each other. Keep it; there is no need to enter your own. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 24,
               "title": "Internal token",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "SECRET_KEY": {
               "default": "{{ token_urlsafe(32) }}",
