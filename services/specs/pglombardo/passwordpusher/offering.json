@@ -55,11 +55,12 @@
           "properties": {
             "SECRET_KEY_BASE": {
               "default": "{{ token_urlsafe(48) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. Password Pusher uses it to sign its cookies, and the instance derives the key that encrypts stored pushes from it, instead of Password Pusher's built-in key that every installation shares. You never type it. Changing it restarts the instance, and pushes already stored cannot be read afterwards.",
+              "description": "Generated for this enrollment; keep it or enter your own. Password Pusher uses it to sign its cookies, and the instance derives the key that encrypts stored pushes from it, instead of Password Pusher's built-in key that every installation shares. You never type it. Changing it restarts the instance, and pushes already stored cannot be read afterwards. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 32,
               "title": "Instance secret",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

@@ -67,11 +67,12 @@
           "properties": {
             "SB_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the password for the one-time upgrade page of a new instance, and it becomes the administrator's password when you complete that upgrade. After that this value is ignored: change the password in SilverBullet's Dashboard. Save it; it is also shown in the enrollment's instance details.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the password for the one-time upgrade page of a new instance, and it becomes the administrator's password when you complete that upgrade. After that this value is ignored: change the password in SilverBullet's Dashboard. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 12,
               "title": "Sign-in password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "SB_USERNAME": {
               "default": "admin",

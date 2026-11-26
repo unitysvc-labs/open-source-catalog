@@ -69,12 +69,13 @@
           "properties": {
             "APP_KEY": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "The encryption key of this 2FAuth instance: exactly 32 characters (letters, digits, - and _), or a Laravel key of the form base64:<44 characters>. Generated for this enrollment; keep it or enter your own. It signs sessions and sign-in tokens and encrypts stored secrets when encryption is turned on. It must stay the same for as long as you use the data: if it changes, everyone is signed out and, when encryption is on, the stored secrets cannot be read. Because your data lives in your home and outlasts the enrollment, SAVE THIS KEY (it is also shown in the enrollment's instance details) and enter the same value when you enroll again; a new enrollment otherwise generates a different key.",
+              "description": "The encryption key of this 2FAuth instance: exactly 32 characters (letters, digits, - and _), or a Laravel key of the form base64:<44 characters>. Generated for this enrollment; keep it or enter your own. It signs sessions and sign-in tokens and encrypts stored secrets when encryption is turned on. It must stay the same for as long as you use the data: if it changes, everyone is signed out and, when encryption is on, the stored secrets cannot be read. Because your data lives in your home and outlasts the enrollment, SAVE THIS KEY NOW (the platform keeps it as a secret and does not show it again) and enter the same value when you enroll again; a new enrollment otherwise generates a different key.",
               "format": "password",
               "minLength": 32,
               "pattern": "^([A-Za-z0-9_-]{32}|base64:[A-Za-z0-9+/]{43}=)$",
               "title": "Encryption key (APP_KEY)",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "APP_URL": {
               "default": "https://instance.invalid",

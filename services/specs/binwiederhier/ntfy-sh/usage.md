@@ -3,7 +3,7 @@
 Each enrollment runs its own private [ntfy](https://ntfy.sh) server. ntfy is written and maintained by [Philipp C. Heckel](https://github.com/binwiederhier) and is dual-licensed Apache-2.0 and GPLv2; the provider of this service is its author. UnitySVC Labs lists the official `binwiederhier/ntfy` image, and the platform runs one isolated instance per enrollment.
 
 1. Enroll in **base**.
-2. The enrollment form shows a generated **Access token**; keep it or replace it with your own (the form `tk_` followed by 29 letters, digits, `-` or `_`), then save it. It is stored with the enrollment (view and copy it from the enrollment's instance details) and given to ntfy at start-up. It is an application credential, not your UnitySVC API key. Changing it later restarts the instance with the new token.
+2. The enrollment form shows a generated **Access token**; keep it or replace it with your own (the form `tk_` followed by 29 letters, digits, `-` or `_`), then save it somewhere now: the platform keeps it as a secret and does not show it again. It is given to ntfy at start-up. It is an application credential, not your UnitySVC API key. Changing it later restarts the instance with the new token.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it.
 4. Publish with the token as a bearer credential:
 
