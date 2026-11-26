@@ -1,0 +1,59 @@
+{
+  "capabilities": [
+    "data-transformation | Encodes, decodes, encrypts, decrypts, hashes, compresses and parses data with hundreds of chainable operations in the visitor's browser; upstream states input is not sent to the server."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official CyberChef image in a separate container for each enrollment, with its own HTTPS address. CyberChef, the \"Cyber Swiss Army Knife\", is a web app for encoding, encryption and data analysis: you chain operations into a recipe (Base64, hex, XOR, AES, hashes and checksums, compression, IPv6 and X.509 parsing, character encodings and many more) and run it on text or files. The container only serves the static web app; according to the CyberChef README, none of your recipe or input is ever sent to the web server and all processing is carried out in your browser. The server keeps no data, so the service stores nothing and asks for no access to your home.\n\nEnroll in the base channel, which has no settings, and open the instance address in a browser. There is no sign-in: anyone who knows the address can open the page and use it, which is harmless because the page holds no data, but you may not want strangers consuming the instance you pay for, so keep the address private. See How to use this service for details and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream CyberChef documentation and issue tracker for software-specific help; the project states that no guarantee is offered for the correctness or security of its cryptographic operations.",
+  "details": {
+    "features": [
+      "Chain operations into recipes: encoding, encryption, hashing, compression and parsing",
+      "Run recipes on typed text or on files dropped into the page",
+      "Magic detection suggests how encoded data can be decoded",
+      "Processing happens in the visitor's browser, per upstream",
+      "No settings, no sign-in and no data kept on the server"
+    ],
+    "links": {
+      "documentation": "https://github.com/gchq/CyberChef/wiki",
+      "homepage": "https://gchq.github.io/CyberChef/",
+      "source_code": "https://github.com/gchq/CyberChef"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "cyberchef",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private CyberChef web page, the Cyber Swiss Army Knife for encoding, encryption and data analysis. Per upstream, data is processed in your browser, not sent to the server. No settings, no sign-in.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private CyberChef web page. It has no settings, no sign-in and keeps no data.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "cyberchef"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}

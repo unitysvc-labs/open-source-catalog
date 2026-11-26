@@ -1,0 +1,14 @@
+# CyberChef official image (built and published by the project's own release workflow), one private instance
+# per enrollment. It is a static website served by nginx-unprivileged (port 8080, uid 101): it takes no settings
+# and keeps no data on the server, so there are no volumes.
+services:
+  cyberchef:
+    image: ghcr.io/gchq/cyberchef:11.6.0@sha256:847b3a20804815014babe9cfa628a1fd1980d92f98240f48cfc6c8e2f5ff7a14
+    ports:
+      - 8080
+    healthcheck:
+      test: [CMD, curl, -fsS, -o, /dev/null, "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
