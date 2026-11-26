@@ -7,7 +7,7 @@ Password Pusher shares a secret through a link instead of through the chat or th
 ## Set up
 
 1. Enroll in **base**. It asks for no access to your home: nothing is stored there.
-2. The form shows a generated **Instance secret**. Keep it or replace it with a string of your own of at least 32 characters. The instance uses it to sign cookies and to derive the key that encrypts stored pushes. It is an application secret, not your UnitySVC API key, and you never type it anywhere. It is also shown in the enrollment's instance details.
+2. The form shows a generated **Instance secret**. Keep it or replace it with a string of your own of at least 32 characters. The instance uses it to sign cookies and to derive the key that encrypts stored pushes. It is an application secret, not your UnitySVC API key, and you never type it anywhere. The platform keeps it as a secret and does not show it again.
 3. Wait for the instance to become ready; the first start took about 20 seconds in a local check. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. A new enrollment has a new address.
 4. Open the address. You land on the push form; there is nothing to sign in to.
 

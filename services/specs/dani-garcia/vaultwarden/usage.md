@@ -19,7 +19,7 @@ A password manager holds your most sensitive data, so be clear about what protec
 ## Set up
 
 1. Enroll in **base**. The enrollment asks for access to the `vaultwarden/` folder of your home (`service:home`, read and write). Approve it, or the instance does not start. You can run one Vaultwarden instance at a time.
-2. The form has three settings. **Admin token** is generated; keep it or enter your own, and save it (it is also shown in the enrollment's instance details). It is not your UnitySVC API key. **Allow open sign-ups** defaults to `false`. **Instance address** is a placeholder, because the address does not exist yet.
+2. The form has three settings. **Admin token** is generated; keep it or enter your own, and save it now (the platform keeps it as a secret and does not show it again). It is not your UnitySVC API key. **Allow open sign-ups** defaults to `false`. **Instance address** is a placeholder, because the address does not exist yet.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address.**
 4. Edit the enrollment and set **Instance address** to that address, for example `https://abc123.example.app`, with no trailing slash. The instance restarts and keeps your data. Until you do, sign-up, sign-in and storing items work, but passkey and security-key (WebAuthn) two-step login are expected not to, and links Vaultwarden builds point at the placeholder. After you change the address, devices that were signed in are expected to sign in again.
 5. Create your own account. With sign-ups closed, open `https://<instance>/admin`, enter the admin token, choose **Users**, then **Invite User** and enter your email. No email is sent, because no mail server is configured: just open the instance address, choose **Create account** with that same email, and set your master password. (Alternatively set **Allow open sign-ups** to `true`, create your account, then set it back to `false`; while it is `true`, anyone who finds the address can register.)
@@ -29,7 +29,7 @@ A password manager holds your most sensitive data, so be clear about what protec
 
 ## Authentication
 
-Sign-in to the vault uses the email and master password you registered. The admin page uses the admin token. A plain admin token works, but Vaultwarden logs a notice that it is insecure because it is stored as typed; upstream recommends an Argon2 PHC string (generate one with `docker run --rm -it vaultwarden/server /vaultwarden hash`, then paste the `$argon2id$...` string as the Admin token and sign in with the password you hashed). The generated token is high-entropy, so it is a reasonable default, but it is visible in the enrollment's instance details; the hashed form is not.
+Sign-in to the vault uses the email and master password you registered. The admin page uses the admin token. A plain admin token works, but Vaultwarden logs a notice that it is insecure because it is stored as typed; upstream recommends an Argon2 PHC string (generate one with `docker run --rm -it vaultwarden/server /vaultwarden hash`, then paste the `$argon2id$...` string as the Admin token and sign in with the password you hashed). The generated token is high-entropy, so it is a reasonable default.
 
 ## What is kept, and what is lost
 

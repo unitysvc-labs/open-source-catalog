@@ -85,11 +85,12 @@
             },
             "LD_SUPERUSER_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when linkding first creates the account: your data lives in your home, so if the account already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in linkding's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when linkding first creates the account: your data lives in your home, so if the account already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in linkding's own settings. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 12,
               "title": "Administrator password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

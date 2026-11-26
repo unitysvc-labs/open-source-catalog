@@ -81,11 +81,12 @@
             },
             "ADMIN_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Gitea first creates the administrator; if that user already exists this value is ignored and the existing password still applies. Change the password in Gitea's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Gitea first creates the administrator; if that user already exists this value is ignored and the existing password still applies. Change the password in Gitea's own settings. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 12,
               "title": "Administrator password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "ADMIN_USERNAME": {
               "default": "admin",
@@ -107,11 +108,12 @@
             },
             "SECRET_KEY": {
               "default": "{{ token_urlsafe(32) }}",
-              "description": "Generated for this enrollment. Gitea encrypts two-factor secrets and similar values in its database with it. Keep it: if you replace it later, values already encrypted with the old key can no longer be read.",
+              "description": "Generated for this enrollment. Gitea encrypts two-factor secrets and similar values in its database with it. Keep it: if you replace it later, values already encrypted with the old key can no longer be read. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 16,
               "title": "Secret key",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

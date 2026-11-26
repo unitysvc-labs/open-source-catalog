@@ -55,11 +55,12 @@
           "properties": {
             "ACCESS_KEY": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. Every route of the instance must carry it, as `?key=<access key>` on the address. Save it; it is also shown in the enrollment's instance details. Changing it restarts the instance.",
+              "description": "Generated for this enrollment; keep it or enter your own. Every route of the instance must carry it, as `?key=<access key>` on the address. Save it now: the platform keeps it as a secret and does not show it again. Changing it restarts the instance.",
               "format": "password",
               "minLength": 12,
               "title": "Access key",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [
