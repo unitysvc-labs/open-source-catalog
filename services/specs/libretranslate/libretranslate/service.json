@@ -1,0 +1,10 @@
+{
+  "display_name": "LibreTranslate Machine Translation Server",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.libretranslate.volumes[0]: volume 'models' at /home/libretranslate/.local becomes scratch space (an emptyDir the instance gets at that path, counted in ephemeral-storage): its data survives a container restart but not a replacement of the instance"
+  ],
+  "name": "libretranslate/libretranslate",
+  "service_id": "9366f7a1-0e50-4370-8284-6ba855fb1ad0",
+  "status": "created",
+  "time_created": "2026-11-26T01:53:44.551603Z"
+}
