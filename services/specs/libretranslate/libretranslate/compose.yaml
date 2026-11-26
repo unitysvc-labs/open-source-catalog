@@ -1,0 +1,36 @@
+# LibreTranslate, one private instance per enrollment. The API key and the languages to load are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  libretranslate:
+    image: libretranslate/libretranslate:v1.10.0@sha256:6cf78d417741c979a12ba4f9731284b1e66066dc090c8c810174a442e0926ba2
+    ports:
+      - 5000
+    # The image's own entrypoint is `libretranslate --host *`. This one first writes the API key from the
+    # LIBRETRANSLATE_API_KEY parameter into the API-key database (db/api_keys.db is recreated on every start, so
+    # nothing needs to persist), then starts the same server in its place.
+    entrypoint:
+      - ./venv/bin/python
+      - -c
+      - |
+        import os
+        from libretranslate.api_keys import Database
+        Database("db/api_keys.db").add(600, os.environ["LIBRETRANSLATE_API_KEY"])
+        os.execv("./venv/bin/libretranslate", ["libretranslate", "--host", "*"])
+    environment:
+      # Turn on the API-key database, and refuse every request that has no valid key ("under attack" mode).
+      LT_API_KEYS: "true"
+      LT_UNDER_ATTACK: "true"
+      # Download the language models into the (empty) models folder at first start.
+      LT_UPDATE_MODELS: "true"
+    volumes:
+      # Language models, downloaded at start (about 200 MB per language pair direction). Scratch: lost when the
+      # instance stops, downloaded again on the next start.
+      - models:/home/libretranslate/.local
+    healthcheck:
+      test: [CMD, ./venv/bin/python, scripts/healthcheck.py]
+      interval: 15s
+      timeout: 10s
+      retries: 4
+      start_period: 90s
+volumes:
+  models:
