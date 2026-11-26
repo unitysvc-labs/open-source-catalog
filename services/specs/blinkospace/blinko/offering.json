@@ -1,0 +1,144 @@
+{
+  "capabilities": [
+    "note-taking | Creates, tags, searches and shares markdown notes with file attachments, through a web interface and an HTTP API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Blinko image together with its PostgreSQL database in a separate pair of containers for each enrollment, with its own HTTPS address. Blinko is a self-hosted note-taking app for quick capture: markdown notes with multi-level tags, file attachments, full-text search, a daily review, public share links and an HTTP API, in a web interface that also works as a phone web app. Notes live in the instance's PostgreSQL database and attachments in its files folder; both are kept in the enrollment's storage, so they survive stopping and restarting the instance. Removing the enrollment removes them. Blinko's optional AI features need an AI provider you configure yourself inside Blinko.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password. Blinko lets the first visitor register as administrator, so the instance creates that account for you at start from the name and password you gave, and registration is closed afterwards. You can run one Blinko instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost for both containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Blinko documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Markdown notes with multi-level tags, full-text search and a daily review",
+      "File and image attachments",
+      "Public share links for single notes and an RSS feed of public notes",
+      "HTTP API with access tokens",
+      "Your data is kept across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://docs.blinko.space/en/introduction",
+      "homepage": "https://blinko.space",
+      "source_code": "https://github.com/blinkospace/blinko"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "blinko",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted note-taking app with markdown, tags, search and file attachments, and an HTTP API. Runs with its own PostgreSQL database; data survives stops and restarts.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Blinko's PostgreSQL database and uploaded files in the storage of this enrollment, so your notes and attachments are still there when the instance is stopped or restarted.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Blinko with its own PostgreSQL database; notes and attachments are kept in this enrollment's storage between stops and restarts.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 1111,
+          "service": "blinko"
+        }
+      ],
+      "environment": {
+        "blinko": {
+          "BLINKO_ADMIN_NAME": "{{ params.BLINKO_ADMIN_NAME }}",
+          "BLINKO_ADMIN_PASSWORD": "{{ params.BLINKO_ADMIN_PASSWORD }}",
+          "DATABASE_URL": "postgresql://blinko:{{ params.POSTGRES_PASSWORD }}@postgres:5432/blinko",
+          "JWT_SECRET": "{{ params.JWT_SECRET }}"
+        },
+        "postgres": {
+          "POSTGRES_PASSWORD": "{{ params.POSTGRES_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "BLINKO_ADMIN_NAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. It is used only when Blinko first creates its database; after that the stored users apply and a change here is ignored.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "BLINKO_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Blinko first creates its database; after that the stored password applies and a change here is ignored. Change the password in Blinko's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "JWT_SECRET": {
+              "default": "{{ token_urlsafe(32) }}",
+              "description": "The key Blinko signs its sign-in tokens with. Keep the generated value. Blinko reads it at every start, so if you change it every signed-in session and API token stops working.",
+              "format": "password",
+              "minLength": 16,
+              "title": "Token signing secret",
+              "type": "string"
+            },
+            "POSTGRES_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "The password of the PostgreSQL database that holds your notes, shared by Blinko and the database container. PostgreSQL stores it when it first creates the database, so changing it later makes Blinko unable to connect: keep the value you first used. Letters, digits, `_` and `-` only.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Database password",
+              "type": "string"
+            }
+          },
+          "required": [
+            "BLINKO_ADMIN_NAME",
+            "BLINKO_ADMIN_PASSWORD",
+            "JWT_SECRET",
+            "POSTGRES_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "BLINKO_ADMIN_NAME": "admin",
+          "BLINKO_ADMIN_PASSWORD": "local-test-password-only",
+          "JWT_SECRET": "local-test-secret-only-0123456789",
+          "POSTGRES_PASSWORD": "local-test-dbpass"
+        }
+      },
+      "resources": {
+        "blinko": "nano",
+        "postgres": "nano"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "blinko-files": {
+          "mode": "rw",
+          "source": "{{ storage.path }}/files",
+          "type": "persist"
+        },
+        "postgres-data": {
+          "gid": 70,
+          "mode": "rw",
+          "source": "{{ storage.path }}/db",
+          "type": "persist",
+          "uid": 70
+        }
+      }
+    }
+  }
+}
