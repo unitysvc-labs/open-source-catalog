@@ -1,0 +1,10 @@
+{
+  "display_name": "Grafana Dashboards and Alerting",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.grafana.volumes[0]: volume 'data' at /var/lib/grafana is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "grafana/grafana",
+  "service_id": "74598ec2-4a1e-4bdd-a79f-6774831458fb",
+  "status": "created",
+  "time_created": "2026-11-25T22:56:01.500346Z"
+}
