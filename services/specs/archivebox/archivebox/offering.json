@@ -1,0 +1,115 @@
+{
+  "capabilities": [
+    "web-archiving | Saves web pages you submit as HTML, screenshot, PDF, text and media snapshots in a private, searchable collection.",
+    "url-snapshots | Keeps a point-in-time copy of each submitted URL that you can browse later from the web interface, even if the original page disappears."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official ArchiveBox image in a separate container for each enrollment, with its own HTTPS address. ArchiveBox is a self-hosted web archive: you give it URLs (one at a time in the web interface, by paste, or through its REST API and command line), and it saves each page with a headless Chromium browser and other extractors, as HTML, a screenshot, a PDF, readable text, media and more. The collection is browsed, searched and tagged in the web interface. It is private: nothing is listed or can be submitted without signing in. Everything is kept in the instance's own SQLite database and files, stored in the `archivebox` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then use **Add** to submit URLs; the first capture of a page takes a few minutes while the browser starts. Capturing runs on one core and uses well over a gigabyte of memory at peak, so the channel runs on the `small` size. You can run one ArchiveBox instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the collection in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream ArchiveBox documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Saves pages as HTML, screenshot, PDF, readable text, media and more, using a headless browser",
+      "Private collection with sign-in; browse, search and tag snapshots in the web interface",
+      "Add URLs by form or paste, or through the REST API and command line",
+      "Your collection is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.archivebox.io",
+      "homepage": "https://archivebox.io",
+      "source_code": "https://github.com/ArchiveBox/ArchiveBox"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "archivebox",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted web archive: save pages as HTML, screenshots and PDFs with a headless browser, then browse and search them, with the collection kept in your home.",
+  "time_created": "2026-11-26T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps ArchiveBox's database and archived pages in the archivebox folder of your home, so your collection is still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=archivebox/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private ArchiveBox; its collection is kept in the archivebox folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5797,
+          "service": "archivebox"
+        }
+      ],
+      "environment": {
+        "archivebox": {
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "ADMIN_USERNAME": "{{ params.ADMIN_USERNAME }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when ArchiveBox first creates that account; if the account already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in ArchiveBox's own admin pages. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string"
+            },
+            "ADMIN_USERNAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. It is created only if no user of that name exists: your data lives in your home, so on a later start or enrollment the existing users still apply.",
+              "maxLength": 150,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@.+_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ADMIN_USERNAME",
+            "ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "ADMIN_USERNAME": "admin"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 911,
+          "mode": "rw",
+          "source": "{{ home.path }}/archivebox",
+          "type": "persist",
+          "uid": 911
+        }
+      }
+    }
+  }
+}

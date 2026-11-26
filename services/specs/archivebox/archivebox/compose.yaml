@@ -1,0 +1,29 @@
+# ArchiveBox, one private instance per enrollment. The administrator and its password, and the trusted origin,
+# are bound from the channel's `environment` in offering.json; the values below are the fixed, non-secret settings.
+services:
+  archivebox:
+    image: archivebox/archivebox:0.9.77@sha256:f63170551ec48d7aa087c71e2d093156dbf4b4ed8680e2f97f22483e3bc71e55
+    ports:
+      - 5797
+    environment:
+      # One public address per instance, so subdomain routing is not available: serve everything from one
+      # domain and neuter JavaScript in archived pages, keeping the admin pages.
+      SERVER_SECURITY_MODE: safe-onedomain-nojsreplay
+      # The collection is private: nothing is listed or can be submitted without signing in.
+      PUBLIC_INDEX: "False"
+      PUBLIC_ADD_VIEW: "False"
+      # Do not send every saved URL to the Internet Archive.
+      ARCHIVEDOTORG_ENABLED: "False"
+    volumes:
+      # The collection: index.sqlite3, the archived pages and the configuration. The channel decides whether this
+      # volume persists, in the archivebox folder of the customer's home (offering.json, `volumes`); under plain
+      # Docker it is an ordinary named volume.
+      - data:/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:5797/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 90s
+volumes:
+  data:
