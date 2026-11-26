@@ -59,8 +59,7 @@
       ],
       "environment": {
         "silverbullet": {
-          "SB_PASSWORD": "{{ params.SB_PASSWORD }}",
-          "SB_USERNAME": "{{ params.SB_USERNAME }}"
+          "SB_USER": "{{ params.SB_USERNAME }}:{{ params.SB_PASSWORD }}"
         }
       },
       "params": {

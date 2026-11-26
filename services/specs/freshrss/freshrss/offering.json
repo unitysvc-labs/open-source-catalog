@@ -60,10 +60,8 @@
       ],
       "environment": {
         "freshrss": {
-          "FRESHRSS_ADMIN_PASSWORD": "{{ params.FRESHRSS_ADMIN_PASSWORD }}",
-          "FRESHRSS_ADMIN_USER": "{{ params.FRESHRSS_ADMIN_USER }}",
-          "FRESHRSS_API_PASSWORD": "{{ params.FRESHRSS_API_PASSWORD }}",
-          "FRESHRSS_INSTALL": "--api-enabled --default-user={{ params.FRESHRSS_ADMIN_USER }} --language=en"
+          "FRESHRSS_INSTALL": "--api-enabled --default-user={{ params.FRESHRSS_ADMIN_USER }} --language=en",
+          "FRESHRSS_USER": "--user={{ params.FRESHRSS_ADMIN_USER }} --password={{ params.FRESHRSS_ADMIN_PASSWORD }} --api-password={{ params.FRESHRSS_API_PASSWORD }} --no-default-feeds"
         }
       },
       "params": {

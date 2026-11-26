@@ -51,11 +51,11 @@
       ],
       "environment": {
         "ntfy": {
-          "NTFY_ACCESS_TOKEN": "{{ params.NTFY_ACCESS_TOKEN }}",
           "NTFY_ATTACHMENT_EXPIRY_DURATION": "{{ params.NTFY_ATTACHMENT_EXPIRY_DURATION }}",
           "NTFY_ATTACHMENT_FILE_SIZE_LIMIT": "{{ params.NTFY_ATTACHMENT_FILE_SIZE_LIMIT }}",
           "NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT": "{{ params.NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT }}",
           "NTFY_AUTH_ACCESS_CACHE": "{{ params.NTFY_AUTH_ACCESS_CACHE }}",
+          "NTFY_AUTH_TOKENS": "admin:{{ params.NTFY_ACCESS_TOKEN }}:enrollment",
           "NTFY_AUTH_USERS": "admin:$2a$10$oGEA5sTZZVcFOpiqyGaTn.qJ/XvvZbnEdq05hW9T5OEmh9S5IiY2q:admin",
           "NTFY_BAN_THRESHOLD": "{{ params.NTFY_BAN_THRESHOLD }}",
           "NTFY_BAN_WEIGHTS": "{{ params.NTFY_BAN_WEIGHTS }}",

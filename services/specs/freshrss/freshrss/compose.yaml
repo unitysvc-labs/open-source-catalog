@@ -8,12 +8,6 @@ services:
     environment:
       # Built-in cron job: refreshes every feed twice an hour (at minutes 17 and 47).
       CRON_MIN: "17,47"
-      # The arguments that create the administrator the first time FreshRSS runs. The channel binds the name
-      # and the two passwords each on its own (the platform keeps the passwords as secrets and delivers a
-      # secret only as a whole value). FreshRSS's entrypoint evaluates this value in a shell, which is what
-      # reads them here; backticks and `printenv` rather than a dollar sign, so Compose and the platform
-      # leave it untouched.
-      FRESHRSS_USER: "--user=`printenv FRESHRSS_ADMIN_USER` --password=`printenv FRESHRSS_ADMIN_PASSWORD` --api-password=`printenv FRESHRSS_API_PASSWORD` --no-default-feeds"
     volumes:
       # Configuration, users, the SQLite databases and caches. The channel decides whether these volumes
       # persist, in the freshrss folder of the customer's home (offering.json, `volumes`); under plain Docker
