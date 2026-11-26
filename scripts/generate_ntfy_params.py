@@ -163,7 +163,7 @@ def main() -> None:
     schema["properties"] = {"NTFY_ACCESS_TOKEN": token, **dict(sorted(properties.items()))}
     schema["required"] = ["NTFY_ACCESS_TOKEN"]
     channel["environment"]["ntfy"] = {
-        **{k: v for k, v in channel["environment"]["ntfy"].items() if k in ("NTFY_AUTH_USERS", "NTFY_AUTH_TOKENS")},
+        **{k: v for k, v in channel["environment"]["ntfy"].items() if k in ("NTFY_AUTH_USERS", "NTFY_ACCESS_TOKEN")},
         **dict(sorted(environment.items())),
     }
     channel["params"]["testing_defaults"] = defaults

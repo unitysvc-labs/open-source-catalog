@@ -4,7 +4,14 @@
 services:
   ntfy:
     image: binwiederhier/ntfy:v2.38.1
-    command: [serve]
+    # ntfy takes its access tokens as one value, `<user>:<token>:<label>` (NTFY_AUTH_TOKENS). The channel
+    # binds the token on its own (NTFY_ACCESS_TOKEN), because the platform keeps it as a secret and delivers
+    # a secret only as a whole value; this command puts it into the form ntfy reads. It uses backticks and
+    # `printenv` rather than a dollar sign, so Compose and the platform leave it untouched.
+    entrypoint:
+      - sh
+      - -c
+      - export NTFY_AUTH_TOKENS=admin:`printenv NTFY_ACCESS_TOKEN`:enrollment && exec ntfy serve
     ports:
       - 80
     environment:

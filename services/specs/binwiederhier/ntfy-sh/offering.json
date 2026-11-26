@@ -51,11 +51,11 @@
       ],
       "environment": {
         "ntfy": {
+          "NTFY_ACCESS_TOKEN": "{{ params.NTFY_ACCESS_TOKEN }}",
           "NTFY_ATTACHMENT_EXPIRY_DURATION": "{{ params.NTFY_ATTACHMENT_EXPIRY_DURATION }}",
           "NTFY_ATTACHMENT_FILE_SIZE_LIMIT": "{{ params.NTFY_ATTACHMENT_FILE_SIZE_LIMIT }}",
           "NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT": "{{ params.NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT }}",
           "NTFY_AUTH_ACCESS_CACHE": "{{ params.NTFY_AUTH_ACCESS_CACHE }}",
-          "NTFY_AUTH_TOKENS": "admin:{{ params.NTFY_ACCESS_TOKEN }}:enrollment",
           "NTFY_AUTH_USERS": "admin:$2a$10$oGEA5sTZZVcFOpiqyGaTn.qJ/XvvZbnEdq05hW9T5OEmh9S5IiY2q:admin",
           "NTFY_BAN_THRESHOLD": "{{ params.NTFY_BAN_THRESHOLD }}",
           "NTFY_BAN_WEIGHTS": "{{ params.NTFY_BAN_WEIGHTS }}",
@@ -98,10 +98,12 @@
           "properties": {
             "NTFY_ACCESS_TOKEN": {
               "default": "tk_{{ token_urlsafe(21) }}0",
-              "description": "Generated for this enrollment; keep it or enter your own (the form tk_ followed by 29 letters, digits, - or _). It is the Bearer token for publishing to and subscribing from your instance, and without it every request is denied. Save it; it is also shown in the enrollment's instance details. Changing it later restarts the instance.",
+              "description": "Generated for this enrollment; keep it or enter your own (the form tk_ followed by 29 letters, digits, - or _). It is the Bearer token for publishing to and subscribing from your instance, and without it every request is denied. Save it now: the platform keeps it as a secret and does not show it again. Changing it later restarts the instance.",
+              "format": "password",
               "pattern": "^tk_[-_A-Za-z0-9]{29}$",
               "title": "Access token",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "NTFY_ATTACHMENT_EXPIRY_DURATION": {
               "default": "3h",

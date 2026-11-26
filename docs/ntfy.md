@@ -44,9 +44,10 @@ health check). The offering's `base` channel (`access_method: container`,
 HTTP port with `auth: app`, so **ntfy itself** authenticates every request.
 
 The enrollment parameter **`NTFY_ACCESS_TOKEN`** (generated default, can be
-replaced; ntfy's `tk_` + 29-character format) is injected through the
-channel's `environment` as `NTFY_AUTH_TOKENS`, owned by a provisioned `admin`
-user whose password is a placeholder hash that nobody knows. Customers
+replaced; ntfy's `tk_` + 29-character format) is kept by the platform as a
+secret (`writeOnly`) and bound on its own through the channel's `environment`.
+The container's start command puts it into `NTFY_AUTH_TOKENS`, owned by a
+provisioned `admin` user whose password is a placeholder hash that nobody knows. Customers
 publish and subscribe with `Authorization: Bearer <token>`.
 
 Storage is ephemeral: cached messages are lost when the instance is replaced
