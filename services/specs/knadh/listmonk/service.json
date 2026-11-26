@@ -1,0 +1,11 @@
+{
+  "display_name": "listmonk Newsletter and Mailing List Manager",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.app.volumes[0]: volume 'uploads' at /listmonk/uploads is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.db.volumes[0]: volume 'dbdata' at /var/lib/postgresql/data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "knadh/listmonk",
+  "service_id": "6d0bdf39-189a-4d6e-8210-93a96a622e0f",
+  "status": "created",
+  "time_created": "2026-11-26T01:48:19.285616Z"
+}
