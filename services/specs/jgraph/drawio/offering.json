@@ -1,0 +1,77 @@
+{
+  "capabilities": [
+    "diagram-editor | Draws flowcharts, UML, network, ER and other diagrams in the visitor's browser and saves them to the visitor's device or browser storage; exports PNG, SVG, PDF (via print) and XML."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the self-hosted draw.io (diagrams.net) editor, from the project's own jgraph/drawio image, in a separate container for each enrollment, with its own HTTPS address. draw.io is a full diagramming editor that runs in the web browser: flowcharts, UML, network and cloud architecture diagrams, ER diagrams, mind maps and whiteboards, with large shape libraries and export to PNG, SVG, PDF and XML. The container only serves the editor; diagrams live in the visitor's browser and are saved by the visitor to their device, to browser storage or by download. The service stores nothing and asks for no access to your home.\n\nEnroll in the base channel and open the instance address in a browser. There is no sign-in: anyone who knows the address can open the editor, which is harmless because the page holds no data, but you may not want strangers consuming the instance you pay for, so keep the address private. The only setting is the editor's default language. Saving to Google Drive, OneDrive, Dropbox, GitHub, GitLab or Trello is not available in this service (no client credentials are configured); use Device, Browser or Download. See How to use this service for details and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream draw.io documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Flowcharts, UML, network, cloud architecture, ER diagrams and whiteboards",
+      "Large built-in shape libraries and templates",
+      "Save to your device, browser storage or by download; export PNG, SVG, XML",
+      "No sign-in, no cloud accounts and no data kept on the server",
+      "Default editor language setting"
+    ],
+    "links": {
+      "documentation": "https://www.drawio.com/doc/faq/configure-diagram-editor",
+      "homepage": "https://www.drawio.com",
+      "source_code": "https://github.com/jgraph/drawio"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "drawio",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private draw.io (diagrams.net) editor in your browser: flowcharts, UML, network and ER diagrams. Diagrams are saved to your own device, not the server. No sign-in, no cloud accounts needed.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private draw.io editor. It has no sign-in and keeps no data; you choose the default language.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "drawio"
+        }
+      ],
+      "environment": {
+        "drawio": {
+          "DRAWIO_LANG": "{{ params.DRAWIO_LANG }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "DRAWIO_LANG": {
+              "default": "en",
+              "description": "Default language of the editor as a draw.io language code, for example en, de, es, fr, pt-br or zh. A visitor can still change it in the editor's Language menu. Read at start, so changing it restarts the instance.",
+              "pattern": "^[A-Za-z]{2,3}(-[A-Za-z]{2})?$",
+              "title": "Default language",
+              "type": "string"
+            }
+          },
+          "required": [
+            "DRAWIO_LANG"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "DRAWIO_LANG": "en"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}
