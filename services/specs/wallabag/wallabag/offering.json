@@ -1,0 +1,135 @@
+{
+  "capabilities": [
+    "read-it-later | Saves web pages you submit, extracts the article text and keeps it for reading later in a web interface, with tags, search, annotations and a REST API.",
+    "article-export | Exports saved articles as EPUB, PDF, CSV, JSON, XML or plain text files."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official wallabag image in a separate container for each enrollment, with its own HTTPS address. wallabag is a self-hosted read-it-later application: give it the address of a web page and it fetches the page, extracts the article and keeps a clean copy you can read later. Articles can be tagged (by hand or by rules), starred, archived, searched and annotated, exported as EPUB or PDF, and followed as feeds. It has a REST API, used by wallabag's browser extension and mobile apps, and it imports from Pocket, Instapaper, Pinboard and other services. Everything is kept in the instance's own SQLite database, stored in the `wallabag` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated password. Sign in at `https://<instance>/` as `wallabag` with that password, then save your first article with the + button. Public registration is off, so the instance has the one account unless you add more yourself. The instance works without knowing its own address; an optional parameter gives it the address for the few places that print it. You can run one wallabag instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream wallabag documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Saves a readable copy of web pages, with tags, tagging rules, stars and archive",
+      "Full-text search, annotations and reading-time estimates",
+      "Export to EPUB, PDF, CSV, JSON, XML and plain text",
+      "REST API for the wallabag browser extension and mobile apps",
+      "Import from Pocket, Instapaper, Pinboard, Readability and browser bookmarks",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://doc.wallabag.org/",
+      "homepage": "https://wallabag.org",
+      "source_code": "https://github.com/wallabag/wallabag"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "wallabag",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted read-it-later app: save web articles, read clean copies later, tag, search and export them, on your own wallabag instance with data kept in your home.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps wallabag's database and files in the wallabag folder of your home, so your saved articles and account are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=wallabag/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private wallabag instance; its data is kept in the wallabag folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "wallabag"
+        }
+      ],
+      "environment": {
+        "wallabag": {
+          "SYMFONY__ENV__DOMAIN_NAME": "{{ params.SYMFONY__ENV__DOMAIN_NAME }}",
+          "SYMFONY__ENV__SECRET": "{{ params.SYMFONY__ENV__SECRET }}",
+          "WALLABAG_PASSWORD": "{{ params.WALLABAG_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "SYMFONY__ENV__DOMAIN_NAME": {
+              "default": "//",
+              "description": "Optional. Leave `//` and wallabag links its pages and files relative to whatever address you open it at, which works at any instance address. Only a few places then lack the full address: the feed identifiers, the Android app link and QR code on the Config page and the examples on the API how-to page. To have them show it, enter this instance's address, for example https://abc123.example.app (shown in the enrollment's instance details), with no trailing slash, and save; changing it restarts the instance and keeps your data. A wrong address here breaks the page styling, so set it back to `//` if the pages look unstyled.",
+              "pattern": "^(//|https://[^/\\s]+)$",
+              "title": "Instance address (optional)",
+              "type": "string"
+            },
+            "SYMFONY__ENV__SECRET": {
+              "default": "{{ token_urlsafe(32) }}",
+              "description": "Generated for this enrollment; wallabag uses it to sign sessions, forms and remember-me cookies, in place of the image's built-in default that is the same everywhere. You do not need to type it anywhere. Changing it signs everyone out. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 24,
+              "title": "Application secret",
+              "type": "string",
+              "writeOnly": true
+            },
+            "WALLABAG_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It becomes the password of the `wallabag` account only when wallabag first creates its database: your data lives in your home, so if the database already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password on wallabag's own Config page. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Password of the wallabag account",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "WALLABAG_PASSWORD",
+            "SYMFONY__ENV__SECRET"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "SYMFONY__ENV__DOMAIN_NAME": "//",
+          "SYMFONY__ENV__SECRET": "local-test-secret-only-0123456789",
+          "WALLABAG_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 65534,
+          "mode": "rw",
+          "source": "{{ home.path }}/wallabag/data",
+          "type": "persist",
+          "uid": 65534
+        },
+        "images": {
+          "gid": 65534,
+          "mode": "rw",
+          "source": "{{ home.path }}/wallabag/images",
+          "type": "persist",
+          "uid": 65534
+        }
+      }
+    }
+  }
+}
