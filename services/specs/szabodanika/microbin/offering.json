@@ -1,0 +1,143 @@
+{
+  "capabilities": [
+    "pastebin | Stores text or source code and returns a link to it; an upload can expire, be removed after a number of reads, be edited, and be protected or encrypted with its own password.",
+    "file-sharing | Stores one uploaded file with an upload (up to 256 MB, or 32 MB when encrypted) and serves it for download from the upload's link.",
+    "url-shortener | Stores a web address and redirects a short link on the instance to it."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official MicroBin image in a separate container for each enrollment, with its own HTTPS address. MicroBin is a small pastebin: you paste text or source code, attach a file, or enter a web address, and get a link with a name made of animal words. An upload containing only a web address becomes a redirect link. Each upload has an expiry (one minute to never, 24 hours by default), an optional burn-after-reads count, optional syntax highlighting, and a privacy level: public (shown in the list), unlisted, read-only, private (encrypted on the server with a password you choose) or secret (also encrypted in your browser first). The text is kept in a SQLite database and the attachments as files, stored in the `microbin` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the two generated passwords. The whole instance is behind HTTP basic authentication: a browser asks for the site user name and password before it shows anything, including a shared link, so give them to the people who should read your uploads. The administrator name and password open the admin page at `/admin`. MicroBin is not told its public address, so its copy-link buttons and QR codes are off; copy links from the browser's address bar. You can run one MicroBin instance at a time. Files of removed or expired uploads stay in your home until you delete them there; see How to use this service for this and the other limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream MicroBin documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Text and code uploads with optional syntax highlighting, editable after upload",
+      "One file attachment per upload, up to 256 MB (32 MB when encrypted)",
+      "Short redirect links for web addresses",
+      "Expiry from one minute to never, and removal after a number of reads",
+      "Public, unlisted, read-only, private (server-side encrypted) and secret (also browser-encrypted) uploads",
+      "Whole site behind a user name and password; separate admin page",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://microbin.eu/docs/intro",
+      "homepage": "https://microbin.eu",
+      "source_code": "https://github.com/szabodanika/microbin"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "microbin",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted MicroBin: a small pastebin, file sharing and URL shortener behind one site password, with expiry, burn after reading and encrypted uploads; data kept in your home.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps MicroBin's database and attachments in the microbin folder of your home, so your uploads are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=microbin/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private MicroBin behind a site user name and password; its data is kept in the microbin folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "microbin"
+        }
+      ],
+      "environment": {
+        "microbin": {
+          "MICROBIN_ADMIN_PASSWORD": "{{ params.MICROBIN_ADMIN_PASSWORD }}",
+          "MICROBIN_ADMIN_USERNAME": "{{ params.MICROBIN_ADMIN_USERNAME }}",
+          "MICROBIN_BASIC_AUTH_PASSWORD": "{{ params.MICROBIN_BASIC_AUTH_PASSWORD }}",
+          "MICROBIN_BASIC_AUTH_USERNAME": "{{ params.MICROBIN_BASIC_AUTH_USERNAME }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "MICROBIN_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the password of the admin page at /admin, which lists every upload, including unlisted ones, and can remove them. MicroBin reads it at each start, so changing it here changes the password and restarts the instance. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "MICROBIN_ADMIN_USERNAME": {
+              "default": "admin",
+              "description": "The user name for the admin page at /admin. MicroBin reads it at each start, so changing it here changes the name and restarts the instance.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "MICROBIN_BASIC_AUTH_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. The browser asks for the site user name and this password before MicroBin shows any page, so everyone who creates or reads uploads on this instance needs it. MicroBin reads it at each start, so changing it here changes the password and restarts the instance. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Site password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "MICROBIN_BASIC_AUTH_USERNAME": {
+              "default": "microbin",
+              "description": "The user name the browser asks for, with the site password, before MicroBin shows any page (HTTP basic authentication). MicroBin reads it at each start, so changing it here changes the name and restarts the instance.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Site user name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "MICROBIN_BASIC_AUTH_USERNAME",
+            "MICROBIN_BASIC_AUTH_PASSWORD",
+            "MICROBIN_ADMIN_USERNAME",
+            "MICROBIN_ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "MICROBIN_ADMIN_PASSWORD": "local-test-admin-password",
+          "MICROBIN_ADMIN_USERNAME": "admin",
+          "MICROBIN_BASIC_AUTH_PASSWORD": "local-test-site-password",
+          "MICROBIN_BASIC_AUTH_USERNAME": "microbin"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-journal",
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/microbin",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}

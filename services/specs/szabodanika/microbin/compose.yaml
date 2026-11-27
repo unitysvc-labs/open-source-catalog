@@ -1,0 +1,43 @@
+# MicroBin, one private instance per enrollment. The site sign-in and the administrator sign-in are bound from
+# the channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  microbin:
+    image: danielszabo99/microbin:2.1.0@sha256:34fe4ac99b65cc633975ae72ca6fc84eab15f73a95b2e03b98312374063ee5d7
+    ports:
+      - 8080
+    environment:
+      # Nothing is sent to the MicroBin project: no telemetry, no update check, no public server list.
+      MICROBIN_DISABLE_TELEMETRY: "true"
+      MICROBIN_DISABLE_UPDATE_CHECKING: "true"
+      MICROBIN_LIST_SERVER: "false"
+      # The features of the upstream example configuration: editable uploads, syntax highlighting, the
+      # unlisted, read-only, private and secret privacy levels, burn after reading and read counts.
+      MICROBIN_EDITABLE: "true"
+      MICROBIN_HIGHLIGHTSYNTAX: "true"
+      MICROBIN_PRIVATE: "true"
+      MICROBIN_ENABLE_READONLY: "true"
+      MICROBIN_ENCRYPTION_CLIENT_SIDE: "true"
+      MICROBIN_ENCRYPTION_SERVER_SIDE: "true"
+      MICROBIN_ENABLE_BURN_AFTER: "true"
+      MICROBIN_SHOW_READ_STATS: "true"
+      # Uploads may be kept for good, and are not removed for being unread (upstream removes after 90 days).
+      MICROBIN_ETERNAL_PASTA: "true"
+      MICROBIN_GC_DAYS: "0"
+      # Attachments: sized for the instance's memory and temporary disk. An encrypted attachment is held in
+      # memory while it is encrypted or decrypted, so its limit is lower.
+      MICROBIN_MAX_FILE_SIZE_UNENCRYPTED_MB: "256"
+      MICROBIN_MAX_FILE_SIZE_ENCRYPTED_MB: "32"
+    volumes:
+      # The SQLite database (database.sqlite) and the attachments. The channel decides whether this volume
+      # persists, in the microbin folder of the customer's home (offering.json, `volumes`); under plain Docker
+      # it is an ordinary named volume.
+      - data:/app/microbin_data
+    healthcheck:
+      # The image has no curl or wget; bash opens a TCP connection to the server instead.
+      test: [CMD, bash, -c, "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+volumes:
+  data:
