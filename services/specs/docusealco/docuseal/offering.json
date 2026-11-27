@@ -67,11 +67,12 @@
           "properties": {
             "SECRET_KEY_BASE": {
               "default": "{{ token_urlsafe(64) }}",
-              "description": "The key DocuSeal uses for sessions and to encrypt its stored settings and its signing certificate. Generated for this enrollment; keep it or enter your own (at least 64 characters). Save it. Changing it after the first start makes the existing data unreadable: DocuSeal can no longer sign in or open its settings. It is also shown in the enrollment's instance details.",
+              "description": "The key DocuSeal uses for sessions and to encrypt its stored settings and its signing certificate. Generated for this enrollment; keep it or enter your own (at least 64 characters). Changing it after the first start makes the existing data unreadable: DocuSeal can no longer sign in or open its settings. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 64,
               "title": "Secret key",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

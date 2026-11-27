@@ -71,19 +71,21 @@
           "properties": {
             "ADMIN_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the password of the Etherpad user `admin`, who opens the admin pages at /admin-auth/. Save it; it is also shown in the enrollment's instance details. Etherpad reads it at every start, so a change you save takes effect when the instance next starts.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the password of the Etherpad user `admin`, who opens the admin pages at /admin-auth/. Save it now: the platform keeps it as a secret and does not show it again. Etherpad reads it at every start, so a change you save takes effect when the instance next starts.",
               "format": "password",
               "minLength": 12,
               "title": "Administrator password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "ADMIN_SECRET": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for the admin pages, in place of a shipped placeholder it warns about. You never type it.",
+              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for the admin pages, in place of a shipped placeholder it warns about. You never type it. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 16,
               "title": "Admin sign-in secret",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "REQUIRE_AUTHENTICATION": {
               "default": "false",
@@ -97,19 +99,21 @@
             },
             "USER_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the password of the Etherpad user `user`, who may open and edit pads but not use the admin pages. It is only asked for when sign-in is required above. Share it with the people who should edit.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the password of the Etherpad user `user`, who may open and edit pads but not use the admin pages. It is only asked for when sign-in is required above. Share it with the people who should edit. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 12,
               "title": "User password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "USER_SECRET": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for users, in place of a shipped placeholder it warns about. You never type it.",
+              "description": "Generated for this enrollment; keep it. Etherpad uses it as the client secret of its built-in single sign-on client for users, in place of a shipped placeholder it warns about. You never type it. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 16,
               "title": "User sign-in secret",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

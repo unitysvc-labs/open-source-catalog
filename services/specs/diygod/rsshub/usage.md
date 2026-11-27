@@ -11,7 +11,7 @@ Each enrollment runs a private [RSSHub](https://github.com/DIYgod/RSSHub) instan
 ## Set up
 
 1. Enroll in **base**. There is nothing to approve: the instance asks for no access to your home or storage.
-2. The form shows a generated **Access key**. Keep it or enter your own (at least 12 characters; use letters, digits, `-` and `_` so it needs no escaping in an address). Save it; it is also shown in the enrollment's instance details. It is an application credential, not your UnitySVC API key.
+2. The form shows a generated **Access key**. Keep it or enter your own (at least 12 characters; use letters, digits, `-` and `_` so it needs no escaping in an address). Save it now: the platform keeps it as a secret and does not show it again. It is an application credential, not your UnitySVC API key.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address**, so feed readers that use the old one need the new one.
 4. Open the address. The home page opens without the key; every feed needs it.
 

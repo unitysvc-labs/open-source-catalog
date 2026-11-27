@@ -7,7 +7,7 @@ Your pads are kept in the `etherpad` folder of your **home**, not in the enrollm
 ## Set up
 
 1. Enroll in **base**. The enrollment asks for access to the `etherpad/` folder of your home (`service:home`, read and write). Approve it, or the instance does not start. You can run one Etherpad instance at a time.
-2. The form shows a generated **Administrator password** (the password of the Etherpad user `admin`), two generated **sign-in secrets** that Etherpad uses internally and you never type, a **Require sign-in to open pads** choice (default `false`) and a generated **User password** (used only when sign-in is required). Save the passwords; they are also shown in the enrollment's instance details. They are application credentials, not your UnitySVC API key.
+2. The form shows a generated **Administrator password** (the password of the Etherpad user `admin`), two generated **sign-in secrets** that Etherpad uses internally and you never type, a **Require sign-in to open pads** choice (default `false`) and a generated **User password** (used only when sign-in is required). Save the passwords now: the platform keeps them as secrets and does not show them again. They are application credentials, not your UnitySVC API key.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address**, so links you shared need the new one.
 
 ## First use

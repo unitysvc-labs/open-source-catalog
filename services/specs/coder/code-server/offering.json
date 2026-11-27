@@ -67,11 +67,12 @@
           "properties": {
             "PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. code-server asks for it on its sign-in page, and anyone who has it gets a full shell in the container, so keep it private. Save it; it is also shown in the enrollment's instance details.",
+              "description": "Generated for this enrollment; keep it or enter your own. code-server asks for it on its sign-in page, and anyone who has it gets a full shell in the container, so keep it private. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 12,
               "title": "Sign-in password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

@@ -1,0 +1,89 @@
+{
+  "capabilities": [
+    "machine-translation | Translates text between the languages loaded on the instance, with automatic source-language detection, over a REST API; the same server also hosts a web translator.",
+    "language-detection | Returns the most likely language of a text with a confidence score."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official LibreTranslate image in a separate container for each enrollment, with its own HTTPS address. LibreTranslate is a self-hosted machine-translation server: text is translated on the instance itself with open translation models (Argos Translate), not sent to a third-party translation service. It offers a REST API (`/translate`, `/detect`, `/languages`) and a web translator, and the languages it loads are chosen when you enroll.\n\nEnroll in the base channel, choose up to three language codes (the default is English and Spanish) and keep or replace the generated API key. The instance accepts only requests that carry that key, in the web translator as well as in the API. The language models are downloaded when the instance starts, so a new instance takes a short while to become ready, and they are downloaded again each time it starts. Nothing else is stored. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream LibreTranslate documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Translates text and HTML between the loaded languages, with automatic source-language detection",
+      "REST API: /translate, /detect and /languages",
+      "Web translator, protected by the same API key",
+      "Models run on the instance; your text is not sent to another translation service",
+      "Choose the languages at enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.libretranslate.com/",
+      "homepage": "https://libretranslate.com",
+      "source_code": "https://github.com/LibreTranslate/LibreTranslate"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "libretranslate",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted machine-translation server: a REST API and web translator running open models on your own instance, protected by an API key you set.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private LibreTranslate server with up to three languages, protected by an API key; nothing is kept between runs.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5000,
+          "service": "libretranslate"
+        }
+      ],
+      "environment": {
+        "libretranslate": {
+          "LIBRETRANSLATE_API_KEY": "{{ params.LIBRETRANSLATE_API_KEY }}",
+          "LT_LOAD_ONLY": "{{ params.LT_LOAD_ONLY }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "LIBRETRANSLATE_API_KEY": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. Every request to the instance, in the web translator and in the API, must carry this key (the `api_key` field), or it is refused. Save it; it is also shown in the enrollment's instance details.",
+              "format": "password",
+              "minLength": 16,
+              "title": "API key",
+              "type": "string"
+            },
+            "LT_LOAD_ONLY": {
+              "default": "en,es",
+              "description": "Comma-separated language codes to load, at most three, for example `en,es` or `en,fr,de`. Each language adds a model download (about 200 MB per language pair direction) and memory; three languages were checked to fit this size. Models are downloaded when the instance starts.",
+              "pattern": "^[a-z]{2,3}(,[a-z]{2,3}){0,2}$",
+              "title": "Languages",
+              "type": "string"
+            }
+          },
+          "required": [
+            "LIBRETRANSLATE_API_KEY",
+            "LT_LOAD_ONLY"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "LIBRETRANSLATE_API_KEY": "local-test-key-only-0123",
+          "LT_LOAD_ONLY": "en,es"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}

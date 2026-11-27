@@ -154,7 +154,7 @@ All paths are on your instance, `https://<instance>`.
 
 ### 401 / 403
 
-- The `Authorization: Bearer tk_...` header is missing or the token is wrong. Copy it from the enrollment's instance details.
+- The `Authorization: Bearer tk_...` header is missing or the token is wrong. Use the token you saved when you enrolled; the platform does not show it again, but you can set a new one in the enrollment's parameters.
 - The token must be `tk_` followed by 29 letters, digits, `-` or `_`.
 
 ### Cannot connect, or the instance is not ready

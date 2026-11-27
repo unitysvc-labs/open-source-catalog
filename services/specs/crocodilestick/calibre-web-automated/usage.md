@@ -7,7 +7,7 @@ Your library, settings and users are kept in the `calibre-web-automated` folder 
 ## Set up
 
 1. Enroll in **base**. The enrollment asks for access to the `calibre-web-automated/` folder of your home (`service:home`, read and write). Approve it, or the instance does not start. You can run one instance at a time.
-2. The form shows a generated **Administrator password**. It is the password of the account named `admin`, set the **first time** the instance runs on your data. If your data already exists, because you enrolled before or restarted, the parameter is ignored and the existing password still applies; change it in the web interface (the user menu, then your profile). Save the value; it is also shown in the enrollment's instance details. It is an application credential, not your UnitySVC API key.
+2. The form shows a generated **Administrator password**. It is the password of the account named `admin`, set the **first time** the instance runs on your data. If your data already exists, because you enrolled before or restarted, the parameter is ignored and the existing password still applies; change it in the web interface (the user menu, then your profile). Save the value now: the platform keeps it as a secret and does not show it again. It is an application credential, not your UnitySVC API key.
 3. Wait for the instance to become ready; the first start takes a minute or two. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address**, so e-reader apps that point at the old one need the new one.
 4. Open the address and sign in as `admin` with the password.
 
