@@ -1,0 +1,80 @@
+{
+  "capabilities": [
+    "encrypted-pastebin | Stores text, source code or Markdown that the browser encrypts before upload and returns a link carrying the key; pastes can expire, be burned after one reading, take a password and have a comment thread."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official PrivateBin image in a separate container for each enrollment, with its own HTTPS address. PrivateBin is a pastebin where the server cannot read what is pasted: the browser encrypts the text with 256-bit AES before sending it, and the key travels only in the part of the link after the `#`, which browsers do not send to the server. You paste plain text, source code or Markdown, choose when it expires (five minutes to never, one week by default), and optionally set a password, burn-after-reading or a comment thread, then send the link. The instance runs PrivateBin's default configuration: file attachments are off and a paste can be up to 10 MiB. The encrypted pastes are stored as files in the `privatebin` folder of your home, so links keep working after the instance is stopped and started, and after removing it and enrolling again at the new address.\n\nEnroll in the base channel; it has no settings. PrivateBin has no accounts, no sign-in and no administrator: anyone who knows the instance address can create pastes, and a paste can be read only with its own link. Open `https://<instance>/` and paste. You can run one PrivateBin instance at a time. Because stored files are never deleted from your home, a paste that was burned or deleted can come back when the instance is stopped and started again; see How to use this service for this and the other limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the pastes in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream PrivateBin documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Pastes are encrypted and decrypted in the browser; the server stores only ciphertext",
+      "Expiry from five minutes to never, burn after reading, and an optional password",
+      "Plain text, syntax-highlighted source code or Markdown, with an optional comment thread",
+      "No accounts: a paste is read with its link, and deleted with the link shown to its author",
+      "Your pastes are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/PrivateBin/PrivateBin/wiki",
+      "homepage": "https://privatebin.info",
+      "source_code": "https://github.com/PrivateBin/PrivateBin"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "privatebin",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted PrivateBin: a pastebin that encrypts in the browser, so the server cannot read pastes. Expiry, burn after reading, passwords; pastes kept in your home.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps PrivateBin's encrypted pastes and its server salt in the privatebin folder of your home, so paste links still work when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=privatebin/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private PrivateBin with its default configuration, no settings and no sign-in; its encrypted pastes are kept in the privatebin folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "privatebin"
+        }
+      ],
+      "params": {
+        "schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "testing_defaults": {}
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "gid": 82,
+          "mode": "rw",
+          "source": "{{ home.path }}/privatebin",
+          "type": "persist",
+          "uid": 65534
+        }
+      }
+    }
+  }
+}
