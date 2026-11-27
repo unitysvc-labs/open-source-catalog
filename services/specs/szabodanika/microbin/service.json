@@ -1,0 +1,10 @@
+{
+  "display_name": "MicroBin Pastebin and File Sharing",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.microbin.volumes[0]: volume 'data' at /app/microbin_data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "szabodanika/microbin",
+  "service_id": "052958e1-c9ff-4f30-be31-6b36ca669d8b",
+  "status": "created",
+  "time_created": "2026-11-27T22:32:17.619113Z"
+}
