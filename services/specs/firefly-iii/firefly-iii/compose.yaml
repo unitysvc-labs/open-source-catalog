@@ -1,0 +1,35 @@
+# Firefly III, one private instance per enrollment. The application key is bound from the channel's
+# `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  firefly-iii:
+    image: fireflyiii/core:version-6.7.12@sha256:99319a6ce1370eba9e85f78e4d506e76267af0e7acc40fb4189b34d5fe83c874
+    ports:
+      - 8080
+    environment:
+      # The embedded database: one SQLite file, storage/database/database.sqlite (the first volume below).
+      DB_CONNECTION: sqlite
+      # The instance is reached through the platform's HTTPS front end. Upstream's documented value for a
+      # reverse proxy: trust its forwarded scheme and host, so that links, redirects and cookies use the
+      # public https address. No APP_URL is needed for that.
+      TRUSTED_PROXIES: "**"
+      # Log to the container's output only, not also to daily files in the container's temporary disk.
+      LOG_CHANNEL: stdout
+    volumes:
+      # The SQLite database: accounts, transactions, users, settings, and a copy of the keys that sign API
+      # tokens (encrypted with APP_KEY). The image declares storage/upload as a volume of its own, so the
+      # two folders that hold data are mounted separately; everything else under storage/ (sessions,
+      # caches, compiled views) is temporary and rebuilt. The channel decides whether these volumes
+      # persist, in the firefly-iii folder of the customer's home (offering.json, `volumes`); under plain
+      # Docker they are ordinary named volumes.
+      - database:/var/www/html/storage/database
+      # The files attached to transactions, accounts, bills and other records.
+      - upload:/var/www/html/storage/upload
+    healthcheck:
+      test: [CMD, curl, -fsS, -o, /dev/null, "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+volumes:
+  database:
+  upload:

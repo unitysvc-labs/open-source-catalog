@@ -1,0 +1,128 @@
+{
+  "capabilities": [
+    "personal-finance-manager | Records income, expenses and transfers in double-entry accounts and organizes them with budgets, categories, tags, bills, piggy banks, rules and recurring transactions, with reports, in a web interface and a REST API. Does not connect to banks by itself."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Firefly III image in a separate container for each enrollment, with its own HTTPS address. Firefly III is a self-hosted manager for personal finances with double-entry bookkeeping: record withdrawals, deposits and transfers between your asset accounts, organize them with budgets, categories and tags, track bills, subscriptions and piggy banks, set up recurring transactions and rules that file new transactions for you, and read reports and charts of income and spending in several currencies. It has a REST API with personal access tokens and OAuth clients, and attaches files such as receipts to records. It does not connect to banks by itself; you enter transactions or load them through the API. Everything is kept in the instance's own SQLite database and upload folder, stored in the `firefly-iii` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel. The form generates an application key (`APP_KEY`); save it and enter it again if you enroll again, or your API tokens stop working. Open `https://<instance>/` as soon as the instance is ready and register: Firefly III has no setting for a first password, so the first account registered becomes the owner, and until it exists anyone who knows the address could register it. After the first account, registration is closed. The address needs no configuration. No mail server is configured, so password reset by email does not work, and changing your email address in the profile locks the account. You can run one Firefly III instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Firefly III documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Double-entry bookkeeping for asset, expense, revenue and liability accounts, in several currencies",
+      "Budgets, categories, tags, bills, subscriptions and piggy banks",
+      "Rules and recurring transactions",
+      "Reports and charts of income, spending and net worth",
+      "REST API with personal access tokens and OAuth clients",
+      "Files attached to transactions and other records",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.firefly-iii.org",
+      "homepage": "https://firefly-iii.org",
+      "source_code": "https://github.com/firefly-iii/firefly-iii"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "firefly-iii",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted personal finance manager: track accounts, budgets, bills and transactions in your own Firefly III instance, with a REST API and data kept in your home between runs.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Firefly III's database and attached files in the firefly-iii folder of your home, so your accounts and transactions are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=firefly-iii/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Firefly III instance; its data is kept in the firefly-iii folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "firefly-iii"
+        }
+      ],
+      "environment": {
+        "firefly-iii": {
+          "APP_KEY": "{{ params.APP_KEY }}",
+          "TZ": "{{ params.TZ }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "APP_KEY": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "The application key of this Firefly III instance: exactly 32 characters (letters, digits, - and _). Generated for this enrollment; keep it or enter your own. It signs your sessions and encrypts the keys that sign API tokens, which are stored with your data. It is not your sign-in password. It must stay the same for as long as you use the data: if it changes, your accounts and transactions and your sign-in still work, but everyone is signed out and every API token and OAuth client token stops working for good and must be created again. Because your data lives in your home and outlasts the enrollment, enter the same value when you enroll again; a new enrollment otherwise generates a different key. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 32,
+              "minLength": 32,
+              "pattern": "^[A-Za-z0-9_-]{32}$",
+              "title": "Application key (APP_KEY)",
+              "type": "string",
+              "writeOnly": true
+            },
+            "TZ": {
+              "default": "UTC",
+              "description": "The instance's time zone, as an IANA name such as Europe/Amsterdam or America/Toronto. Firefly III uses it for the dates and times it records and shows. Changing it restarts the instance and keeps your data.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$",
+              "title": "Time zone",
+              "type": "string"
+            }
+          },
+          "required": [
+            "APP_KEY",
+            "TZ"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "APP_KEY": "LocalTestKeyOf32CharsExactly_0-9",
+          "TZ": "UTC"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "database": {
+          "exclude": [
+            "*-journal",
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/firefly-iii/database",
+          "type": "persist",
+          "uid": 33
+        },
+        "upload": {
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/firefly-iii/upload",
+          "type": "persist",
+          "uid": 33
+        }
+      }
+    }
+  }
+}
