@@ -1,0 +1,130 @@
+{
+  "capabilities": [
+    "vehicle-maintenance-log | Records service, repair, upgrade, tax and odometer entries per vehicle with attached files, reminders by date or distance and cost reports, in a web interface and over a REST API.",
+    "fuel-mileage-tracker | Records fuel fill-ups per vehicle and calculates fuel economy and cost over time."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official LubeLogger image in a separate container for each enrollment, with its own HTTPS address. LubeLogger is a self-hosted vehicle maintenance and fuel mileage tracker: keep a garage of vehicles and record service, repairs, upgrades, fuel fill-ups, odometer readings, taxes and notes for each, attach receipts and photos, set reminders by date or distance, plan work on a board, and see costs and fuel economy in reports. Records can be imported and exported as CSV, and there is a REST API. Everything is kept in the instance's own embedded LiteDB database and files, stored in the `lubelogger` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated root password. LubeLogger starts with sign-in switched off upstream; this recipe switches it on from the first start, so open `https://<instance>/` and sign in with the root user name and password. Then add a vehicle and its first records. The address needs no configuration. No mail server is set up, so reminders are not emailed and registration and password-reset tokens are passed on by hand. You can run one LubeLogger instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream LubeLogger documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Garage of vehicles with service, repair, upgrade, tax, odometer and note records",
+      "Fuel fill-ups with fuel economy and cost calculations",
+      "Reminders by date or distance, a planner board and supplies",
+      "Attached receipts, documents and photos",
+      "Reports, CSV import and export, and a REST API",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.lubelogger.com",
+      "homepage": "https://lubelogger.com",
+      "source_code": "https://github.com/hargata/lubelog"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "lubelogger",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted vehicle maintenance and fuel mileage tracker: log service, repairs, fuel and reminders for your vehicles on your own LubeLogger, with data kept in your home.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps LubeLogger's database, uploaded files and settings in the lubelogger folder of your home, so your vehicles and records are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=lubelogger/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private LubeLogger; its data is kept in the lubelogger folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "lubelogger"
+        }
+      ],
+      "environment": {
+        "lubelogger": {
+          "LC_ALL": "{{ params.LC_ALL }}",
+          "ROOT_USER_NAME": "{{ params.ROOT_USER_NAME }}",
+          "ROOT_USER_PASSWORD": "{{ params.ROOT_USER_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "LC_ALL": {
+              "default": "en_US.UTF-8",
+              "description": "The locale LubeLogger uses for the currency symbol, number format and date format, for example en_US.UTF-8, en_GB.UTF-8 or de_DE.UTF-8. Changing it restarts the instance and keeps your data.",
+              "pattern": "^[a-z]{2,3}_[A-Z]{2}\\.UTF-8$",
+              "title": "Locale",
+              "type": "string"
+            },
+            "ROOT_USER_NAME": {
+              "default": "admin",
+              "description": "The root user's sign-in name, without spaces or colons. It applies together with the root password, under the same conditions.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[^\\s:]+$",
+              "title": "Root user name",
+              "type": "string"
+            },
+            "ROOT_USER_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own, without spaces or colons. It is the root user's password until LubeLogger stores its own copy of the sign-in settings in your data, which it does the first time the root user saves any setting: your data lives in your home, so from then on (a later restart, or a later enrollment) this value is ignored and the stored password still applies. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[^\\s:]+$",
+              "title": "Root password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "ROOT_USER_NAME",
+            "ROOT_USER_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "LC_ALL": "en_US.UTF-8",
+          "ROOT_USER_NAME": "admin",
+          "ROOT_USER_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-log.db"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/lubelogger/data",
+          "type": "persist"
+        },
+        "keys": {
+          "mode": "rw",
+          "source": "{{ home.path }}/lubelogger/keys",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}

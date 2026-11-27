@@ -1,0 +1,48 @@
+# LubeLogger, one private instance per enrollment. The root user's name and password are bound from the channel's
+# `environment` in offering.json; nothing in this file is secret.
+# LubeLogger starts with authentication off. Upstream documents three settings that turn it on from the
+# environment: EnableAuth, and UserNameHash and UserPasswordHash, the SHA-256 hashes (lower-case hex) of the root
+# user's name and password. So the entrypoint below hashes the two bound values with the image's own `sha256sum`,
+# exports the hashes, drops the plain values and starts the image's own command. If a value is missing the
+# container stops instead of starting without sign-in. The script has no dollar sign, so neither Docker Compose
+# nor the platform rewrites it.
+services:
+  lubelogger:
+    image: ghcr.io/hargata/lubelogger:v1.7.5@sha256:cdfd841eea84b652cca5401dc7edfca9f400970ab472025246f92323b2ce36e1
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e -o pipefail
+        UserNameHash=`printenv ROOT_USER_NAME | tr -d '\n' | sha256sum | cut -d ' ' -f 1`
+        UserPasswordHash=`printenv ROOT_USER_PASSWORD | tr -d '\n' | sha256sum | cut -d ' ' -f 1`
+        export UserNameHash UserPasswordHash
+        unset ROOT_USER_NAME ROOT_USER_PASSWORD
+        exec ./CarCareTracker
+    ports:
+      - 8080
+    environment:
+      # Require sign-in from the first start. A userConfig.json that LubeLogger later writes in the data folder
+      # (when the root user saves settings or changes the credentials) takes precedence over these variables.
+      EnableAuth: "true"
+    volumes:
+      # The LiteDB database (cartracker.db), uploaded images and documents, translations, themes and the
+      # configuration (config/). The channel decides whether these volumes persist, in the lubelogger folder of
+      # the customer's home (offering.json, `volumes`); under plain Docker they are ordinary named volumes.
+      - data:/App/data
+      # The keys that encrypt the sign-in cookie, so a restart does not sign everyone out.
+      - keys:/root/.aspnet/DataProtection-Keys
+    healthcheck:
+      # The image has no curl or wget, so bash opens the port itself and asks for the anonymous /health route.
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\r\n\r\n' >&3 && grep -q '"status":"pass"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
+  keys:
