@@ -1,0 +1,11 @@
+{
+  "display_name": "LubeLogger Vehicle Maintenance and Fuel Tracker",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.lubelogger.volumes[0]: volume 'data' at /App/data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.lubelogger.volumes[1]: volume 'keys' at /root/.aspnet/DataProtection-Keys is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "hargata/lubelogger",
+  "service_id": "a8e292a1-2f2e-4f54-8336-7f487ae3095a",
+  "status": "created",
+  "time_created": "2026-11-27T22:33:18.129901Z"
+}
