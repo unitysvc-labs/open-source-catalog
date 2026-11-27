@@ -1,0 +1,27 @@
+# JupyterLab, one private instance per enrollment. The access token is bound from the channel's
+# `environment` in offering.json (Jupyter Server reads it from JUPYTER_TOKEN).
+services:
+  jupyterlab:
+    image: quay.io/jupyter/minimal-notebook:2026-11-23@sha256:b97cc9adde649c3b7b8209f4aa17996b7ec0df8b5424f22aae50ce1329d900c8
+    # The image's own start script, which runs `jupyter lab` with the options after it. The file browser and
+    # new terminals open on the customer's work folder, the only folder that is kept. The token is the one
+    # credential: a password set on the sign-in page would be stored outside the work folder and lost on stop.
+    command:
+      - start-notebook.py
+      - --ServerApp.root_dir=/home/jovyan/work
+      - --PasswordIdentityProvider.allow_password_change=False
+    working_dir: /home/jovyan/work
+    ports:
+      - 8888
+    volumes:
+      # The customer's notebooks and files. The channel decides whether this volume persists, in the jupyterlab
+      # folder of the customer's home (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - work:/home/jovyan/work
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:8888/api"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  work:
