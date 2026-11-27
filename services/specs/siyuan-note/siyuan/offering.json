@@ -1,0 +1,106 @@
+{
+  "capabilities": [
+    "note-taking | Stores notes as nested blocks in notebooks, edited in a web interface with block references, backlinks, databases, flashcards, full-text and SQL search, and an HTTP API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official SiYuan image in a separate container for each enrollment, with its own HTTPS address. SiYuan is a privacy-first personal knowledge management system: notes are made of blocks that you can reference, embed and link in both directions, organised in notebooks and edited in a what-you-see-is-what-you-get Markdown editor in the browser. It has database (table) views, flashcards with spaced repetition, templates, full-text and SQL search, a community marketplace of plugins and themes, and an HTTP API. Your workspace (settings, notebooks, assets and history) is stored in the `siyuan` folder of your home, so it survives stopping the instance and even removing it and enrolling again. Because that copy only adds and replaces files, a document you delete or move comes back at its old place after the instance is stopped and started; read How to use this service before relying on it.\n\nEnroll in the base channel and keep or replace the generated access authorization code. Open `https://<instance>/` and enter the code to unlock the workspace; SiYuan has no user accounts, so the code is the only credential. The server image works in a browser only: the SiYuan desktop and mobile apps cannot connect to it, and export to PDF, HTML and Word and import of Markdown files are not available. Data sync and backup to the vendor's cloud or to S3 or WebDAV storage, cloud asset hosting and the cloud inbox are paid features of a SiYuan account sold by the vendor and are not part of this service. You can run one SiYuan instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the workspace in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream SiYuan guide, community and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Block-based editor with references, embeds, backlinks and a graph view",
+      "Database (table) views, flashcards, templates and daily notes",
+      "Full-text and SQL search",
+      "HTTP API with a token, and a community marketplace of plugins and themes",
+      "Access protected by an authorization code you set at enrollment",
+      "Your workspace is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/siyuan-note/siyuan/blob/master/README.md",
+      "homepage": "https://b3log.org/siyuan",
+      "source_code": "https://github.com/siyuan-note/siyuan"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "siyuan",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted SiYuan workspace: block-based notes with references, databases and flashcards in your browser, unlocked by your own access code, with data kept in your home.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps the SiYuan workspace (settings, notebooks, assets and history) in the siyuan folder of your home, so your notes are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=siyuan/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private SiYuan workspace; it is kept in the siyuan folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 6806,
+          "service": "siyuan"
+        }
+      ],
+      "environment": {
+        "siyuan": {
+          "SIYUAN_ACCESS_AUTH_CODE": "{{ params.SIYUAN_ACCESS_AUTH_CODE }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "SIYUAN_ACCESS_AUTH_CODE": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is SiYuan's access authorization code (lock screen password), the only credential of the instance: anyone who has it can read and change the whole workspace. SiYuan applies this value at every start, so changing it here restarts the instance with the new code and signs out existing browser sessions; a code changed in SiYuan's own settings is replaced by this one at the next start. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Access authorization code",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "SIYUAN_ACCESS_AUTH_CODE"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "SIYUAN_ACCESS_AUTH_CODE": "local-test-code-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "temp/**",
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/siyuan",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
