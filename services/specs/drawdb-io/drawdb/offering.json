@@ -1,0 +1,53 @@
+{
+  "capabilities": [
+    "database-diagram-editor | Draws entity-relationship diagrams in the browser, with tables, fields and relationships.",
+    "sql-import-export | Imports a diagram from SQL and exports SQL scripts for MySQL, PostgreSQL, SQLite, MariaDB, SQL Server and Oracle.",
+    "diagram-export | Exports a diagram as an image, PDF, JSON or DBML file."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official drawDB image in a separate container for each enrollment, with its own HTTPS address. drawDB is a database schema editor that runs in the browser: you draw tables, fields and relationships on a canvas, generate the SQL for your database, import an existing schema from SQL, and export diagrams as images, PDF, JSON or DBML. The container only serves the application's static files.\n\nEnroll in the base channel, then open the instance address and start designing. There is no sign-in and no server-side data: your diagrams are saved in your browser's own storage, so they stay on the computer and browser you used, and they are not part of the instance. Export or download a diagram to keep a copy. The optional sharing server from the drawDB project is not included. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream drawDB documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Visual editor for tables, fields, relationships, notes and areas",
+      "Generates SQL for MySQL, PostgreSQL, SQLite, MariaDB, SQL Server and Oracle",
+      "Imports a schema from SQL and exports images, PDF, JSON and DBML",
+      "Diagrams are saved in your own browser; nothing is stored on the server"
+    ],
+    "links": {
+      "documentation": "https://drawdb.app/docs",
+      "homepage": "https://drawdb.app",
+      "source_code": "https://github.com/drawdb-io/drawdb"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "drawdb",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private drawDB, a browser-based database schema designer: draw tables and relationships, generate SQL, import from SQL, export images, PDF, JSON or DBML. Diagrams stay in your browser.",
+  "time_created": "2026-11-25T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private drawDB web application; it keeps no data on the server, so it asks for no storage access.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "drawdb"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}
