@@ -1,0 +1,45 @@
+# Healthchecks, one private instance per enrollment. The first account, the signing secret and the instance
+# address are bound from the channel's `environment` in offering.json; the values below are the instance's
+# fixed, non-secret settings.
+services:
+  healthchecks:
+    image: healthchecks/healthchecks:v5.0.3@sha256:5eb96eb72dc63ac24743f1c0fc4469931155329e05c9781a0809320de0ae479c
+    # Healthchecks has no environment setting that creates the first account, and sign-up needs a mail server.
+    # This command creates the database tables, then creates the account with the documented
+    # `manage.py createsuperuser --email ... --password ...` (it fails harmlessly when the email is already
+    # taken, as it is on every restart over kept data), then starts the image's own run.sh. It uses backticks
+    # and `printenv` rather than a dollar sign, so Compose and the platform leave it untouched, and the
+    # `--name=value` form so that a generated password beginning with a hyphen is not read as an option.
+    command:
+      - /bin/bash
+      - -c
+      - |
+        ./manage.py migrate || exit 1
+        ./manage.py createsuperuser "--email=`printenv ADMIN_EMAIL`" "--password=`printenv ADMIN_PASSWORD`" || true
+        exec /opt/healthchecks/run.sh
+    ports:
+      - 8000
+    environment:
+      DB: sqlite
+      DB_NAME: /data/hc.sqlite
+      DEBUG: "False"
+      # The address is not known before the instance exists, so accept any host name. Absolute links are
+      # built from SITE_ROOT, never from the request.
+      ALLOWED_HOSTS: "*"
+      # A private instance: nobody who finds the address can create an account.
+      REGISTRATION_OPEN: "False"
+      # Two web workers instead of the default four, to fit the smallest size (upstream's documented setting).
+      GUNICORN_WORKERS: "2"
+    volumes:
+      # The SQLite database: accounts, projects, checks, pings and integrations. The channel decides whether
+      # this volume persists, in the healthchecks folder of the customer's home (offering.json, `volumes`);
+      # under plain Docker it is an ordinary named volume.
+      - data:/data
+    healthcheck:
+      test: [CMD, python, /opt/healthchecks/fetchstatus.py]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:
