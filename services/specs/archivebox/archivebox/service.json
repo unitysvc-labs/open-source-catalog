@@ -1,0 +1,10 @@
+{
+  "display_name": "ArchiveBox Web Archive",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.archivebox.volumes[0]: volume 'data' at /data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "archivebox/archivebox",
+  "service_id": "11a23fdd-9b11-411c-af00-eb00dad760a2",
+  "status": "created",
+  "time_created": "2026-11-26T02:07:28.302137Z"
+}
