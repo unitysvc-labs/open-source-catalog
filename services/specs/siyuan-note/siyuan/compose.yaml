@@ -1,0 +1,29 @@
+# SiYuan, one private instance per enrollment. The access authorization code (SIYUAN_ACCESS_AUTH_CODE) is bound
+# from the channel's `environment` in offering.json; nothing in this file is secret. Without a code the kernel
+# refuses to start in a container ("the access authorization code ... must be set when deploying via Docker"),
+# so an instance is never served open.
+services:
+  siyuan:
+    image: b3log/siyuan:v3.8.12@sha256:3e1b65ce633e437fed4ed440367d0dc316039b02d4554a47bdda16790b6a973d
+    # The image's entrypoint starts as root, gives the workspace to user 1000:1000 (its PUID/PGID defaults) and
+    # runs the kernel as that user.
+    command: [serve, --workspace=/siyuan/workspace]
+    ports:
+      - 6806
+    environment:
+      # The image defaults to Asia/Shanghai; note timestamps use the container's time zone.
+      TZ: Etc/UTC
+    volumes:
+      # The whole workspace: conf/ (settings), data/ (notebooks as .sy files, assets, plugins, templates),
+      # history/ and repo/ (local snapshots), and temp/ (the SQLite index, rebuilt from data/ when missing).
+      # The channel decides whether this volume persists, in the siyuan folder of the customer's home
+      # (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/siyuan/workspace
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:6806/api/system/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
