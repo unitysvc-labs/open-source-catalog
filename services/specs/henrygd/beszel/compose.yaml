@@ -1,0 +1,23 @@
+# Beszel hub, one private instance per enrollment. The first account's email and password are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+# The image is built from scratch: it holds only the hub binary, runs as root and has no shell.
+services:
+  beszel:
+    image: henrygd/beszel:0.21.2@sha256:b0be90bd4aee2993fde763032a5098ce4386fba43cfe5031ec017b8d9e8c97a2
+    ports:
+      - 8090
+    volumes:
+      # PocketBase's data folder: the SQLite databases (data.db, auxiliary.db) and the hub's key pair
+      # (id_ed25519), which agents use to recognise this hub. The channel decides whether this volume
+      # persists, in the beszel folder of the customer's home (offering.json, `volumes`); under plain Docker
+      # it is an ordinary named volume.
+      - data:/beszel_data
+    healthcheck:
+      # The hub's own health command (the image has no curl or wget); it requests /api/health.
+      test: [CMD, /beszel, health, --url, "http://127.0.0.1:8090"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+volumes:
+  data:
