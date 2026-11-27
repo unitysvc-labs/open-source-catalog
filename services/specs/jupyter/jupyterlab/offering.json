@@ -1,0 +1,100 @@
+{
+  "capabilities": [
+    "notebook-environment | Serves JupyterLab in a web browser: create and run Jupyter notebooks on a Python 3 kernel, edit files, and use a terminal that runs shell commands inside the container."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the Jupyter Docker Stacks `minimal-notebook` image (JupyterLab 4.6, Python 3.13) in a separate container for each enrollment, with its own HTTPS address. You get JupyterLab in a browser tab: notebooks that run on a Python 3 kernel in the container, a file browser, a text editor and a terminal with git, curl and pip. The image is the small one, so scientific packages such as pandas or matplotlib are not preinstalled; install what you need with `pip` or `mamba`. The `work` folder that JupyterLab opens is kept in the `jupyterlab` folder of your home, so your notebooks survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated access token. Open `https://<instance>/`, enter the token, and JupyterLab opens on your work folder. Anyone who has the token can run any code in the container, so treat it like a password to a shell. You can run one instance at a time. See How to use this service for full setup, what is kept and what is lost.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Only the work folder is stored; installed packages, JupyterLab settings and everything else outside it are lost when the instance stops. Labs adds no markup and receives no seller payout. See the JupyterLab and Jupyter Docker Stacks documentation and issue trackers for software-specific help.",
+  "details": {
+    "features": [
+      "JupyterLab in a browser tab: notebooks, file browser, text editor and terminal",
+      "Python 3.13 kernel, with pip, mamba and git in the container",
+      "Token sign-in, set by you at enrollment",
+      "Your work folder is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://jupyterlab.readthedocs.io/en/stable/",
+      "homepage": "https://jupyter.org",
+      "source_code": "https://github.com/jupyterlab/jupyterlab"
+    },
+    "protocols": [
+      "http",
+      "websocket"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "jupyterlab",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private JupyterLab in your browser: Python notebooks, a file browser and a terminal; your work folder is kept in your home. Anyone with the access token can run code in the container.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps the notebooks and files of your work folder in the jupyterlab folder of your home, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=jupyterlab/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private JupyterLab instance on the small size; the work folder is kept in the jupyterlab folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8888,
+          "service": "jupyterlab"
+        }
+      ],
+      "environment": {
+        "jupyterlab": {
+          "JUPYTER_TOKEN": "{{ params.JUPYTER_TOKEN }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "JUPYTER_TOKEN": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. JupyterLab asks for it on its sign-in page and accepts it as an API token, and anyone who has it can run any code in the container, so keep it private. Changing it later restarts the instance with the new token. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 16,
+              "title": "Access token",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "JUPYTER_TOKEN"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "JUPYTER_TOKEN": "local-test-token-only-1234"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "work": {
+          "gid": 100,
+          "mode": "rw",
+          "source": "{{ home.path }}/jupyterlab",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
