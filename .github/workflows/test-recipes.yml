@@ -5,8 +5,11 @@ name: Test Recipes
 #
 #   0. validate   the same three checks as ever (data, format, channel binding); nothing is uploaded
 #                 unless all three pass
-#   1. upload     only the recipes whose expanded content changed, using the upload state of the last
-#                 production upload (`specs upload --submit --state`), and fail if an upload fails
+#   1. upload     only the recipes this pull request changed: those whose expanded content differs from the
+#                 commit where the branch left its base (`specs upload --submit --since origin/<base>`), and
+#                 fail if an upload fails. The recipes of other pull requests, and what the base gained after
+#                 the branch was made, are not sent, so a branch that is behind its base cannot put an older
+#                 copy of someone else's recipe on production
 #   2. sidecars   commit the `service.json` of a recipe that has none to the pull request's branch
 #   3. wait       `--wait-for-test`: until the platform's activation tests have decided each uploaded
 #                 service; `active` or `review` passes, `rejected`, an error or no decision in time fails
@@ -61,7 +64,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write # the sidecar commit
-      actions: read # to find the production upload state
       statuses: write # the verdict on the head commit
     defaults:
       run:
@@ -74,6 +76,8 @@ jobs:
         with:
           # The branch, not the detached commit, so the sidecar commit can be pushed to it.
           ref: ${{ inputs.ref || github.head_ref }}
+          # The whole history: `--since` needs the commit where the branch left its base.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -81,34 +85,22 @@ jobs:
 
       - name: Install unitysvc-sellers
         # 0.3.26 added `specs upload --wait-for-test`; 0.3.27 runs the platform's check on a recipe whose upload
-        # queued no tests (an unchanged one), so a re-run is never a pass without a container check.
-        run: pip install "unitysvc-sellers>=0.3.27"
-
-      - name: Restore the production upload state
-        working-directory: .
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-        run: |
-          mkdir -p .upload-state
-          run_id="$(gh api "repos/$REPO/actions/artifacts?name=upload-state-production&per_page=10" \
-            --jq '[.artifacts[] | select(.expired | not)][0].workflow_run.id // empty' 2>/dev/null || true)"
-          if [ -n "$run_id" ] && gh run download "$run_id" --repo "$REPO" -n upload-state-production -D .upload-state; then
-            echo "Restored the upload state of run $run_id."
-          else
-            echo "::warning::No production upload state; every recipe will be uploaded and tested."
-            rm -f .upload-state/state.json
-          fi
+        # queued no tests (an unchanged one), so a re-run is never a pass without a container check; 0.3.28
+        # added `--since`.
+        run: pip install "unitysvc-sellers>=0.3.28"
 
       - name: Upload the recipes that changed and wait for the platform's decision
         id: upload
-        # The state file is a working copy and is not saved, so the merge upload still sends the recipes.
+        # Nothing is remembered between runs, so a re-run sends and tests the same recipes again, and the
+        # merge upload (which keeps its own state) still sends them.
         # The step does not fail the job here: the sidecars of what was uploaded are committed either way,
         # so the next push targets the same services.
         continue-on-error: true
+        env:
+          BASE: origin/${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
         run: |
           usvc_seller specs upload --submit \
-            --state "$GITHUB_WORKSPACE/.upload-state/state.json" \
+            --since "$BASE" \
             --wait-for-test 40m \
             --report "$GITHUB_WORKSPACE/recipe-test-report.md"
 
