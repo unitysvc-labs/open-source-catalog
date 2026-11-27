@@ -1,0 +1,32 @@
+# PrivateBin, one private instance per enrollment. PrivateBin has no accounts and is configured by a file, not by
+# environment variables, so the channel in offering.json binds no parameters: the instance runs the image's
+# default configuration (no conf.php), which stores pastes as files under /srv/data.
+services:
+  privatebin:
+    image: privatebin/nginx-fpm-alpine:2.1.1@sha256:2e2674fa2f8b18a263fe5577841a6959c5954cd09b9a5476d80a422c277f5a1a
+    ports:
+      - 8080
+    # The image runs as nobody:www-data (65534:82) and is built to run with a read-only root filesystem, as its
+    # documentation recommends: only the four paths mounted below are written.
+    read_only: true
+    volumes:
+      # The pastes, their comments, the server salt and the rate limiter's state. The channel decides whether
+      # this volume persists, in the privatebin folder of the customer's home (offering.json, `volumes`); under
+      # plain Docker it is an ordinary named volume.
+      - data:/srv/data
+      # Scratch space the image needs writable: the service manager's state and sockets, PHP's temporary files
+      # and nginx's request buffers. Lost when the instance stops, which is what the image expects.
+      - run:/run
+      - tmp:/tmp
+      - nginx-tmp:/var/lib/nginx/tmp
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+volumes:
+  data:
+  run:
+  tmp:
+  nginx-tmp:
