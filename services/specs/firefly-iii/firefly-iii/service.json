@@ -1,0 +1,11 @@
+{
+  "display_name": "Firefly III Personal Finance Manager",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.firefly-iii.volumes[0]: volume 'database' at /var/www/html/storage/database is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.firefly-iii.volumes[1]: volume 'upload' at /var/www/html/storage/upload is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "firefly-iii/firefly-iii",
+  "service_id": "01d2af26-6d07-4f8c-8585-ffa8df9c4ac5",
+  "status": "created",
+  "time_created": "2026-11-27T22:36:16.987583Z"
+}
