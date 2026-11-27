@@ -78,11 +78,12 @@
             },
             "VIKUNJA_SERVICE_SECRET": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. Vikunja signs sign-in tokens with it, so changing it signs everyone out. Anyone who knows it could forge a sign-in, so keep it private.",
+              "description": "Generated for this enrollment; keep it or enter your own. Vikunja signs sign-in tokens with it, so changing it signs everyone out. Anyone who knows it could forge a sign-in, so keep it private. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 16,
               "title": "Signing secret",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

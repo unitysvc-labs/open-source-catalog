@@ -7,7 +7,7 @@ Your messages, applications and users are kept in the `gotify` folder of your **
 ## Set up
 
 1. Enroll in **base**. The enrollment asks for access to the `gotify/` folder of your home (`service:home`, read and write). Approve it, or the instance does not start. You can run one Gotify instance at a time.
-2. The form shows an **Administrator name** (default `admin`) and a generated **Administrator password**. They create the administrator account the **first time** Gotify runs on your data. If the database already exists, because you enrolled before or restarted, the parameters are ignored and the existing password still applies; change it in Gotify's own settings. Save the values; they are also shown in the enrollment's instance details. They are application credentials, not your UnitySVC API key.
+2. The form shows an **Administrator name** (default `admin`) and a generated **Administrator password**. They create the administrator account the **first time** Gotify runs on your data. If the database already exists, because you enrolled before or restarted, the parameters are ignored and the existing password still applies; change it in Gotify's own settings. Save the password now: the platform keeps it as a secret and does not show it again. They are application credentials, not your UnitySVC API key.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address**, so apps and scripts that point at the old one need the new one.
 4. Open the address and sign in with the administrator name and password.
 

@@ -64,11 +64,12 @@
             },
             "SEARXNG_SECRET": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. SearXNG uses it to sign internal links (for example the image proxy). It is not a sign-in password and gives no access control. Links signed with an earlier secret stop working if you change it.",
+              "description": "Generated for this enrollment; keep it or enter your own. SearXNG uses it to sign internal links (for example the image proxy). It is not a sign-in password and gives no access control. Links signed with an earlier secret stop working if you change it. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 16,
               "title": "Secret key",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

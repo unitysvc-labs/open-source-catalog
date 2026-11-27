@@ -7,7 +7,7 @@ Your project files are kept in the `code-server/project` folder of your **home**
 ## Set up
 
 1. Enroll in **base**. The enrollment asks for access to the `code-server/` folder of your home (`service:home`, read and write). Approve it, or the instance does not start. You can run one instance at a time.
-2. The form shows a generated **Sign-in password**. Keep it or enter your own (at least 12 characters), and save it; it is also shown in the enrollment's instance details. It is an application password, not your UnitySVC API key.
+2. The form shows a generated **Sign-in password**. Keep it or enter your own (at least 12 characters), and save it now: the platform keeps it as a secret and does not show it again. It is an application password, not your UnitySVC API key.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address.**
 4. Open the address, enter the password, and VS Code opens on the `project` folder.
 

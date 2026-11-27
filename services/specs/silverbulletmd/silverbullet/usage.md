@@ -7,7 +7,7 @@ Your server configuration, pages and attachments are kept in the `silverbullet` 
 ## Set up
 
 1. Enroll in **base**. The enrollment asks for access to the `silverbullet/` folder of your home (`service:home`, read and write). Approve it, or the instance does not start. You can run one SilverBullet instance at a time.
-2. The form shows a **Sign-in name** (default `admin`) and a generated **Sign-in password**. Save them; they are also shown in the enrollment's instance details. They are application credentials, not your UnitySVC API key.
+2. The form shows a **Sign-in name** (default `admin`) and a generated **Sign-in password**. Save the password now: the platform keeps it as a secret and does not show it again. They are application credentials, not your UnitySVC API key.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address**, so anything that points at the old one needs the new one.
 4. **Complete the one-time upgrade on a new instance.** Opening the address on a brand-new instance shows the text "This SilverBullet server needs a one-time upgrade". Open `https://<instance>/.setup/migrate/`, sign in with the sign-in name and password, leave the suggested settings (space name `Notes`, no access for visitors without an account), tick "I have a backup of this folder" (the folder holds only the starter page) and press **Migrate**. This turns the folder into SilverBullet's multi-space layout and creates the administrator account with your name and password. Then open the address again and sign in to your space.
 
