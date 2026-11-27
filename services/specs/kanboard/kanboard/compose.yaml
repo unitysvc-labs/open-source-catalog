@@ -1,0 +1,41 @@
+# Kanboard, one private instance per enrollment. The administrator password is bound from the channel's
+# `environment` in offering.json; nothing in this file is secret.
+# Kanboard creates its database with a built-in administrator (`admin`) whose password is published, and has no
+# environment setting for it. So on a fresh data folder the entrypoint below first lets Kanboard's own command
+# line create the database, replaces that password with the bound one (`./cli user:reset-password`, which asks
+# for the password twice on standard input) and only then starts the image's own entrypoint. If any step fails
+# the new database is removed and the container stops, so the instance never starts with the default password.
+# When the data folder already holds a database (a restore, or a restart) nothing is changed. The script has no
+# dollar sign, so neither Docker Compose nor the platform rewrites it.
+services:
+  kanboard:
+    image: kanboard/kanboard:v1.2.58@sha256:51a912ecd3b6df0cca2cfb521edb2cb92462c59fff427a4938465178b1f54d19
+    entrypoint:
+      - bash
+      - -c
+      - |
+        if [ ! -f /var/www/app/data/db.sqlite ]; then
+          (
+            set -e
+            cd /var/www/app
+            ./cli db:migrate > /dev/null
+            (printenv KANBOARD_ADMIN_PASSWORD; printenv KANBOARD_ADMIN_PASSWORD) | ./cli user:reset-password admin | grep -q "Password updated successfully"
+          ) || { rm -f /var/www/app/data/db.sqlite /var/www/app/data/db.sqlite-shm /var/www/app/data/db.sqlite-wal; echo "first-run setup failed" >&2; exit 1; }
+        fi
+        exec /usr/local/bin/entrypoint.sh
+    ports:
+      - 80
+    volumes:
+      # The SQLite database (db.sqlite) and the files attached to tasks (files/). The channel decides whether
+      # this volume persists, in the kanboard folder of the customer's home (offering.json, `volumes`); under
+      # plain Docker it is an ordinary named volume. The image's plugin folder is not kept: the plugin
+      # installer is off by default and this recipe leaves it off.
+      - data:/var/www/app/data
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:80/healthcheck.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:

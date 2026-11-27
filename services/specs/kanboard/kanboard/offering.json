@@ -1,0 +1,106 @@
+{
+  "capabilities": [
+    "kanban-board | Keeps projects as boards of task cards in columns and swimlanes, with work-in-progress limits, subtasks, comments, attached files and due dates, in a web interface and over a JSON-RPC API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Kanboard image in a separate container for each enrollment, with its own HTTPS address. Kanboard is a self-hosted project management application built around the Kanban board: tasks are cards that you drag between columns, with work-in-progress limits per column, swimlanes, subtasks, comments, attached files, due dates, categories, tags, a search and filter language, automatic actions and analytics such as a cumulative flow diagram. It has users, groups and per-project roles, and a JSON-RPC API. Upstream describes Kanboard as being in maintenance mode: it receives fixes, not major new features. Everything is kept in the instance's own SQLite database and files folder, stored in the `kanboard` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` as `admin` with that password; the published default password of a new Kanboard is replaced before the application first starts. Then create a project and add tasks to its board. The address needs no configuration. You can run one Kanboard instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Kanboard documentation and forum for software-specific help.",
+  "details": {
+    "features": [
+      "Kanban boards with drag and drop, column work-in-progress limits and swimlanes",
+      "Tasks with subtasks, comments, attached files, due dates, categories and tags",
+      "Search and filter language, automatic actions and analytics",
+      "Users, groups and per-project roles",
+      "JSON-RPC API",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.kanboard.org",
+      "homepage": "https://kanboard.org",
+      "source_code": "https://github.com/kanboard/kanboard"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "kanboard",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted Kanban board for project management: drag task cards between columns, limit work in progress and track projects, with data kept in your home between runs.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Kanboard's database and attached files in the kanboard folder of your home, so your projects are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=kanboard/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Kanboard; its data is kept in the kanboard folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "kanboard"
+        }
+      ],
+      "environment": {
+        "kanboard": {
+          "KANBOARD_ADMIN_PASSWORD": "{{ params.KANBOARD_ADMIN_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "KANBOARD_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own, without spaces. It becomes the password of the built-in administrator, `admin`, only when Kanboard first creates its database: your data lives in your home, so if the database already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in Kanboard's own user settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^\\S+$",
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "KANBOARD_ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "KANBOARD_ADMIN_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "gid": 101,
+          "mode": "rw",
+          "source": "{{ home.path }}/kanboard",
+          "type": "persist",
+          "uid": 100
+        }
+      }
+    }
+  }
+}
