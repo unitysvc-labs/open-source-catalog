@@ -1,0 +1,37 @@
+# File Browser, one private instance per enrollment. The administrator's name and password are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:v2.63.23@sha256:a469ea076d4a1b4b1d86a41d130f2f536cd9da996a2b1fb39c0d7635f9d89b9a
+    # File Browser takes the first user's password only as a bcrypt hash (FB_PASSWORD); without one it invents a
+    # password and prints it once to the container log, which a customer cannot read. So the bound plain
+    # password is hashed here with the application's own `filebrowser hash` command, and then the image's own
+    # entrypoint runs unchanged. FB_USERNAME and FB_PASSWORD are read only when the database does not exist yet.
+    # There is no dollar sign in the command, so neither Docker Compose nor the platform rewrites it.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - export FB_PASSWORD=`filebrowser hash "\`printenv ADMIN_PASSWORD\`"` && exec tini -- /init.sh
+    ports:
+      - 8080
+    environment:
+      # The image's default is port 80; an unprivileged port needs nothing special from the non-root user.
+      FB_PORT: "8080"
+      FB_ROOT: /srv
+      FB_DATABASE: /database/filebrowser.db
+    volumes:
+      # The files File Browser serves, and its database (users, settings and share links; one Bolt file). The
+      # channel decides whether these volumes persist, in the filebrowser folder of the customer's home
+      # (offering.json, `volumes`); under plain Docker they are ordinary named volumes. /config holds only a
+      # copy of the image's default settings.json, written again on every start, so it is not kept.
+      - files:/srv
+      - database:/database
+    healthcheck:
+      test: [CMD, wget, -q, --spider, "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+volumes:
+  files:
+  database:

@@ -1,0 +1,120 @@
+{
+  "capabilities": [
+    "web-file-manager | Lists, uploads, downloads, previews, edits, renames, deletes and shares the files of one folder kept in the customer's home, through a web interface with user accounts."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official File Browser image in a separate container for each enrollment, with its own HTTPS address. File Browser is a web file manager for one folder: upload, download, preview, rename, move and delete files, edit text files in the browser, create share links, and add users with their own permissions. The files it serves and its database (users, settings and share links) are stored in the `filebrowser` folder of your home, so they survive stopping the instance and even removing it and enrolling again. The upstream project was archived on 2026-09-01: this is its last release (v2.63.23), and it gets no further bug or security fixes. Its author advises against exposing it directly to the internet; an instance here is reachable by anyone who has its address, protected only by File Browser's own sign-in.\n\nEnroll in the base channel and keep or replace the generated administrator password, then sign in at `https://<instance>/` with the administrator name and password. Files are held on the instance's 1 GiB temporary disk while it runs and copied to your home; the copy adds and replaces but never deletes, so a file you delete or rename in File Browser comes back after the next start unless you also remove it from your home. Empty files, symbolic links and files over 1 GiB are not kept. You can run one File Browser instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. The upstream project is read-only, so there is no upstream support; its documentation remains in the repository.",
+  "details": {
+    "features": [
+      "Upload, download, preview, rename, move and delete files in a browser",
+      "Edit text files in the browser",
+      "Share links with optional password and expiry",
+      "Several users, each with their own permissions and folder",
+      "Your files and settings are kept in your home, across stops, restarts and re-enrollment",
+      "Final upstream release: the project is archived and receives no fixes"
+    ],
+    "links": {
+      "documentation": "https://github.com/filebrowser/filebrowser/tree/master/docs",
+      "homepage": "https://github.com/filebrowser/filebrowser",
+      "source_code": "https://github.com/filebrowser/filebrowser"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "filebrowser",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private web file manager for a folder in your home: upload, preview, edit and share files in a browser. Final release of an archived project; no further security fixes.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps the files File Browser serves and its database in the filebrowser folder of your home, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=filebrowser/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private File Browser instance; its files and database are kept in the filebrowser folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "filebrowser"
+        }
+      ],
+      "environment": {
+        "filebrowser": {
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "FB_USERNAME": "{{ params.FB_USERNAME }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when File Browser first creates its database: your data lives in your home, so if the database already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in File Browser's own settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "FB_USERNAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. It is used only when File Browser first creates its database; afterwards the existing users apply.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@._-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "FB_USERNAME",
+            "ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "FB_USERNAME": "admin"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "database": {
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/filebrowser/database",
+          "type": "persist",
+          "uid": 1000
+        },
+        "files": {
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/filebrowser/files",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
