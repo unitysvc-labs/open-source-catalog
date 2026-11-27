@@ -1,0 +1,117 @@
+{
+  "capabilities": [
+    "server-monitoring | Collects CPU, memory, disk, network, temperature and Docker container figures from agents you install on your own servers, and shows current and historical charts while the instance runs.",
+    "resource-alerts | Sends a notification when a monitored server goes down or a CPU, memory, disk, bandwidth, temperature or load threshold you set is crossed, through notification URLs you configure."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Beszel hub image in a separate container for each enrollment, with its own HTTPS address. Beszel is a lightweight server monitoring tool in two parts: the hub, which is the web dashboard this service runs, and an agent, which you install yourself on each server you want to watch. Each agent connects out to the hub over HTTPS (a WebSocket) with a token, so your servers need no open inbound port, and reports CPU, memory, disk, network, temperature and Docker container figures. The hub shows current and historical charts and can raise alerts. It records data only while it runs. The hub's data is kept in its own SQLite database, stored in the `beszel` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel, enter the email address you will sign in with and keep or replace the generated password. Sign in at `https://<instance>/`, choose Add System, and run the agent command the hub shows on your server; the command already contains the instance address, the hub's public key and a token. Only the agent-to-hub connection works on the platform; the older mode in which the hub dials each agent over SSH is not offered. You can run one Beszel hub at a time. Read How to use this service before relying on it: after a crash, changes since the database's last checkpoint are lost, and the guide explains how to keep that window short.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Beszel documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Dashboard of all your servers with CPU, memory, disk, network and temperature charts",
+      "Docker and Podman container statistics per server",
+      "Agents connect out to the hub over HTTPS with a token; no inbound port on your servers",
+      "Configurable alerts for status, CPU, memory, disk, bandwidth, temperature and load",
+      "Several users, and a REST API through PocketBase",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://beszel.dev/guide/what-is-beszel",
+      "homepage": "https://beszel.dev",
+      "source_code": "https://github.com/henrygd/beszel"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "beszel",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private Beszel hub: a lightweight dashboard for your servers' CPU, memory, disk, network and containers, fed by agents you install on them, with data kept in your home.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps the Beszel hub's database and key pair in the beszel folder of your home, so your systems, history and accounts are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=beszel/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Beszel hub; its data is kept in the beszel folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8090,
+          "service": "beszel"
+        }
+      ],
+      "environment": {
+        "beszel": {
+          "USER_EMAIL": "{{ params.USER_EMAIL }}",
+          "USER_PASSWORD": "{{ params.USER_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "USER_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The email address of the first account, used as its sign-in name. Beszel sends no mail to it here. The account is created only when the hub first runs on an empty data folder: if your home already holds a Beszel database (an earlier enrollment, or a later restart) this value is ignored and the existing accounts still apply.",
+              "format": "email",
+              "maxLength": 255,
+              "minLength": 3,
+              "title": "Sign-in email",
+              "type": "string"
+            },
+            "USER_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It becomes the password of the first account, and of the PocketBase administrator with the same email at /_/, only when the hub first runs on an empty data folder: if your home already holds a Beszel database (an earlier enrollment, or a later restart) this value is ignored and the existing passwords still apply. Change passwords in the PocketBase admin pages at /_/. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 71,
+              "minLength": 12,
+              "title": "Password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "USER_EMAIL",
+            "USER_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "USER_EMAIL": "admin@example.com",
+          "USER_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/beszel",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "display_name": "Beszel Server Monitoring Hub",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.beszel.volumes[0]: volume 'data' at /beszel_data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "henrygd/beszel",
+  "service_id": "6ed92d23-4579-40d9-880a-3760279ee009",
+  "status": "created",
+  "time_created": "2026-11-27T22:35:47.060764Z"
+}
