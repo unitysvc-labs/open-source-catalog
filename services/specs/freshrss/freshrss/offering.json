@@ -69,13 +69,14 @@
           "properties": {
             "FRESHRSS_ADMIN_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the account's password only when FreshRSS first creates it on an empty data folder; if the account already exists this value is ignored and the existing password still applies. Change the password in FreshRSS's own settings. Save it; it is also shown in the enrollment's instance details.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the account's password only when FreshRSS first creates it on an empty data folder; if the account already exists this value is ignored and the existing password still applies. Change the password in FreshRSS's own settings. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "maxLength": 72,
               "minLength": 12,
               "pattern": "^[A-Za-z0-9_.+-]+$",
               "title": "Administrator password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "FRESHRSS_ADMIN_USER": {
               "default": "admin",
@@ -88,13 +89,14 @@
             },
             "FRESHRSS_API_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "The password feed-reader apps use with the Google Reader compatible or Fever API, separate from the web password. Generated for this enrollment; keep it or enter your own. It applies only when FreshRSS first creates the account; if the account already exists this value is ignored. Change it in FreshRSS's own profile settings. Save it; it is also shown in the enrollment's instance details.",
+              "description": "The password feed-reader apps use with the Google Reader compatible or Fever API, separate from the web password. Generated for this enrollment; keep it or enter your own. It applies only when FreshRSS first creates the account; if the account already exists this value is ignored. Change it in FreshRSS's own profile settings. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "maxLength": 72,
               "minLength": 12,
               "pattern": "^[A-Za-z0-9_.+-]+$",
               "title": "API password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

@@ -70,11 +70,12 @@
           "properties": {
             "ADMIN_TOKEN": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "The password of the admin page at /admin, which is how you invite users while sign-ups are closed. Generated for this enrollment; keep it or enter your own. A plain token works, but Vaultwarden logs a notice that it is insecure, because the token is stored as typed. For a stronger form paste an Argon2 PHC string (starting with $argon2id$) made with `vaultwarden hash` (docker run --rm -it vaultwarden/server /vaultwarden hash); then you sign in with the password you hashed, not with the string. Save it; a generated token is also shown in the enrollment's instance details. Changes apply when the instance restarts. If you later save settings on the admin page, Vaultwarden keeps them in its data folder and they take precedence over these parameters.",
+              "description": "The password of the admin page at /admin, which is how you invite users while sign-ups are closed. Generated for this enrollment; keep it or enter your own. A plain token works, but Vaultwarden logs a notice that it is insecure, because the token is stored as typed. For a stronger form paste an Argon2 PHC string (starting with $argon2id$) made with `vaultwarden hash` (docker run --rm -it vaultwarden/server /vaultwarden hash); then you sign in with the password you hashed, not with the string. Save it now: the platform keeps it as a secret and does not show it again. Changes apply when the instance restarts. If you later save settings on the admin page, Vaultwarden keeps them in its data folder and they take precedence over these parameters.",
               "format": "password",
               "minLength": 20,
               "title": "Admin token",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "DOMAIN": {
               "default": "https://instance.invalid",

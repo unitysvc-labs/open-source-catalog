@@ -66,11 +66,12 @@
           "properties": {
             "ENCRYPTION_SEED": {
               "default": "{{ token_urlsafe(32) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. Homarr turns it into the key (SECRET_ENCRYPTION_KEY, 64 hexadecimal characters) that encrypts integration secrets in its database. Your data lives in your home, so a later enrollment must use the same seed to read secrets stored earlier: save it, it is also shown in the enrollment's instance details. Changing it restarts the instance.",
+              "description": "Generated for this enrollment; keep it or enter your own. Homarr turns it into the key (SECRET_ENCRYPTION_KEY, 64 hexadecimal characters) that encrypts integration secrets in its database. Your data lives in your home, so a later enrollment must use the same seed to read secrets stored earlier: save it now, because the platform keeps it as a secret and does not show it again. Changing it restarts the instance.",
               "format": "password",
               "minLength": 24,
               "title": "Encryption seed",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [

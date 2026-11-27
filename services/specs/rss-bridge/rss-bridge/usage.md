@@ -5,7 +5,7 @@ Each enrollment runs a private [RSS-Bridge](https://rss-bridge.org/) instance. R
 ## Set up
 
 1. Enroll in **base**. There is nothing to approve: the instance asks for no access to your home or storage.
-2. The form shows a **Sign-in name** (default `admin`), a generated **Sign-in password**, and **Enabled bridges** (default `*`, all of them). Save the password; it is also shown in the enrollment's instance details. They are application credentials, not your UnitySVC API key.
+2. The form shows a **Sign-in name** (default `admin`), a generated **Sign-in password**, and **Enabled bridges** (default `*`, all of them). Save the password now: the platform keeps it as a secret and does not show it again. They are application credentials, not your UnitySVC API key.
 3. Wait for the instance to become ready. Its address is `https://<enrollment-code>.<apps-domain>` (HTTPS, port 443); the instance details show it. **A new enrollment has a new address**, so feed readers that use the old one need the new one.
 4. Open the address. The browser asks for the name and password; then you see the list of bridges.
 

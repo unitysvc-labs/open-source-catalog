@@ -89,11 +89,12 @@
             },
             "CMD_SESSION_SECRET": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it. HedgeDoc signs its login cookies with it. You never type it. Changing it signs everyone out.",
+              "description": "Generated for this enrollment; keep it. HedgeDoc signs its login cookies with it. You never type it. Changing it signs everyone out. The platform keeps it as a secret: it is not shown again, and it is not part of the enrollment's instance details.",
               "format": "password",
               "minLength": 16,
               "title": "Session secret",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [
