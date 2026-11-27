@@ -1,0 +1,11 @@
+{
+  "display_name": "JupyterLab Notebooks",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.jupyterlab.volumes[0]: volume 'work' at /home/jovyan/work is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.jupyterlab.working_dir: `working_dir` is accepted but the agent's manifest has no field for it yet; it is not applied"
+  ],
+  "name": "jupyter/jupyterlab",
+  "service_id": "143a4269-ecd0-45d0-b3e5-611c482f9dcf",
+  "status": "created",
+  "time_created": "2026-11-27T22:30:00.250704Z"
+}
