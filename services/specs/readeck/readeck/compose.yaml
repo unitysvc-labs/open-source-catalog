@@ -1,0 +1,38 @@
+# Readeck, one private instance per enrollment. The administrator's name and password are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  readeck:
+    image: codeberg.org/readeck/readeck:0.23.6@sha256:1bc8b0ad2c43fff8bababce4b586e5eaa1a0ad835abdbfadeeaef3330956d90d
+    # Readeck has no environment setting for a first account: without one, the first visitor creates the
+    # administrator on the onboarding page. So the command first creates the administrator with Readeck's own
+    # documented `readeck user` command (only when no user of that name exists, so a later restart over kept data
+    # does not reset a password changed in Readeck), then starts the server as the image does. It uses backticks
+    # and `printenv` rather than a dollar sign, so Compose and the platform leave it untouched; the password is
+    # read by Readeck itself from the environment (`env:ADMIN_PASSWORD`).
+    command:
+      - sh
+      - -c
+      - |
+        /bin/readeck user -config config.toml -dry-run -json -user "`printenv ADMIN_USERNAME`" | grep -q '"exists":true' \
+          || /bin/readeck user -config config.toml -user "`printenv ADMIN_USERNAME`" -password env:ADMIN_PASSWORD -group admin \
+          || exit 1
+        exec /bin/readeck serve -config config.toml
+    ports:
+      - 8000
+    environment:
+      READECK_SERVER_HOST: 0.0.0.0
+      READECK_SERVER_PORT: "8000"
+      READECK_LOG_FORMAT: text
+    volumes:
+      # config.toml (with the generated secret key) and the data folder: the SQLite database and the saved
+      # pages. The channel decides whether this volume persists, in the readeck folder of the customer's home
+      # (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/readeck
+    healthcheck:
+      test: [CMD, /bin/readeck, healthcheck, -config, config.toml]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+volumes:
+  data:
