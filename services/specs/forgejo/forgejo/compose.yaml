@@ -1,0 +1,62 @@
+# Forgejo, one private instance per enrollment. The administrator, the secrets and the address are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+# This is the rootless image (user git, uid 1000). Only HTTP (port 3000) is exposed, so Git over SSH is not available.
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:17.0.2-rootless@sha256:39362ab93a94c0c9b8b330d2a877ddbb3f02fa8c0cba1b8d686d437b39f36a04
+    # Forgejo has no environment setting that creates the first administrator once the installer is locked, so this
+    # entrypoint runs the image's own setup (it writes app.ini from the environment) and then, only when there is no
+    # database yet, creates it with `forgejo migrate` and adds the administrator with `forgejo admin user create`.
+    # If either step fails the new database is removed and the container stops, so the instance never runs without
+    # its administrator. When the data folder already holds a database (a restore, or a restart) nothing is
+    # changed. Before every start it also recreates the empty folders Git expects in each repository (refs/heads,
+    # refs/tags, objects/info, objects/pack): the copy kept in the customer's home holds files only, and without
+    # them Git does not recognise a repository that has no commits yet. It uses backticks and `printenv` rather
+    # than a dollar sign, so Compose and the platform leave it untouched.
+    entrypoint:
+      - /usr/bin/dumb-init
+      - --
+      - /bin/sh
+      - -c
+      - |
+        /usr/local/bin/docker-setup.sh || exit 1
+        if [ ! -f /var/lib/gitea/data/forgejo.db ]; then
+          (
+            set -e
+            forgejo migrate > /dev/null
+            forgejo admin user create --admin --username "`printenv ADMIN_USERNAME`" --password "`printenv ADMIN_PASSWORD`" --email "`printenv ADMIN_EMAIL`" --must-change-password=false
+          ) || { rm -f /var/lib/gitea/data/forgejo.db /var/lib/gitea/data/forgejo.db-journal /var/lib/gitea/data/forgejo.db-wal /var/lib/gitea/data/forgejo.db-shm; echo "first-run setup failed" >&2; exit 1; }
+        fi
+        if [ -d /var/lib/gitea/git/repositories ]; then
+          find /var/lib/gitea/git/repositories -mindepth 2 -maxdepth 2 -type d -name '*.git' -exec mkdir -p {}/refs/heads {}/refs/tags {}/objects/info {}/objects/pack ';'
+        fi
+        exec forgejo web
+    ports:
+      - 3000
+    environment:
+      FORGEJO__database__DB_TYPE: sqlite3
+      FORGEJO__database__PATH: /var/lib/gitea/data/forgejo.db
+      # Forgejo's default for SQLite is write-ahead logging, which keeps recent changes in forgejo.db-wal. That file
+      # is not copied to the customer's home, so use the rollback journal: the data is then in forgejo.db itself.
+      FORGEJO__database__SQLITE_JOURNAL_MODE: DELETE
+      FORGEJO__security__INSTALL_LOCK: "true"
+      # Anyone who can reach the address could otherwise create an account.
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__server__DISABLE_SSH: "true"
+      FORGEJO__server__START_SSH_SERVER: "false"
+      FORGEJO__server__HTTP_PORT: "3000"
+      FORGEJO__other__SHOW_FOOTER_VERSION: "false"
+    volumes:
+      # Repositories, the SQLite database (data/forgejo.db), custom/conf/app.ini, attachments, avatars, indexes and
+      # sessions. The image keeps all of it under /var/lib/gitea (the path is inherited from Gitea). The channel
+      # decides whether this volume persists, in the forgejo folder of the customer's home (offering.json,
+      # `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/var/lib/gitea
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:3000/api/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+volumes:
+  data:

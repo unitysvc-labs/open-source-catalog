@@ -1,0 +1,10 @@
+{
+  "contact_email": "contact@forgejo.org",
+  "display_name": "Forgejo (The Forgejo Authors)",
+  "homepage": "https://forgejo.org",
+  "logo": "https://codeberg.org/avatars/dae8ab126a96f6fbd6942cf08ab92382",
+  "name": "forgejo",
+  "status": "ready",
+  "terms_of_service": "https://codeberg.org/forgejo/forgejo/src/branch/forgejo/LICENSE",
+  "time_created": "2026-11-27T00:00:00Z"
+}
