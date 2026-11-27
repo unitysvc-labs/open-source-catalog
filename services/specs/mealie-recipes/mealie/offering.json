@@ -1,0 +1,105 @@
+{
+  "capabilities": [
+    "recipe-manager | Stores recipes with ingredients, steps, pictures, categories and tags in a web interface with a REST API, and imports a recipe from the URL of a web page.",
+    "meal-planning | Assigns saved recipes to days in a meal plan and builds shopping lists from their ingredients."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Mealie image in a separate container for each enrollment, with its own HTTPS address. Mealie is a self-hosted recipe manager and meal planner: paste the URL of a recipe and Mealie imports its ingredients, steps and picture, or write a recipe in the editor. Recipes are organised with categories, tags and cookbooks, scaled by servings and searched; a meal planner assigns them to days, and shopping lists are built from their ingredients. It serves several users in households, and has a REST API. Everything is kept in the instance's own SQLite database and files, stored in the `mealie` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and, if you wish, set the time zone. Mealie has no setting for the first administrator's password: a new instance starts with Mealie's published default account, shown on its sign-in page, and anyone who reaches the address can use it until you replace it. Open `https://<instance>/` as soon as the instance is ready, sign in, and enter your own email and password in the First Time Setup that follows. Public sign-up is off. You can run one Mealie instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Mealie documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Import a recipe from the URL of a web page, or write it in the editor",
+      "Categories, tags, cookbooks, search and scaling by servings",
+      "Meal planner and shopping lists built from recipe ingredients",
+      "Several users in households and groups; public sign-up is off",
+      "REST API with personal tokens",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.mealie.io",
+      "homepage": "https://mealie.io",
+      "source_code": "https://github.com/mealie-recipes/mealie"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "mealie",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted recipe manager and meal planner: import recipes from a URL, plan meals and build shopping lists on your own Mealie instance, with data kept in your home.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Mealie's database, recipe pictures and backups in the mealie folder of your home, so your recipes are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=mealie/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Mealie instance; its data is kept in the mealie folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 9000,
+          "service": "mealie"
+        }
+      ],
+      "environment": {
+        "mealie": {
+          "TZ": "{{ params.TZ }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "TZ": {
+              "default": "UTC",
+              "description": "The server's time zone, as an IANA name such as Europe/Lisbon or America/Toronto. Mealie uses it for dates and for its daily tasks, which run at 23:45 in this zone. Changing it restarts the instance.",
+              "minLength": 1,
+              "title": "Time zone",
+              "type": "string"
+            }
+          },
+          "required": [
+            "TZ"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "TZ": "UTC"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 911,
+          "mode": "rw",
+          "source": "{{ home.path }}/mealie",
+          "type": "persist",
+          "uid": 911
+        }
+      }
+    }
+  }
+}
