@@ -1,0 +1,105 @@
+{
+  "capabilities": [
+    "notification-api | Send notifications to customer-configured Apprise destination URLs through an authenticated HTTP API, optionally using saved named configurations and tags."
+  ],
+  "currency": "USD",
+  "description": "Apprise API wraps the Apprise notification library in an HTTP API and browser interface. Send to provider URLs in a request, or save a named configuration and notify its tagged destinations later. This recipe requires Apprise HTTP Basic authentication and uses simple stateful configuration filenames, with two workers. Saved configurations and their access controls are kept in the apprise-api folder of your home. Customers supply credentials for their own notification destinations; the catalog supplies no downstream provider account.\n\nEnroll in base, keep or change the generated administrator password, then sign in at the instance address with that name and password. Start with the /status endpoint or create a saved Config ID in the browser. The same credentials authenticate API calls. Configuration-specific logins and public tagged destinations are upstream options; keep configurations private unless intentional. See How to use this service for request examples and deletion limits.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/caronc/apprise-api#readme",
+      "homepage": "https://github.com/caronc/apprise-api",
+      "source_code": "https://github.com/caronc/apprise-api"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "apprise-api",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A password-protected REST API for sending notifications through Apprise-supported providers, with saved configurations kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=apprise-api/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated Apprise Notification API instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8000,
+          "service": "apprise"
+        }
+      ],
+      "environment": {
+        "apprise": {
+          "APPRISE_PASSWORD": "{{ params.APPRISE_PASSWORD }}",
+          "APPRISE_USER": "{{ params.APPRISE_USER }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "APPRISE_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Used for every protected page and API request. Changing it changes the administrator credential, without changing saved notification configurations. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "APPRISE_USER": {
+              "default": "admin",
+              "description": "HTTP Basic authentication user name.",
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "APPRISE_USER",
+            "APPRISE_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "APPRISE_PASSWORD": "catalog-local-password-only",
+          "APPRISE_USER": "admin"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "config": {
+          "exclude": [],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/apprise-api",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}

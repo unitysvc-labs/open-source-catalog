@@ -1,0 +1,35 @@
+# Apprise API, one private instance per enrollment. The administrator's name and password are bound from the
+# channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+services:
+  apprise:
+    image: caronc/apprise:2.2.0@sha256:8a7654c329ce3821848b8052ba915bcf5a3e02dd3ce817c8fa1427fb60bdeae7
+    ports:
+      - 8000
+    environment:
+      # Apprise API is open to anyone with the address unless its built-in authentication is on. With it on,
+      # every page and API call needs the administrator's credentials (or a login the administrator made
+      # for one configuration), and requests without them get 401.
+      APPRISE_AUTH_REQUIRED: "yes"
+      # Keep each configuration as a plain <ID>.cfg or <ID>.yml file. The default (hash) mode derives the
+      # file names from a key that would have to be the same in every later enrollment to find them again.
+      APPRISE_STATEFUL_MODE: simple
+      # Listen on IPv4 only (the default also binds [::], which needs IPv6 in the pod).
+      IPV4_ONLY: "yes"
+      # The default is two workers per processor of the host plus one, far more than this instance needs.
+      APPRISE_WORKER_COUNT: "2"
+    volumes:
+      # Saved configurations, their logins, reminders, the browser-login key and Apprise's own state. The
+      # channel decides whether this volume persists, in the apprise-api folder of the customer's home
+      # (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - config:/config
+    healthcheck:
+      # /status needs the administrator's credentials like everything else, so the check reads them from the
+      # environment with printenv (no dollar sign for Compose or the platform to rewrite). It answers 200
+      # only when the application is up and can write its folders.
+      test: [CMD-SHELL, "curl -fsS -o /dev/null -u \"`printenv APPRISE_USER`:`printenv APPRISE_PASSWORD`\" http://127.0.0.1:8000/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 110s
+volumes:
+  config:
