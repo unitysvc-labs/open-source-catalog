@@ -62,7 +62,7 @@
           "properties": {
             "NEXTCLOUD_ADMIN_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Used only when creating the installation. Existing users change their password in Nextcloud. Save it now: the platform stores it as a secret and does not show it again.",
+              "description": "Used only when creating the installation. Existing users change their password in Nextcloud. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
               "format": "password",
               "minLength": 12,
               "title": "Initial administrator password",
