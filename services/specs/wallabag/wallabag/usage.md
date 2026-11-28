@@ -50,4 +50,4 @@ Two folders are persistent: `wallabag/data` (the SQLite database with your artic
 
 ## Cost and size
 
-The instance runs on the `nano` size (half a core, 512 MiB, 1 GiB of temporary disk) and you pay the platform's cost for it for as long as it runs, including idle time. In a local check with the same limits wallabag used about 75 MiB idle and under 100 MiB while saving and exporting articles. Labs adds no markup and receives no seller payout. The data in your home is not billed while that feature is in preview.
+The instance runs on the `small` size (one core, 2 GiB of memory, 5 GiB of temporary disk) and you pay the platform's cost for it for as long as it runs, including idle time. wallabag itself uses little memory (about 75 MiB idle and under 100 MiB while saving and exporting articles in a local check), but its first start installs the application and takes more than two minutes on half a core, longer than the platform allows a start to take, so the smaller `nano` size is not offered. Labs adds no markup and receives no seller payout. The data in your home is not billed while that feature is in preview.

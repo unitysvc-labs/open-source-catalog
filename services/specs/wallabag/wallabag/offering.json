@@ -107,7 +107,7 @@
           "WALLABAG_PASSWORD": "local-test-password-only"
         }
       },
-      "resources": "nano",
+      "resources": "small",
       "type": "enrollable",
       "volumes": {
         "data": {
