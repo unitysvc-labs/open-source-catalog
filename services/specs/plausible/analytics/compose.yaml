@@ -111,7 +111,6 @@ services:
     - 9000
     environment:
       CLICKHOUSE_USER: plausible
-      CLICKHOUSE_DB: plausible_events
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
     volumes:
     - eventsdata:/var/lib/clickhouse
