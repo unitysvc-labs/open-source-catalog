@@ -45,4 +45,4 @@ One folder is persistent: a backup of the PostgreSQL database (websites, users, 
 
 ## Cost and size
 
-Each of the two containers (Umami and PostgreSQL) runs on the `nano` size (half a core, 512 MiB, 1 GiB of temporary disk) and you pay the platform's cost for both for as long as the instance runs, including idle time. In a local check with those limits Umami used about 100 MiB after starting and 165 to 220 MiB in use, and PostgreSQL 25 to 55 MiB. Labs adds no markup and receives no seller payout.
+Umami runs on the `small` size (one core, 2 GiB of memory, 5 GiB of temporary disk) and PostgreSQL on the `nano` size (half a core, 512 MiB, 1 GiB of temporary disk). Umami needs little memory, but its start (database migrations, then the server) does not finish within the platform's limit on half a core, so the smaller size is not offered. The instance runs on these sizes and you pay the platform's cost for both for as long as the instance runs, including idle time. In a local check with those limits Umami used about 100 MiB after starting and 165 to 220 MiB in use, and PostgreSQL 25 to 55 MiB. Labs adds no markup and receives no seller payout.

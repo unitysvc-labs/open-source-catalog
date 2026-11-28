@@ -112,7 +112,7 @@
         }
       },
       "resources": {
-        "app": "nano",
+        "app": "small",
         "db": "nano"
       },
       "type": "enrollable",
