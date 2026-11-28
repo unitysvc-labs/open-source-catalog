@@ -1,0 +1,118 @@
+{
+  "capabilities": [
+    "wiki | Hosts a wiki of pages written in Markdown, a visual editor or HTML, with page history, tags, uploaded assets, users, groups and page permissions, through a web interface and a GraphQL API."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Wiki.js 2 image in a separate container for each enrollment, with its own HTTPS address. Wiki.js is a wiki and documentation site: write pages in Markdown, a visual editor or raw HTML, organise them by path and tags, keep every revision, upload images and files, and control who reads and writes with users, groups and page rules. It has a GraphQL API with API keys. This recipe runs the maintained 2.x line on its embedded SQLite database, which suits one person or a small team; upstream recommends PostgreSQL for production use, and Wiki.js 3 no longer supports SQLite. The database is stored in the `wikijs` folder of your home, so the wiki survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel, set the administrator's email address and keep or replace the generated password. The setup wizard is completed for you before the instance is reachable, so open `https://<instance>/`, sign in and create the home page. A new wiki lets visitors without an account read its pages: remove that in Administration > Groups > Guests if the wiki should be private. You can run one Wiki.js instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Wiki.js documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Markdown, visual and HTML editors with page history",
+      "Tags, page tree, navigation and title search",
+      "Image and file uploads, stored with the pages",
+      "Users, groups and page-level permissions",
+      "GraphQL API with API keys",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://docs.requarks.io/",
+      "homepage": "https://js.wiki",
+      "source_code": "https://github.com/requarks/wiki-v2"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "wiki",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private Wiki.js 2 wiki: write and organise pages in Markdown or a visual editor, with history, uploads, permissions and a GraphQL API, and data kept in your home between runs.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps the Wiki.js database in the wikijs folder of your home, so your pages, uploads and accounts are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=wikijs/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Wiki.js 2 instance on SQLite; its database is kept in the wikijs folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "wiki"
+        }
+      ],
+      "environment": {
+        "wiki": {
+          "WIKI_ADMIN_EMAIL": "{{ params.WIKI_ADMIN_EMAIL }}",
+          "WIKI_ADMIN_PASSWORD": "{{ params.WIKI_ADMIN_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "WIKI_ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The email address of the administrator account, used as its sign-in name. Wiki.js sends no mail to it here. The account is created only when Wiki.js first runs on an empty data folder: if your home already holds a Wiki.js database (an earlier enrollment, or a later restart) this value is ignored and the existing accounts still apply.",
+              "format": "email",
+              "maxLength": 255,
+              "minLength": 3,
+              "title": "Administrator email",
+              "type": "string"
+            },
+            "WIKI_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Wiki.js first creates the account: your data lives in your home, so if the database already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in your Wiki.js profile. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "WIKI_ADMIN_EMAIL",
+            "WIKI_ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "WIKI_ADMIN_EMAIL": "admin@example.com",
+          "WIKI_ADMIN_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/wikijs",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
