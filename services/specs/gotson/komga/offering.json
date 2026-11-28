@@ -1,0 +1,125 @@
+{
+  "capabilities": [
+    "comic-and-ebook-reader | Serves comics, manga and e-books (CBZ, CBR, PDF, EPUB) that you provide to a web reader, and tracks reading progress per user.",
+    "opds-catalog | Serves the library as OPDS v1.2 and v2 catalogs, so e-reader apps can browse and download books after signing in."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Komga image in a separate container for each enrollment, with its own HTTPS address. Komga is a self-hosted media server for comics, manga and e-books: it scans folders of CBZ, CBR, PDF and EPUB files, groups them into libraries, series and books, and lets you read them in the browser with reading progress, collections, read lists, metadata editing, full-text search and several users with their own access. It also serves OPDS catalogs and a REST API for reader apps.\n\nKomga has no page for uploading books: it reads them from disk. Your books come from your own UnitySVC home: put them in the `komga/library` folder of your home with the platform's Files page, and the instance copies them in each time it starts. Komga's databases are kept in `komga/config`. Because the platform copies whole files, the library has to be small enough to copy at every start and to fit in the instance's 5 GiB temporary disk; files over 1 GiB are not stored, and new books appear only after the instance is stopped and started again. This is a small personal library, not a large collection. Enroll in the base channel and keep or replace the administrator's email address and the generated password; the administrator account is created with them before the instance is reachable, so nobody else can claim the server. You can run one Komga instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Komga documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Web reader for comics, manga and e-books: CBZ, CBR, PDF and EPUB",
+      "Libraries, series, collections and read lists, with metadata editing and full-text search",
+      "Several users with reading progress and per-library access",
+      "OPDS v1.2 and v2 catalogs and a REST API for reader apps",
+      "The administrator account is created from the enrollment before the instance is reachable",
+      "Your library and databases are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://komga.org/docs/introduction",
+      "homepage": "https://komga.org",
+      "source_code": "https://github.com/gotson/komga"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "komga",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private media server for comics, manga and e-books: read a small library kept in your home in a web reader or over OPDS, with progress and users kept between runs.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Reads your books from komga/library in your home and keeps Komga's databases in komga/config, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=komga/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Komga server; it serves the books in the komga/library folder of your home and keeps its databases in komga/config between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 25600,
+          "service": "komga"
+        }
+      ],
+      "environment": {
+        "komga": {
+          "ADMIN_EMAIL": "{{ params.ADMIN_EMAIL }}",
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The administrator's sign-in name. Komga identifies users by email address but never sends mail to it, so it does not have to be a real address. It is used only when Komga first creates the account; afterwards this value is ignored.",
+              "maxLength": 200,
+              "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+              "title": "Administrator email (sign-in name)",
+              "type": "string"
+            },
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own (letters, digits and punctuation, no spaces). It is the administrator's password only when Komga first creates the account: your data lives in your home, so if the account already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in Komga's own account settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 200,
+              "minLength": 12,
+              "pattern": "^[!-~]+$",
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "ADMIN_EMAIL",
+            "ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_EMAIL": "admin@example.com",
+          "ADMIN_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "config": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal",
+            "lucene/**",
+            "logs/**"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/komga/config",
+          "type": "persist"
+        },
+        "library": {
+          "mode": "ro",
+          "source": "{{ home.path }}/komga/library",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
