@@ -1,0 +1,55 @@
+# Wiki.js 2, one private instance per enrollment, on its embedded SQLite database. The administrator's
+# email address and password are bound from the channel's `environment` in offering.json; the values below
+# are the instance's fixed, non-secret settings.
+services:
+  wiki:
+    image: ghcr.io/requarks/wiki:2.5.317@sha256:e4708eed80c014449c0c8426c8d466c7a52a62131555bb44372fa48378b448b8
+    ports:
+      - 3000
+    # Wiki.js has no environment setting for a first account: a new installation serves a setup wizard,
+    # and whoever opens it first becomes the administrator. So, when the data volume holds no database
+    # yet, the command completes that wizard itself before the instance is reachable. It starts Wiki.js
+    # on the loopback address only (port 3001, its own configuration file, a database in /tmp), posts
+    # the wizard's form with the bound email address and password, stops that copy, and moves the
+    # finished database into the data volume with SQLite's own backup command and a rename, so a start
+    # that is interrupted leaves no half-made database behind. A volume that already holds a database is
+    # left alone, so a restart never resets a password. Then it starts the server as the image does.
+    # Backticks and `printenv`, no dollar sign.
+    command:
+      - sh
+      - -c
+      - |
+        if [ ! -e /wiki/data/content/wiki.sqlite ]; then
+          echo 'new installation: completing the setup wizard'
+          rm -f /tmp/setup.sqlite /tmp/setup.sqlite-journal /wiki/data/content/wiki.sqlite.new
+          printf 'port: 3001\nbindIP: 127.0.0.1\ndb:\n  type: sqlite\n  storage: /tmp/setup.sqlite\n' > /tmp/setup.yml
+          CONFIG_FILE=/tmp/setup.yml node --no-deprecation server &
+          until curl --silent --fail --output /dev/null http://127.0.0.1:3001/; do sleep 1; done
+          node -e "fetch('http://127.0.0.1:3001/finalize',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({adminEmail:process.env.WIKI_ADMIN_EMAIL,adminPassword:process.env.WIKI_ADMIN_PASSWORD,adminPasswordConfirm:process.env.WIKI_ADMIN_PASSWORD,siteUrl:'https://wiki.invalid',telemetry:false})}).then(r=>r.json()).then(j=>{console.log('setup wizard:',j.ok?'completed':j.error);process.exit(j.ok?0:1)})" || exit 1
+          pkill -x node
+          wait
+          sqlite3 /tmp/setup.sqlite '.backup /wiki/data/content/wiki.sqlite.new' || exit 1
+          test "`sqlite3 /wiki/data/content/wiki.sqlite.new 'select count(*) from users'`" = 2 || exit 1
+          mv /wiki/data/content/wiki.sqlite.new /wiki/data/content/wiki.sqlite || exit 1
+          rm -f /tmp/setup.sqlite /tmp/setup.sqlite-journal /tmp/setup.yml
+        fi
+        exec node --no-deprecation server
+    environment:
+      DB_TYPE: sqlite
+      DB_FILEPATH: /wiki/data/content/wiki.sqlite
+    volumes:
+      # The SQLite database: pages and their history, uploaded assets, users, groups and all settings.
+      # The channel decides whether this volume persists, in the wikijs folder of the customer's home
+      # (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/wiki/data/content
+    healthcheck:
+      test: [CMD, curl, --silent, --fail, --output, /dev/null, "http://127.0.0.1:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (database migrations, then the setup wizard) is several
+      # times slower than under Docker on a workstation.
+      start_period: 110s
+volumes:
+  data:
