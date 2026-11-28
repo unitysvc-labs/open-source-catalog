@@ -1,0 +1,21 @@
+# PairDrop, one private instance per enrollment. The server only serves the web page and introduces devices to
+# each other over a WebSocket; it keeps no data, so there are no volumes, and it has no accounts, so the channel
+# in offering.json binds no parameters. The values below are the instance's fixed, non-secret settings.
+services:
+  pairdrop:
+    image: ghcr.io/schlagmichdoch/pairdrop:v1.11.3@sha256:14f2f9da12c7c26708b0077ca1c425a2bef799c333408baf0540ca4d7a9f0205
+    ports:
+      - 3000
+    environment:
+      # A browser that has no WebRTC (switched off, or removed by a privacy extension) sends and receives
+      # through this server's WebSocket instead of directly. Upstream's default is false.
+      WS_FALLBACK: "true"
+      # Devices that reach the instance over IPv6 are grouped by their /64 network (the first four groups of
+      # the address), upstream's suggested value; without it two IPv6 devices on one network never see each other.
+      IPV6_LOCALIZE: "4"
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 110s
