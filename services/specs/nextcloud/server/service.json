@@ -1,0 +1,12 @@
+{
+  "display_name": "Nextcloud Private File Sync Server",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.nextcloud.volumes[0]: volume 'data' at /var/www/html/data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.nextcloud.volumes[1]: volume 'config' at /var/www/html/config is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.nextcloud.volumes[2]: volume 'apps' at /var/www/html/custom_apps is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "nextcloud/server",
+  "service_id": "3e96bd85-3022-4655-b868-8b62283beade",
+  "status": "created",
+  "time_created": "2026-11-28T16:05:54.211392Z"
+}
