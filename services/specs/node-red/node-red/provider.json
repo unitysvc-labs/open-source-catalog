@@ -1,0 +1,10 @@
+{
+  "contact_email": "team@nodered.org",
+  "display_name": "Node-RED (OpenJS Foundation and contributors)",
+  "homepage": "https://nodered.org",
+  "logo": "https://avatars.githubusercontent.com/u/5375661",
+  "name": "node-red",
+  "status": "ready",
+  "terms_of_service": "https://github.com/node-red/node-red/blob/main/LICENSE",
+  "time_created": "2026-11-28T00:00:00Z"
+}

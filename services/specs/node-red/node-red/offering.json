@@ -1,0 +1,116 @@
+{
+  "capabilities": [
+    "flow-automation | Runs event-driven flows built in a browser editor by wiring nodes: HTTP and webhook endpoints, scheduled triggers, API calls, MQTT and JavaScript functions, with extra nodes installed from a palette."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Node-RED image in a separate container for each enrollment, with its own HTTPS address. Node-RED is a flow-based, low-code tool for event-driven automation: in a browser editor you wire nodes together into flows that receive webhooks and HTTP requests, call APIs, run on a schedule, transform messages with JavaScript functions, and talk to MQTT brokers, databases and other services. Thousands of extra nodes, including dashboards, can be installed from the editor's palette manager. A stock Node-RED leaves its editor open to anyone who has the address; this recipe turns on Node-RED's own sign-in before the first start, so the editor and the admin API always need the administrator's name and password. Flows, their encrypted credentials, the settings file and installed nodes are stored in the `node-red` folder of your home, so they survive stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel and keep or replace the generated administrator password. Open `https://<instance>/`, sign in with the administrator name and password, and build and deploy flows; the address needs no configuration. HTTP endpoints and dashboards that your flows create are served from the same address and are public unless you protect them, as Node-RED intends. Only that HTTPS address reaches the instance, so nodes that listen on other ports (TCP, UDP, an MQTT broker) cannot be reached from outside; outgoing connections work. You can run one Node-RED instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Node-RED documentation and forum for software-specific help.",
+  "details": {
+    "features": [
+      "Browser-based flow editor with sign-in required from the first start",
+      "HTTP and webhook endpoints, scheduled triggers, API calls, MQTT and JavaScript function nodes",
+      "Palette manager for installing community nodes, including dashboards",
+      "Admin HTTP API for deploying flows with a bearer token",
+      "Stored node credentials encrypted with a key kept with your data",
+      "Your flows, settings and installed nodes are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://nodered.org/docs/",
+      "homepage": "https://nodered.org",
+      "source_code": "https://github.com/node-red/node-red"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "node-red",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private Node-RED instance for flow-based automation: wire webhooks, APIs, schedules and MQTT in a browser editor that requires sign-in, with flows kept in your home between runs.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Node-RED's flows, encrypted credentials, settings file and installed nodes in the node-red folder of your home, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=node-red/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Node-RED; its flows, settings and installed nodes are kept in the node-red folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 1880,
+          "service": "node-red"
+        }
+      ],
+      "environment": {
+        "node-red": {
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "ADMIN_USERNAME": "{{ params.ADMIN_USERNAME }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It becomes the editor administrator's password only when the settings file is first created: your data lives in your home, so if `node-red/settings.js` already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Node-RED stores only a hash of it and has no page for changing it; How to use this service explains how to replace it. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "ADMIN_USERNAME": {
+              "default": "admin",
+              "description": "The editor administrator's user name, written into the settings file when it is first created. If `node-red/settings.js` already exists in your home (an earlier enrollment, or a later restart) this value is ignored and the existing name still applies.",
+              "maxLength": 150,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@.+_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ADMIN_USERNAME",
+            "ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "ADMIN_USERNAME": "admin"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            ".npm/**"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/node-red",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
