@@ -1,0 +1,11 @@
+{
+  "display_name": "Jellyfin Media Server for Video and Music",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.jellyfin.volumes[0]: volume 'config' at /config is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.jellyfin.volumes[1]: volume 'media' at /media is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "jellyfin/jellyfin",
+  "service_id": "2a0c3551-173d-4263-bca7-7cd175fbdca1",
+  "status": "created",
+  "time_created": "2026-11-28T14:27:13.027982Z"
+}

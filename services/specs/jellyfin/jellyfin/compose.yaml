@@ -1,0 +1,80 @@
+# Jellyfin, one private instance per enrollment. The administrator's name and password are bound from the
+# channel's `environment` in offering.json; nothing in this file is secret.
+#
+# Jellyfin has no environment setting for a first account: on a new server a setup wizard lets the first
+# visitor create the administrator. So, while the kept configuration does not say the wizard is complete, the
+# entrypoint below first runs Jellyfin with a temporary configuration folder whose network.xml binds it to
+# 127.0.0.1 only, completes the wizard through Jellyfin's own startup API (`/Startup/...`) with the bound name
+# and password, stops it, and copies the resulting configuration, without that network.xml, into the kept
+# folder. Only then does it start Jellyfin normally, so the wizard is never reachable from outside. When the
+# kept configuration says the wizard is complete (a restore, or a restart) nothing is changed, so a restart
+# never resets a password. If a step fails the container stops before Jellyfin listens on the network, nothing
+# is written to the kept configuration and the next start tries again. The steps are chained with `&&` on
+# purpose: `set -e` has no effect inside a list joined by `||`.
+#
+# Two more things are done for the copy in the customer's home, which leaves out SQLite's write-ahead file and
+# empty files:
+# - The first-run step writes Jellyfin's documented database.xml with the pragma `journal_mode=DELETE`, after the
+#   wizard run (the first start's migrations stall for a minute when the pragma is already there). By default
+#   Jellyfin keeps recent changes in the write-ahead file.
+# - Jellyfin records a library's type as an empty file (for example `movies.collection`) and reads only its
+#   name. A small loop gives those files one line of content, so the library still has its type after a restore.
+#
+# The script has no dollar sign, so neither Docker Compose nor the platform rewrites it.
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:12.4@sha256:fea863d0cd9ec445985d9c75fc6ed64e38a1d2766cf0c250a33d553f4fc1b771
+    # Runs as root, as the image ships it (the platform does not apply a Compose `user` yet).
+    entrypoint:
+      - bash
+      - -c
+      - |
+        if ! grep -q "<IsStartupWizardCompleted>true<" /config/config/system.xml 2>/dev/null; then
+          rm -rf /tmp/jellyfin-setup
+          mkdir -p /tmp/jellyfin-setup /config/config
+          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' '<NetworkConfiguration>' '  <LocalNetworkAddresses>' '    <string>127.0.0.1</string>' '  </LocalNetworkAddresses>' '</NetworkConfiguration>' > /tmp/jellyfin-setup/network.xml
+          JELLYFIN_CONFIG_DIR=/tmp/jellyfin-setup /jellyfin/jellyfin &
+          until curl -fsS -o /dev/null http://127.0.0.1:8096/Startup/Configuration 2>/dev/null; do
+            kill -0 %1 || { echo "first-run setup failed: Jellyfin did not start" >&2; exit 1; }
+            sleep 1
+          done
+          curl -fsS -X POST -H "Content-Type: application/json" -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}' http://127.0.0.1:8096/Startup/Configuration \
+            && curl -fsS -o /dev/null http://127.0.0.1:8096/Startup/User \
+            && printf '{"Name":"%s","Password":"%s"}' "`printenv JELLYFIN_ADMIN_USER`" "`printenv JELLYFIN_ADMIN_PASSWORD`" | curl -fsS -X POST -H "Content-Type: application/json" -d @- http://127.0.0.1:8096/Startup/User \
+            && curl -fsS -X POST http://127.0.0.1:8096/Startup/Complete \
+            || { echo "first-run setup failed: the wizard was not completed" >&2; kill -9 %1; exit 1; }
+          kill %1
+          wait %1
+          grep -q "<IsStartupWizardCompleted>true<" /tmp/jellyfin-setup/system.xml \
+            && rm /tmp/jellyfin-setup/network.xml \
+            && printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' '<DatabaseConfigurationOptions>' '  <DatabaseType>Jellyfin-SQLite</DatabaseType>' '  <LockingBehavior>NoLock</LockingBehavior>' '  <CustomProviderOptions>' '    <Options>' '      <CustomDatabaseOption>' '        <Key>#PRAGMA:journal_mode</Key>' '        <Value>DELETE</Value>' '      </CustomDatabaseOption>' '    </Options>' '  </CustomProviderOptions>' '</DatabaseConfigurationOptions>' > /tmp/jellyfin-setup/database.xml \
+            && cp /tmp/jellyfin-setup/* /config/config/ \
+            || { echo "first-run setup failed: the configuration was not saved" >&2; exit 1; }
+        fi
+        printf '%s\n' 'library type marker' > /tmp/collection-marker
+        (while sleep 5; do find /config/root -name "*.collection" -size 0 -exec cp /tmp/collection-marker {} \; 2>/dev/null; done) &
+        exec /jellyfin/jellyfin
+    ports:
+      - 8096
+    volumes:
+      # Jellyfin's data and configuration: the SQLite database (users, libraries, watch state), settings,
+      # downloaded artwork and plugins. The channel decides whether this volume persists, in the jellyfin
+      # folder of the customer's home (offering.json, `volumes`), and leaves out logs and database backups;
+      # under plain Docker it is an ordinary named volume. The cache and transcoding folder (/cache) is not a
+      # volume: it is temporary and rebuilt on demand.
+      - config:/config
+      # The media library, read only. The channel restores it from the customer's home before Jellyfin
+      # starts.
+      - media:/media:ro
+    healthcheck:
+      # Passes only once the wizard is complete, so the instance is not ready during the first-run step.
+      # Generous start_period on purpose: the platform restarts a container that has not passed its check by
+      # the end of this period, and a first start there is several times slower than under Docker.
+      test: [CMD-SHELL, "curl -fsS http://127.0.0.1:8096/System/Info/Public | grep -q '\"StartupWizardCompleted\":true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 110s
+volumes:
+  config:
+  media:

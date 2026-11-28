@@ -1,0 +1,126 @@
+{
+  "capabilities": [
+    "media-server | Streams video and music files you provide to a web player and to Jellyfin apps, with libraries, artwork, several users and watch state.",
+    "video-transcoding | Converts a video or audio file on the fly, on the processor only, when the playing device cannot play it directly."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Jellyfin image in a separate container for each enrollment, with its own HTTPS address. Jellyfin is a self-hosted media server: it scans folders of video and music, sorts them into libraries of films, shows, music and home videos with artwork and descriptions, and plays them in a web player or in Jellyfin's apps for phones, TVs and desktops. It has several users with their own watch state, playlists and collections, and it converts a file on the fly when a device cannot play it as it is.\n\nJellyfin has no page for uploading media: it reads files from disk. Your media comes from your own UnitySVC home: put it in the `jellyfin/media` folder of your home with the platform's Files page, and the instance copies it in each time it starts. Jellyfin's database, settings and artwork are kept in `jellyfin/config`. This sets what kind of library fits. Files over 1 GiB are not stored, which rules out most feature films at full quality; music, audiobooks, home videos, clips and TV episodes or films encoded below 1 GiB per file work. The whole library is copied at every start and has to fit in the instance's 50 GiB temporary disk, and new files appear only after the instance is stopped and started again. Converting video uses the processor only (there is no graphics card) and one core manages about one stream, so prefer files your devices play directly (H.264 video with AAC audio in MP4 plays almost everywhere). Enroll in the base channel and keep or replace the generated administrator password; the instance completes Jellyfin's setup wizard with it before the address is reachable, so there is no open setup page. You can run one Jellyfin instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Jellyfin documentation, forum and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Web player and Jellyfin apps for phones, TVs and desktops",
+      "Libraries for films, shows, music and home videos, with artwork and descriptions",
+      "Several users with their own watch state, playlists and collections",
+      "On-the-fly conversion on the processor when a device cannot play a file directly",
+      "The administrator is created from the enrollment's parameters; the setup wizard is never open",
+      "Your media and database are kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://jellyfin.org/docs/",
+      "homepage": "https://jellyfin.org",
+      "source_code": "https://github.com/jellyfin/jellyfin"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "jellyfin",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private media server for video and music: play a library kept in your home in a web player or Jellyfin's apps, with users and watch state kept between runs. Files up to 1 GiB each.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Reads your media from jellyfin/media in your home and keeps Jellyfin's database, settings and artwork in jellyfin/config, so they are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=jellyfin/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Jellyfin server; it plays the media in the jellyfin/media folder of your home and keeps its database, settings and artwork in jellyfin/config between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8096,
+          "service": "jellyfin"
+        }
+      ],
+      "environment": {
+        "jellyfin": {
+          "JELLYFIN_ADMIN_PASSWORD": "{{ params.JELLYFIN_ADMIN_PASSWORD }}",
+          "JELLYFIN_ADMIN_USER": "{{ params.JELLYFIN_ADMIN_USER }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "JELLYFIN_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own (letters, digits and common punctuation; no spaces, quotes or backslashes). It is the administrator's password only when Jellyfin's setup is first completed: your data lives in your home, so if the server is already set up (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in Jellyfin's own settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 128,
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_.~!@#%^&*+=:,;?()/-]+$",
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "JELLYFIN_ADMIN_USER": {
+              "default": "admin",
+              "description": "The administrator's user name, set when Jellyfin's setup is first completed. Your data lives in your home, so if the server is already set up (an earlier enrollment, or a later restart) this value is ignored and the existing users still apply.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.@+-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "JELLYFIN_ADMIN_USER",
+            "JELLYFIN_ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "JELLYFIN_ADMIN_PASSWORD": "local-test-password-only",
+          "JELLYFIN_ADMIN_USER": "admin"
+        }
+      },
+      "resources": "small-largedisk",
+      "type": "enrollable",
+      "volumes": {
+        "config": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal",
+            "log/**",
+            "data/SQLiteBackups/**"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/jellyfin/config",
+          "type": "persist"
+        },
+        "media": {
+          "mode": "ro",
+          "source": "{{ home.path }}/jellyfin/media",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
