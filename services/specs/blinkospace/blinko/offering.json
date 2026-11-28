@@ -97,7 +97,7 @@
             },
             "POSTGRES_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "The password of the PostgreSQL database that holds your notes, shared by Blinko and the database container. PostgreSQL stores it when it first creates the database, so changing it later makes Blinko unable to connect: keep the value you first used. Letters, digits, `_` and `-` only.",
+              "description": "The password of the PostgreSQL database that holds your notes, used only between Blinko and the database container of your instance. Keep the generated value.",
               "format": "password",
               "minLength": 12,
               "pattern": "^[A-Za-z0-9_-]+$",
@@ -131,12 +131,13 @@
           "source": "{{ storage.path }}/files",
           "type": "persist"
         },
-        "postgres-data": {
-          "gid": 70,
+        "postgres-backup": {
+          "exclude": [
+            "*.tmp"
+          ],
           "mode": "rw",
-          "source": "{{ storage.path }}/db",
-          "type": "persist",
-          "uid": 70
+          "source": "{{ storage.path }}/db-backup",
+          "type": "persist"
         }
       }
     }

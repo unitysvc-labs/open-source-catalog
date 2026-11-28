@@ -21,12 +21,13 @@ Blinko checks every request itself: the web interface and the API need your sign
 
 ## What is kept, and what is lost
 
-Two folders of the enrollment's storage are persistent: the PostgreSQL database (your notes, tags, users and settings) and Blinko's files folder (uploaded attachments). The platform restores them before the containers start, copies new and changed files back about every 30 seconds while the instance runs, and makes a last copy when it stops. Stopping therefore takes a moment longer while the copy finishes, and the instance shows as `draining`.
+Two folders of the enrollment's storage are persistent: a backup of the PostgreSQL database (your notes, tags, users and settings) and Blinko's files folder (uploaded attachments). The database itself runs on temporary disk; the instance writes a backup of it every five minutes and once more when it stops, and restores that backup when it starts. The platform copies both folders to storage about every 30 seconds while the instance runs and once more when it stops. Stopping therefore takes a moment longer, and the instance shows as `draining`.
 
 - The data belongs to this enrollment's storage. It survives stopping and restarting the instance, but removing the enrollment removes it, and a new enrollment starts empty. Copy out what you want to keep first.
-- A crash, or a node failure, can lose up to the last 30 seconds of changes, which may include a note just written. A normal stop loses nothing. PostgreSQL's files are copied one by one while it runs, so after a crash the copy is not guaranteed to be consistent; a normal stop makes a clean final copy.
-- Files are copied, never deleted from storage: a file that PostgreSQL or Blinko removes can come back after a restart. This is cosmetic.
-- Do not change the **Database password** after the first start. PostgreSQL stores it when it creates the database, and a different value makes Blinko unable to connect.
+- A normal stop loses nothing. A crash, or a node failure, can lose the notes and changes made since the last backup: up to five minutes, plus up to 30 seconds for attachments.
+- The backup is one file and must stay under 1 GiB, the largest file the platform's storage copy keeps. A database of notes is far below that; attachments are stored separately and do not count.
+- Attachments are copied, never deleted from storage: a file that Blinko removes can come back after a restart.
+- Keep the **Database password** as it is. It is used only between the two containers of your instance; a changed value takes effect at the next start after a stop, not while the instance runs.
 - Changing the **Token signing secret** signs everyone out and invalidates access tokens.
 - Empty files, symbolic links and files over 1 GiB are not stored.
 
