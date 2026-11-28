@@ -1,0 +1,94 @@
+# LinkStack, one private instance per enrollment, on its embedded SQLite database. The administrator's email
+# address, password and page name are bound from the channel's `environment` in offering.json; the values
+# below are the instance's fixed, non-secret settings.
+services:
+  linkstack:
+    image: linkstackorg/linkstack:v4.8.8@sha256:deba986fc1f7391af629c0bbcca67a1508284176bd3accf69d041ecc887dc7dd
+    ports:
+      - 8080
+    # The image keeps the whole application in /htdocs and upstream mounts a volume over all of it. Here
+    # only the customer's state is kept, in /data: the settings file (.env, with the application key), the
+    # SQLite database, the advanced configuration, uploaded images and the themes. On every start the
+    # command links those paths from /htdocs into /data, so the code always comes from the image.
+    #
+    # LinkStack has no environment setting for a first account: a new installation serves a setup page,
+    # and whoever opens it first becomes the administrator. So, when /data holds no database yet, the
+    # command completes that setup itself before the instance is reachable: it starts LinkStack's own
+    # development server on the loopback address only (`artisan serve`, port 8001), posts the setup
+    # page's two forms with the bound email address, password and page name, checks that exactly one
+    # account exists, stops that server, and copies the settings and the database into /data, the
+    # database last and with a rename, so an interrupted start leaves no half-made installation behind.
+    # A volume that already holds a database is left alone, so a restart never resets a password.
+    #
+    # On every start it also removes the INSTALLING marker the image ships (otherwise the setup routes
+    # would be open again on restored data), and deletes superseded avatar and background images:
+    # LinkStack shows the first file named <user id>_<time>, and the home copy brings back files that
+    # LinkStack deleted when a newer one was uploaded.
+    #
+    # Apache then runs as the image runs it, except on port 8080 and without the image's self-signed TLS
+    # listener on 443: the image's user is not root and may not be allowed to bind ports 80 and 443.
+    # Backticks and `printenv`, no dollar sign.
+    command:
+      - sh
+      - -c
+      - |
+        cd /htdocs || exit 1
+        if [ ! -e /data/database/database.sqlite ]; then
+          echo 'new installation: completing the setup page'
+          sed -i -e 's/^APP_DEBUG=.*/APP_DEBUG=false/' -e 's/^APP_ENV=.*/APP_ENV=production/' -e 's/^NOTIFY_UPDATES=.*/NOTIFY_UPDATES=false/' .env || exit 1
+          printf '\nFORCE_HTTPS=true\n' >> .env
+          php83 artisan key:generate --force || exit 1
+          php83 artisan serve --no-reload --host=127.0.0.1 --port=8001 > /tmp/setup.log 2>&1 &
+          until curl -s -f -o /tmp/setup.html -c /tmp/setup.jar 'http://127.0.0.1:8001/?4'; do sleep 1; done
+          sed -n 's/.*name="_token" value="\([^"]*\)".*/\1/p' /tmp/setup.html | head -n 1 > /tmp/setup.token
+          curl -s -f -o /dev/null -b /tmp/setup.jar -c /tmp/setup.jar --data-urlencode "_token=`cat /tmp/setup.token`" --data-urlencode "email=`printenv LINKSTACK_ADMIN_EMAIL`" --data-urlencode "password=`printenv LINKSTACK_ADMIN_PASSWORD`" --data-urlencode "handle=`printenv LINKSTACK_PAGE_NAME`" --data-urlencode "name=`printenv LINKSTACK_PAGE_NAME`" http://127.0.0.1:8001/create-admin || exit 1
+          curl -s -f -o /dev/null -b /tmp/setup.jar -c /tmp/setup.jar --data-urlencode "_token=`cat /tmp/setup.token`" -d register=No -d verify=No -d page=Yes -d app=LinkStack http://127.0.0.1:8001/options || exit 1
+          pkill -f '^php83 artisan serve'; pkill -f '^/usr/bin/php83 -S'
+          wait
+          test "`XDG_CONFIG_HOME=/tmp/setup.psysh php83 artisan tinker --execute='echo App\Models\User::where("role", "admin")->count(), App\Models\User::count();'`" = 11 || exit 1
+          test ! -e INSTALLING || exit 1
+          rm -rf /tmp/setup.jar /tmp/setup.token /tmp/setup.html /tmp/setup.log /tmp/setup.psysh storage/logs/laravel.log storage/framework/sessions/* storage/framework/cache/data
+          mkdir -p /data/database || exit 1
+          cp .env /data/.env || exit 1
+          cp database/database.sqlite /data/database/database.sqlite.new || exit 1
+          mv /data/database/database.sqlite.new /data/database/database.sqlite || exit 1
+          echo 'setup completed'
+        fi
+        rm -f INSTALLING INSTALLERLOCK
+        test ! -e INSTALLING || exit 1
+        mkdir -p /data/config /data/themes /data/assets/img/background-img /data/assets/linkstack/images || exit 1
+        test -e /data/config/advanced-config.php || cp storage/templates/advanced-config.php /data/config/advanced-config.php || exit 1
+        if [ ! -L themes ]; then
+          cp -a -n themes/. /data/themes/ && cp -a -n assets/img/. /data/assets/img/ && cp -a -n assets/linkstack/images/. /data/assets/linkstack/images/ || exit 1
+          rm -rf themes assets/img assets/linkstack/images .env database/database.sqlite config/advanced-config.php
+          ln -s /data/themes themes && ln -s /data/assets/img assets/img && ln -s /data/assets/linkstack/images assets/linkstack/images && ln -s /data/.env .env && ln -s /data/database/database.sqlite database/database.sqlite && ln -s /data/config/advanced-config.php config/advanced-config.php || exit 1
+        fi
+        cd /data/assets/img && ls | grep -E '^[0-9]+_[0-9]+\.' | sort | sed -n 'N; /^\([0-9]*\)_.*\n\1_/P; D' | xargs -r rm -f
+        cd /data/assets/img/background-img && ls | grep -E '^[0-9]+_[0-9]+\.' | sort | sed -n 'N; /^\([0-9]*\)_.*\n\1_/P; D' | xargs -r rm -f
+        cd /htdocs
+        mkdir -p /tmp/apache/conf.d && cp /etc/apache2/conf.d/*.conf /tmp/apache/conf.d/ && rm -f /tmp/apache/conf.d/ssl.conf || exit 1
+        sed -e 's/^Listen 80/Listen 8080/' -e 's#/etc/apache2/conf.d/#/tmp/apache/conf.d/#' /etc/apache2/httpd.conf > /tmp/apache/httpd.conf || exit 1
+        printf 'upload_max_filesize = 8M\nmemory_limit = 256M\ndate.timezone = UTC\n' > /etc/php83/conf.d/40-custom.ini
+        rm -f /htdocs/httpd.pid
+        exec httpd -f /tmp/apache/httpd.conf -D FOREGROUND
+    environment:
+      # Read by the image's Apache configuration.
+      SERVER_ADMIN: you@example.com
+      HTTP_SERVER_NAME: localhost
+      LOG_LEVEL: info
+    volumes:
+      # The customer's state: .env, database/database.sqlite, config/advanced-config.php, assets/img,
+      # assets/linkstack/images and themes. The channel decides whether this volume persists, in the
+      # linkstack folder of the customer's home (offering.json, `volumes`); under plain Docker it is an
+      # ordinary named volume.
+      - data:/data
+    healthcheck:
+      test: [CMD, curl, --silent, --fail, --output, /dev/null, --user-agent, HealthCheck, "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there is several times slower than under Docker on a workstation.
+      start_period: 110s
+volumes:
+  data:

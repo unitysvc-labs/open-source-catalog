@@ -1,0 +1,121 @@
+{
+  "capabilities": [
+    "link-profile-page | Publish a themed public profile containing links, managed through an authenticated administrator dashboard."
+  ],
+  "currency": "USD",
+  "description": "LinkStack creates a public profile page collecting your links, with a private dashboard for managing links, appearance and themes. This recipe uses the upstream image with SQLite and completes its own setup forms before opening the public server, creating an administrator from enrollment parameters and disabling public registration. Application state is persisted separately from the image code in the linkstack folder of your home.\n\nEnroll in base, choose the initial administrator email and page name, and save the generated password. Open the instance address, sign in at /login and add a link. Public visitors can read the profile and links; only signed-in accounts can edit them. Enrollment settings create the account only on a fresh database and do not reset it after restoration. See How to use this service for startup and storage limitations.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/LinkStackOrg/LinkStack#readme",
+      "homepage": "https://linkstack.org",
+      "source_code": "https://github.com/LinkStackOrg/LinkStack"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "linkstack",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Publish a personal link-in-bio page with themes and a private administrator dashboard, with your page, settings and uploads kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=linkstack/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated LinkStack Personal Link Page instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "linkstack"
+        }
+      ],
+      "environment": {
+        "linkstack": {
+          "LINKSTACK_ADMIN_EMAIL": "{{ params.LINKSTACK_ADMIN_EMAIL }}",
+          "LINKSTACK_ADMIN_PASSWORD": "{{ params.LINKSTACK_ADMIN_PASSWORD }}",
+          "LINKSTACK_PAGE_NAME": "{{ params.LINKSTACK_PAGE_NAME }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "LINKSTACK_ADMIN_EMAIL": {
+              "default": "owner@example.com",
+              "description": "First administrator login; used only when no database exists. No mail server is configured.",
+              "format": "email",
+              "title": "Administrator email",
+              "type": "string"
+            },
+            "LINKSTACK_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Creates the first administrator before the public server starts. Ignored on existing data; change an existing password inside LinkStack. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Initial administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "LINKSTACK_PAGE_NAME": {
+              "default": "mylinks",
+              "description": "Initial administrator display name and page handle. Read only on the first installation.",
+              "maxLength": 25,
+              "minLength": 3,
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "title": "Initial page name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "LINKSTACK_ADMIN_EMAIL",
+            "LINKSTACK_ADMIN_PASSWORD",
+            "LINKSTACK_PAGE_NAME"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "LINKSTACK_ADMIN_EMAIL": "owner@example.com",
+          "LINKSTACK_ADMIN_PASSWORD": "catalog-local-password-only",
+          "LINKSTACK_PAGE_NAME": "mylinks"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*.new",
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 101,
+          "mode": "rw",
+          "source": "{{ home.path }}/linkstack",
+          "type": "persist",
+          "uid": 100
+        }
+      }
+    }
+  }
+}
