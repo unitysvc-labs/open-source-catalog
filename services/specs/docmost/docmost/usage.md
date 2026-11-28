@@ -1,6 +1,6 @@
 # Docmost Collaborative Knowledge Base
 
-This unofficial community recipe runs the upstream `docmost/docmost:0.98.0` image, pinned by digest. Docmost and contributors publishes the software under [AGPL-3.0](https://github.com/docmost/docmost/blob/main/LICENSE). No author endorsement or support commitment is implied.
+This unofficial community recipe runs the upstream `docmost/docmost:0.98.0` image, pinned by digest. The community core is published under [AGPL-3.0](https://github.com/docmost/docmost/blob/main/LICENSE); the official image also includes separately licensed Enterprise code. No author endorsement or support commitment is implied.
 
 ## Create your workspace
 
@@ -25,4 +25,4 @@ The platform restores persisted files before startup, copies changed files about
 
 ## Cost and support
 
-The **base** channel uses **small**. Pay the current platform compute base rate for the time the instance runs, including idle time. Labs adds no markup and receives no payout. Stop the instance when finished. Consult the [upstream documentation](https://github.com/docmost/docmost#readme) for application behavior; this recipe does not promise author support.
+The **base** channel runs **small** for app, **nano** for db, **nano** for redis. All containers incur runtime charges. Pay the current platform compute base rate for the time the instance runs, including idle time. Labs adds no markup and receives no payout. Stop the instance when finished. Consult the [upstream documentation](https://github.com/docmost/docmost#readme) for application behavior; this recipe does not promise author support.
