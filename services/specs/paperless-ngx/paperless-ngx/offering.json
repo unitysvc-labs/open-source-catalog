@@ -1,0 +1,160 @@
+{
+  "capabilities": [
+    "document-management | Stores uploaded documents with tags, correspondents, document types and custom fields, and finds them by full-text search, in a web interface and a REST API.",
+    "ocr | Reads the text of scanned PDFs and images with Tesseract (English, German, French, Italian, Spanish) and keeps a searchable PDF/A copy beside the original."
+  ],
+  "currency": "USD",
+  "description": "Each enrollment runs the official Paperless-ngx image with a private SQLite database and a disposable task broker, behind its own HTTPS address. Upload scans, PDFs, images or plain text in the web interface or REST API: OCR makes scans searchable, while tags, correspondents, document types, saved views and workflows organize the archive. Original documents, searchable PDF/A copies, database metadata and the trained matching model persist in enrollment storage. The search index is rebuilt before each start becomes ready. This channel is for a personal archive and light concurrency; it is not sized or configured for a busy multi-user document service.\n\nEnroll in base, save the generated administrator password and secret key, then sign in at the instance address and upload a file. One background worker processes OCR. The image includes English, German, French, Italian and Spanish OCR; Office conversion servers, outgoing mail and AI provider configuration are not included. Changing the initial administrator password in enrollment settings does not reset an existing account. See How to use this service for setup, storage limits and backup advice.\n\nYou pay platform compute cost for Paperless and its broker while running, including idle time. Labs adds no markup and receives no seller payout. Keep independent document exports: the platform copies files periodically, may lose recent changes on failure, and does not delete old files from storage when you delete or rename them in Paperless. Upstream documentation and discussions cover software-specific help.",
+  "details": {
+    "features": [
+      "Upload in the browser or through the REST API; OCR makes scans searchable",
+      "Tags, correspondents, document types, storage paths and custom fields",
+      "Full-text search, saved views and a dashboard",
+      "Automatic matching that learns from the documents you have filed",
+      "Several users and groups with per-document permissions, share links, workflows",
+      "Your documents and database are kept in the enrollment's storage, across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://docs.paperless-ngx.com/",
+      "homepage": "https://docs.paperless-ngx.com/",
+      "source_code": "https://github.com/paperless-ngx/paperless-ngx"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "paperless-ngx",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private personal document archive with OCR, tags and full-text search. Runs Paperless-ngx with SQLite; documents and metadata persist between runs.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps your documents, SQLite database and trained matching model in this enrollment’s storage between stops and restarts.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "A personal Paperless archive with SQLite and a disposable task broker. Documents, database and matching model persist; search is rebuilt before readiness.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8000,
+          "service": "web"
+        }
+      ],
+      "environment": {
+        "web": {
+          "PAPERLESS_ADMIN_PASSWORD": "{{ params.PAPERLESS_ADMIN_PASSWORD }}",
+          "PAPERLESS_ADMIN_USER": "{{ params.PAPERLESS_ADMIN_USER }}",
+          "PAPERLESS_OCR_LANGUAGE": "{{ params.PAPERLESS_OCR_LANGUAGE }}",
+          "PAPERLESS_SECRET_KEY": "{{ params.PAPERLESS_SECRET_KEY }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "PAPERLESS_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Paperless-ngx first creates that account; after that the stored password applies and a change here is ignored. Change the password in Paperless-ngx itself, under My Profile. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "PAPERLESS_ADMIN_USER": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. A user of that name is created only if none exists; changing it later adds a second administrator with the password above and leaves the first in place.",
+              "maxLength": 150,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@.+_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "PAPERLESS_OCR_LANGUAGE": {
+              "default": "eng",
+              "description": "The language OCR expects in your documents, as a Tesseract code: eng (English), deu (German), fra (French), ita (Italian) or spa (Spanish). Join several with a plus sign, for example deu+eng; each added language makes OCR slower. Changing it restarts the instance and applies to documents added afterwards.",
+              "pattern": "^(eng|deu|fra|ita|spa)(\\+(eng|deu|fra|ita|spa))*$",
+              "title": "OCR language",
+              "type": "string"
+            },
+            "PAPERLESS_SECRET_KEY": {
+              "default": "{{ token_urlsafe(48) }}",
+              "description": "The key Paperless-ngx signs its sessions and its saved matching model with. Keep the generated value. It is read at every start: if you change it, everyone is signed out and the matching model is trained again.",
+              "format": "password",
+              "minLength": 32,
+              "title": "Secret key",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "PAPERLESS_ADMIN_USER",
+            "PAPERLESS_ADMIN_PASSWORD",
+            "PAPERLESS_SECRET_KEY",
+            "PAPERLESS_OCR_LANGUAGE"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "PAPERLESS_ADMIN_PASSWORD": "local-test-password-only",
+          "PAPERLESS_ADMIN_USER": "admin",
+          "PAPERLESS_OCR_LANGUAGE": "eng",
+          "PAPERLESS_SECRET_KEY": "local-test-secret-key-only-0123456789abcdef"
+        }
+      },
+      "resources": {
+        "redis": "nano",
+        "web": "small-2x"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "index/**",
+            "log/**",
+            "celerybeat-schedule*",
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/data",
+          "type": "persist",
+          "uid": 1000
+        },
+        "media": {
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/media",
+          "type": "persist",
+          "uid": 1000
+        },
+        "model": {
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/model",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}

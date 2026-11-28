@@ -1,0 +1,106 @@
+# A personal Paperless archive: SQLite in rollback-journal mode and a disposable Valkey queue.
+# The pinned upstream image supports rootless S6 startup. After preparing the mounted directories,
+# drop to its paperless user; this avoids the image's expensive eager bytecode compilation under gVisor.
+# Lazy Python bytecode goes to /tmp instead of the overlay filesystem.
+#
+# The wrapper replaces five pinned S6 init units with one Python process running the SAME upstream
+# management commands: compatibility check, migrations, administrator creation, full index rebuild,
+# LLM-index migration and system checks. Failures still stop initialization; the migration lock remains.
+# This avoids repeated Django imports; no readiness check or application check is bypassed.
+# Search is always rebuilt because the storage copy cannot safely preserve a changing segment index.
+# Changing the image version requires rechecking these upstream S6 paths and commands.
+services:
+  web:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.5.1@sha256:8508853b8a0f8394074260957d0be186c8c64f346973b24a7583de4580f306b9
+    ports:
+      - 8000
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -eu
+        until (exec 3<>/dev/tcp/redis/6379) 2>/dev/null; do sleep 2; done
+        chown paperless:paperless /usr/src/paperless/data /usr/src/paperless/media /usr/src/paperless/model
+        cat > /usr/local/lib/catalog-paperless-init.py <<'PY'
+        import os
+        import sys
+
+        sys.path.insert(0, "/usr/src/paperless/src")
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "paperless.settings")
+        import django
+        from django.core.management import call_command
+
+        django.setup()
+        print("[catalog-init] Checking compatibility and migrating", flush=True)
+        call_command("check", "paperless", tags=["compatibility"])
+        call_command("migrate", interactive=False, skip_checks=True)
+        if os.environ.get("PAPERLESS_ADMIN_USER"):
+            call_command("manage_superuser")
+        call_command("document_index", "reindex", "--no-progress-bar")
+        call_command("document_llmindex", "migrate")
+        call_command("check")
+        print("[catalog-init] Initialization complete", flush=True)
+        PY
+        printf '%s\n' '#!/command/with-contenv /usr/bin/bash' \
+          'exec /command/s6-setlock -n /usr/src/paperless/data/migration_lock python3 /usr/local/lib/catalog-paperless-init.py' \
+          > /etc/s6-overlay/s6-rc.d/init-migrations/run
+        printf '%s\n' '#!/bin/sh' 'exit 0' | tee \
+          /etc/s6-overlay/s6-rc.d/init-superuser/run \
+          /etc/s6-overlay/s6-rc.d/init-search-index/run \
+          /etc/s6-overlay/s6-rc.d/init-llmindex-migrate/run \
+          /etc/s6-overlay/s6-rc.d/init-system-checks/run >/dev/null
+        exec gosu paperless /init
+    environment:
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_BIND_ADDR: 0.0.0.0
+      PAPERLESS_PROXY_SSL_HEADER: '["HTTP_X_FORWARDED_PROTO", "https"]'
+      PAPERLESS_WEBSERVER_WORKERS: '1'
+      PAPERLESS_TASK_WORKERS: '1'
+      PAPERLESS_THREADS_PER_WORKER: '1'
+      PAPERLESS_CONSUMER_DISABLE: '1'
+      PAPERLESS_TIME_ZONE: Etc/UTC
+      PAPERLESS_MODEL_FILE: /usr/src/paperless/model/classification_model.pickle
+      PAPERLESS_DBENGINE: sqlite
+      PAPERLESS_DB_OPTIONS: init_command=PRAGMA journal_mode=DELETE;PRAGMA synchronous=FULL,transaction_mode=DEFERRED,timeout=60
+      HOME: /usr/src/paperless
+      PYTHONPYCACHEPREFIX: /tmp/paperless-pycache
+      PYTHONDONTWRITEBYTECODE: ''
+    volumes:
+      - media:/usr/src/paperless/media
+      - model:/usr/src/paperless/model
+      - data:/usr/src/paperless/data
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - --max-time
+        - '5'
+        - http://127.0.0.1:8000/accounts/login/
+      interval: 10s
+      timeout: 8s
+      retries: 6
+      start_period: 110s
+  redis:
+    image: valkey/valkey:9.2.1-alpine@sha256:3ad5a213cb1bc2fd4a113c89b6248a88655a6bf1dda69519d04e03cd3e3d2742
+    ports:
+      - 6379
+    command:
+      - valkey-server
+      - --save
+      - ''
+      - --appendonly
+      - 'no'
+    healthcheck:
+      test:
+        - CMD
+        - valkey-cli
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 110s
+volumes:
+  media: null
+  model: null
+  data: null
