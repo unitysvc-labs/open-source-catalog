@@ -4,7 +4,7 @@
     "ocr | Reads the text of scanned PDFs and images with Tesseract (English, German, French, Italian, Spanish) and keeps a searchable PDF/A copy beside the original."
   ],
   "currency": "USD",
-  "description": "UnitySVC runs the official Paperless-ngx image together with its own PostgreSQL database and task broker in a separate stack for each enrollment, with its own HTTPS address. Paperless-ngx is a self-hosted document management system: you upload scans, PDFs, images and office-style text files in the web interface or through its REST API, it reads the text with OCR, keeps the original next to a searchable PDF/A copy, and files each document with tags, correspondents, document types and custom fields. Full-text search, saved views, automatic matching that learns from your filing, workflows, share links, several users with permissions and a mobile-friendly interface are included. The documents, the database and the trained matching model are kept in the enrollment's storage, so they survive stopping and restarting the instance; the search index is rebuilt at each start.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then drag a file onto the page. Documents arrive only through the web upload, the API or a mail account you connect: there is no consume folder to drop files into. One OCR worker processes documents; the web container uses small-2x so first startup has enough CPU. The image's OCR languages are English, German, French, Italian and Spanish. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of the three containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Paperless-ngx documentation and discussions for software-specific help.",
+  "description": "Each enrollment runs the official Paperless-ngx image with a private SQLite database and a disposable task broker, behind its own HTTPS address. Upload scans, PDFs, images or plain text in the web interface or REST API: OCR makes scans searchable, while tags, correspondents, document types, saved views and workflows organize the archive. Original documents, searchable PDF/A copies, database metadata and the trained matching model persist in enrollment storage. The search index is rebuilt before each start becomes ready. This channel is for a personal archive and light concurrency; it is not sized or configured for a busy multi-user document service.\n\nEnroll in base, save the generated administrator password and secret key, then sign in at the instance address and upload a file. One background worker processes OCR. The image includes English, German, French, Italian and Spanish OCR; Office conversion servers, outgoing mail and AI provider configuration are not included. Changing the initial administrator password in enrollment settings does not reset an existing account. See How to use this service for setup, storage limits and backup advice.\n\nYou pay platform compute cost for Paperless and its broker while running, including idle time. Labs adds no markup and receives no seller payout. Keep independent document exports: the platform copies files periodically, may lose recent changes on failure, and does not delete old files from storage when you delete or rename them in Paperless. Upstream documentation and discussions cover software-specific help.",
   "details": {
     "features": [
       "Upload in the browser or through the REST API; OCR makes scans searchable",
@@ -32,14 +32,14 @@
   },
   "service_type": "container",
   "status": "ready",
-  "summary": "A private, self-hosted document archive: upload scans and PDFs, OCR makes them searchable, and tags and full-text search find them again. Runs with its own PostgreSQL; data is kept between runs.",
+  "summary": "A private personal document archive with OCR, tags and full-text search. Runs Paperless-ngx with SQLite; documents and metadata persist between runs.",
   "time_created": "2026-11-28T00:00:00Z",
   "upstream_access_config": {
     "base": {
       "access_method": "container",
       "customer_access_requests": [
         {
-          "justification": "Keeps your documents, a backup of Paperless-ngx's PostgreSQL database and the trained matching model in the storage of this enrollment, so your archive is still there when the instance is stopped or restarted.",
+          "justification": "Keeps your documents, SQLite database and trained matching model in this enrollment’s storage between stops and restarts.",
           "object": "service:storage",
           "permissions": [
             "read",
@@ -48,7 +48,7 @@
           "required": true
         }
       ],
-      "description": "One private Paperless-ngx with its own PostgreSQL database and task broker; the documents and the database are kept in this enrollment's storage between stops and restarts.",
+      "description": "A personal Paperless archive with SQLite and a disposable task broker. Documents, database and matching model persist; search is rebuilt before readiness.",
       "entries": [
         {
           "auth": "app",
@@ -59,13 +59,9 @@
         }
       ],
       "environment": {
-        "db": {
-          "POSTGRES_PASSWORD": "{{ params.DB_PASSWORD }}"
-        },
         "web": {
           "PAPERLESS_ADMIN_PASSWORD": "{{ params.PAPERLESS_ADMIN_PASSWORD }}",
           "PAPERLESS_ADMIN_USER": "{{ params.PAPERLESS_ADMIN_USER }}",
-          "PAPERLESS_DBPASS": "{{ params.DB_PASSWORD }}",
           "PAPERLESS_OCR_LANGUAGE": "{{ params.PAPERLESS_OCR_LANGUAGE }}",
           "PAPERLESS_SECRET_KEY": "{{ params.PAPERLESS_SECRET_KEY }}"
         }
@@ -73,16 +69,6 @@
       "params": {
         "schema": {
           "properties": {
-            "DB_PASSWORD": {
-              "default": "{{ token_urlsafe(24) }}",
-              "description": "Password of the stack's PostgreSQL database, used by Paperless-ngx to connect to it. Keep the generated value. The database is reachable only from inside the instance.",
-              "format": "password",
-              "minLength": 12,
-              "pattern": "^[A-Za-z0-9_-]+$",
-              "title": "Database password",
-              "type": "string",
-              "writeOnly": true
-            },
             "PAPERLESS_ADMIN_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
               "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Paperless-ngx first creates that account; after that the stored password applies and a change here is ignored. Change the password in Paperless-ngx itself, under My Profile. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
@@ -122,13 +108,11 @@
             "PAPERLESS_ADMIN_USER",
             "PAPERLESS_ADMIN_PASSWORD",
             "PAPERLESS_SECRET_KEY",
-            "DB_PASSWORD",
             "PAPERLESS_OCR_LANGUAGE"
           ],
           "type": "object"
         },
         "testing_defaults": {
-          "DB_PASSWORD": "local-test-db-password",
           "PAPERLESS_ADMIN_PASSWORD": "local-test-password-only",
           "PAPERLESS_ADMIN_USER": "admin",
           "PAPERLESS_OCR_LANGUAGE": "eng",
@@ -136,19 +120,25 @@
         }
       },
       "resources": {
-        "db": "nano",
         "redis": "nano",
         "web": "small-2x"
       },
       "type": "enrollable",
       "volumes": {
-        "dbbackup": {
+        "data": {
           "exclude": [
-            "*.tmp"
+            "index/**",
+            "log/**",
+            "celerybeat-schedule*",
+            "*-wal",
+            "*-shm",
+            "*-journal"
           ],
+          "gid": 1000,
           "mode": "rw",
-          "source": "{{ storage.path }}/db-backup",
-          "type": "persist"
+          "source": "{{ storage.path }}/data",
+          "type": "persist",
+          "uid": 1000
         },
         "media": {
           "gid": 1000,
