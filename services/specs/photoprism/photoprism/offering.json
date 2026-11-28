@@ -1,0 +1,127 @@
+{
+  "capabilities": [
+    "photo-library | Upload and organize photos and videos, browse metadata and albums, and use the application sharing controls."
+  ],
+  "currency": "USD",
+  "description": "PhotoPrism organizes photos and videos in a browser, with albums, metadata search and uploads. This recipe uses the upstream community image with SQLite and password authentication. Originals and application storage are persisted in the photoprism folder of your home. TensorFlow classification is disabled to keep resource use predictable; this recipe does not supply paid features, external models, a GPU or a separate database service.\n\nEnroll in base, approve home access and save the generated administrator password. Open the instance address and sign in, then upload a small photo and create an album. Update Public address to the assigned HTTPS URL before sharing links. The initial password is only for a fresh account. See How to use this service for processing and storage limits.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/photoprism/photoprism#readme",
+      "homepage": "https://www.photoprism.app",
+      "source_code": "https://github.com/photoprism/photoprism"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "photoprism",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Browse, upload and organize a private PhotoPrism photo library, with SQLite metadata, originals and thumbnails kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=photoprism/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated PhotoPrism Private Photo Library instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 2342,
+          "service": "photoprism"
+        }
+      ],
+      "environment": {
+        "photoprism": {
+          "PHOTOPRISM_ADMIN_PASSWORD": "{{ params.PHOTOPRISM_ADMIN_PASSWORD }}",
+          "PHOTOPRISM_ADMIN_USER": "{{ params.PHOTOPRISM_ADMIN_USER }}",
+          "PHOTOPRISM_SITE_URL": "{{ params.PHOTOPRISM_SITE_URL }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "PHOTOPRISM_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Sets the first administrator password. Restored accounts keep their stored password; change it in PhotoPrism. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Initial administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "PHOTOPRISM_ADMIN_USER": {
+              "default": "admin",
+              "description": "Initial administrator account name.",
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "PHOTOPRISM_SITE_URL": {
+              "default": "https://instance.invalid/",
+              "description": "After the instance is assigned an address, enter its HTTPS URL here for canonical and sharing links.",
+              "pattern": "^https://[^/]+/?$",
+              "title": "Public address",
+              "type": "string"
+            }
+          },
+          "required": [
+            "PHOTOPRISM_ADMIN_USER",
+            "PHOTOPRISM_ADMIN_PASSWORD",
+            "PHOTOPRISM_SITE_URL"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "PHOTOPRISM_ADMIN_PASSWORD": "catalog-local-password-only",
+          "PHOTOPRISM_ADMIN_USER": "admin",
+          "PHOTOPRISM_SITE_URL": "https://instance.invalid/"
+        }
+      },
+      "resources": "small-2x",
+      "type": "enrollable",
+      "volumes": {
+        "originals": {
+          "exclude": [],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/photoprism/originals",
+          "type": "persist",
+          "uid": 1000
+        },
+        "storage": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/photoprism/storage",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
