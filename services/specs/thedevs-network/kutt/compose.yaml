@@ -1,0 +1,76 @@
+# Kutt, one private instance per enrollment. The administrator, the token-signing secret and the address are
+# bound from the channel's `environment` in offering.json; the values below are the fixed, non-secret settings.
+services:
+  kutt:
+    image: kutt/kutt:v3.2.6@sha256:fa3d24a89b04e0feb542ed7d3c77993d58dbcc1406e5291a369595d543886146
+    ports:
+      - 3000
+    # The image's own command is `npm run migrate && npm start`. This wraps it to add one step in between.
+    # A new Kutt has no user, and until one exists every page sends the visitor to "Create admin account",
+    # where the first person to arrive becomes the administrator; Kutt has no setting or command that creates
+    # the account. So after the migration a copy of the server is started on port 3001, which is not a
+    # declared port and so is closed from outside the container on the platform, and asked through Kutt's own
+    # API (`POST /api/v2/auth/create-admin`) to create the administrator from the bound ADMIN_EMAIL and
+    # ADMIN_PASSWORD. Kutt itself refuses that call once any user exists, so on a restart, or on data restored
+    # from the customer's home, nothing is changed and no password is ever reset. If the step fails the
+    # container stops with an error and the next start tries again. Only then does the server listen on port
+    # 3000. Backticks and `printenv`, no dollar sign.
+    command:
+      - sh
+      - -c
+      - |
+        npm run migrate || exit 1
+        node -e "
+        const { spawn } = require('child_process');
+        const base = 'http://127.0.0.1:3001';
+        const server = spawn('node', ['server/server.js', '--production'], {
+          env: Object.assign({}, process.env, { PORT: '3001' }),
+          stdio: 'ignore',
+        });
+        const stop = (code) => { server.kill(); process.exit(code); };
+        (async () => {
+          for (let i = 0; ; i++) {
+            try { if ((await fetch(base + '/api/v2/health')).ok) break; } catch (e) {}
+            if (i > 160) throw new Error('the server did not start');
+            await new Promise((r) => setTimeout(r, 500));
+          }
+          const page = await fetch(base + '/create-admin', { redirect: 'manual' });
+          if (page.status !== 200) { console.log('administrator: already exists'); return stop(0); }
+          const made = await fetch(base + '/api/v2/auth/create-admin', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }),
+          });
+          if (made.status !== 201) throw new Error('create-admin answered ' + made.status + ' ' + (await made.text()).slice(0, 200));
+          console.log('administrator: created from the enrollment');
+          stop(0);
+        })().catch((e) => { console.error('administrator: ' + e.message); stop(1); });
+        " || exit 1
+        exec npm start
+    environment:
+      DB_CLIENT: better-sqlite3
+      DB_FILENAME: /var/lib/kutt/data.sqlite
+      # Only signed-in users can shorten links, and nobody can sign up: the administrator creates the accounts.
+      DISALLOW_ANONYMOUS_LINKS: "true"
+      DISALLOW_REGISTRATION: "true"
+      # No mail server is available to the instance.
+      MAIL_ENABLED: "false"
+      REDIS_ENABLED: "false"
+      # The platform's HTTPS front end passes the visitor's address in X-Forwarded-For.
+      TRUST_PROXY: "true"
+    volumes:
+      # The SQLite database (data.sqlite): users, links, visit statistics and custom domains. The channel decides
+      # whether this volume persists, in the kutt folder of the customer's home (offering.json, `volumes`); under
+      # plain Docker it is an ordinary named volume.
+      - data:/var/lib/kutt
+    healthcheck:
+      # Port 3000 is opened only after the administrator step, so this passes only then.
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:3000/api/v2/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end of this
+      # period, and a first start there is several times slower than under Docker on a workstation.
+      start_period: 110s
+volumes:
+  data:
