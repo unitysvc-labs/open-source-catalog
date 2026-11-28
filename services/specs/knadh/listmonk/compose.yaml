@@ -1,0 +1,51 @@
+# listmonk with its PostgreSQL database, one private stack per enrollment. The administrator login and the
+# database password are bound from the channel's `environment` in offering.json; the values below are the
+# stack's fixed, non-secret settings.
+services:
+  app:
+    image: listmonk/listmonk:v6.2.0@sha256:f535d59e14991337a9f2d570273685378ae86b0d7698c3e00da444e3bc205286
+    ports:
+      - 9000
+    # depends_on does not order startup on the platform, so the first command retries until PostgreSQL accepts
+    # connections. --install --idempotent creates the schema and the administrator only on an empty database;
+    # --upgrade applies any pending migrations; the empty --config makes listmonk read only the environment.
+    command:
+      - sh
+      - -c
+      - "until ./listmonk --install --idempotent --yes --config ''; do echo 'waiting for the database'; sleep 3; done && ./listmonk --upgrade --yes --config '' && exec ./listmonk --config ''"
+    environment:
+      LISTMONK_app__address: 0.0.0.0:9000
+      LISTMONK_db__host: db
+      LISTMONK_db__port: "5432"
+      LISTMONK_db__user: listmonk
+      LISTMONK_db__database: listmonk
+      LISTMONK_db__ssl_mode: disable
+      TZ: Etc/UTC
+    volumes:
+      # Files uploaded in the media library. In Settings > Media keep the upload path /listmonk/uploads.
+      - uploads:/listmonk/uploads
+  db:
+    image: postgres:17-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
+    # Declared so the platform gives this service a name and lets listmonk reach it: a service
+    # without ports gets no address inside the instance, and only declared ports are open between services.
+    ports:
+      - 5432
+    environment:
+      POSTGRES_USER: listmonk
+      POSTGRES_DB: listmonk
+      # A subfolder, so PostgreSQL creates the data directory itself with the permissions it requires.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U listmonk -d listmonk"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (sandboxed, on a small size) is several times slower than
+      # under Docker on a workstation.
+      start_period: 110s
+volumes:
+  uploads:
+  dbdata:
