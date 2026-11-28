@@ -1,0 +1,131 @@
+{
+  "capabilities": [
+    "url-shortening | Create short URLs and custom aliases through authenticated web/API access, with public redirects and visit statistics."
+  ],
+  "currency": "USD",
+  "description": "Kutt creates short URLs, optional custom aliases and password-protected links, and records visit statistics. Anonymous shortening and public registration are disabled. A startup wrapper uses Kutt's own create-admin API on an internal port before opening the public service, so the first administrator is set from enrollment parameters. Users, links and statistics are kept in SQLite in the kutt folder of your home. Redirects are public by design; link administration requires application authentication.\n\nEnroll in base and save the initial administrator password and token signing secret. Once UnitySVC assigns the instance address, set Public host name to that hostname, without https://, and save the enrollment before creating short links. Sign in with the administrator email and create a test link. Restored databases keep their users and passwords. See How to use this service for address changes and storage limitations.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/thedevs-network/kutt#readme",
+      "homepage": "https://kutt.to",
+      "source_code": "https://github.com/thedevs-network/kutt"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "kutt",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Create short URLs and inspect visit statistics with your own Kutt instance, with private link management and SQLite data kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=kutt/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated Kutt Private URL Shortener instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "kutt"
+        }
+      ],
+      "environment": {
+        "kutt": {
+          "ADMIN_EMAIL": "{{ params.ADMIN_EMAIL }}",
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "DEFAULT_DOMAIN": "{{ params.DEFAULT_DOMAIN }}",
+          "JWT_SECRET": "{{ params.JWT_SECRET }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_EMAIL": {
+              "default": "owner@example.com",
+              "description": "First account login, used only on a fresh database. No mail server is configured.",
+              "format": "email",
+              "title": "Initial administrator email",
+              "type": "string"
+            },
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Creates the first administrator before the public server starts. Ignored when users already exist. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Initial administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "DEFAULT_DOMAIN": {
+              "default": "instance.invalid",
+              "description": "After the instance is assigned an HTTPS address, replace instance.invalid with that hostname, without a scheme or path. Generated short links use this host; they are unusable until it is set.",
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9.-]+(:[0-9]+)?$",
+              "title": "Public host name",
+              "type": "string"
+            },
+            "JWT_SECRET": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Keep this value across enrollments to preserve token signing. Changing it invalidates existing sign-in tokens. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Token signing secret",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "ADMIN_EMAIL",
+            "ADMIN_PASSWORD",
+            "JWT_SECRET",
+            "DEFAULT_DOMAIN"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_EMAIL": "owner@example.com",
+          "ADMIN_PASSWORD": "catalog-local-password-only",
+          "DEFAULT_DOMAIN": "instance.invalid",
+          "JWT_SECRET": "catalog-local-signing-secret-only"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/kutt",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
