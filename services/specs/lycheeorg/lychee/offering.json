@@ -1,0 +1,132 @@
+{
+  "capabilities": [
+    "photo-gallery | Upload and organize photos into albums, browse metadata and share selected albums using the application permissions."
+  ],
+  "currency": "USD",
+  "description": "Lychee is a photo-management application for uploading, organizing and selectively sharing images and albums. This recipe uses the upstream image, SQLite and the standard open-source edition. A startup wrapper creates the first administrator with the application command before the service is reachable. Photo metadata and uploaded media are kept in the lychee folder of your home. Extra services such as face recognition and paid supporter features are not included.\n\nEnroll in base, save the application key and initial administrator password, then sign in to the gallery and create an album. New albums remain private unless you choose to publish or share them. Keep the encryption key for later enrollments; restored databases keep their users and passwords. See How to use this service for photo-size, persistence and email limits.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/LycheeOrg/Lychee#readme",
+      "homepage": "https://lycheeorg.dev",
+      "source_code": "https://github.com/LycheeOrg/Lychee"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "lychee",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Manage and share photo albums with your own Lychee gallery, with an initialized administrator, SQLite metadata and uploaded images kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=lychee/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated Lychee Private Photo Gallery instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8000,
+          "service": "lychee"
+        }
+      ],
+      "environment": {
+        "lychee": {
+          "APP_KEY": "{{ params.APP_KEY }}",
+          "LYCHEE_ADMIN_PASSWORD": "{{ params.LYCHEE_ADMIN_PASSWORD }}",
+          "LYCHEE_ADMIN_USER": "{{ params.LYCHEE_ADMIN_USER }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "APP_KEY": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Keep the same 32-character value whenever using this home folder. Changing it invalidates encrypted application values and sessions. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 32,
+              "minLength": 32,
+              "title": "Application encryption key",
+              "type": "string",
+              "writeOnly": true
+            },
+            "LYCHEE_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Creates the first administrator before opening the service. For an existing account, change the password in Lychee. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Initial administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "LYCHEE_ADMIN_USER": {
+              "default": "admin",
+              "description": "Created only on a fresh database. Restored data keeps its existing users.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Initial administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "APP_KEY",
+            "LYCHEE_ADMIN_USER",
+            "LYCHEE_ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "APP_KEY": "0123456789abcdef0123456789abcdef",
+          "LYCHEE_ADMIN_PASSWORD": "catalog-local-password-only",
+          "LYCHEE_ADMIN_USER": "admin"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "database": {
+          "exclude": [
+            "*.sqlite-wal",
+            "*.sqlite-shm",
+            "*.sqlite-journal",
+            "new.sqlite*"
+          ],
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/lychee/database",
+          "type": "persist",
+          "uid": 33
+        },
+        "uploads": {
+          "exclude": [],
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/lychee/uploads",
+          "type": "persist",
+          "uid": 33
+        }
+      }
+    }
+  }
+}
