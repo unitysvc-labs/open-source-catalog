@@ -1,0 +1,36 @@
+# Official slim image, original branding retained. No model server or local ML runtime.
+services:
+  web:
+    image: ghcr.io/open-webui/open-webui:v0.13.5-slim@sha256:f5c36d2d6c39fa6dac100ef6907d741b9571ab3d7be2368a06fa6fc13c35e25f
+    ports:
+      - 8080
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8080"
+      UVICORN_WORKERS: "1"
+      WEBUI_AUTH: "true"
+      ENABLE_SIGNUP: "false"
+      ENABLE_INITIAL_ADMIN_SIGNUP: "false"
+      WEBUI_SESSION_COOKIE_SECURE: "true"
+      # Enrollment values are authoritative on restart. Admin Panel configuration changes are temporary.
+      ENABLE_PERSISTENT_CONFIG: "false"
+      ENABLE_OPENAI_API: "true"
+      ENABLE_OLLAMA_API: "false"
+      # Native rollback journaling: the platform file copy cannot preserve matching SQLite WAL files.
+      DATABASE_ENABLE_SQLITE_WAL: "false"
+      DATABASE_SQLITE_PRAGMA_SYNCHRONOUS: FULL
+      # Skip model downloads and update checks; model API requests still work.
+      OFFLINE_MODE: "true"
+      DO_NOT_TRACK: "true"
+      SCARF_NO_ANALYTICS: "true"
+      ANONYMIZED_TELEMETRY: "false"
+    volumes:
+      - data:/app/backend/data
+    healthcheck:
+      test: [CMD, curl, -fsS, --max-time, "5", http://127.0.0.1:8080/ready]
+      interval: 10s
+      timeout: 8s
+      retries: 6
+      start_period: 110s
+volumes:
+  data:

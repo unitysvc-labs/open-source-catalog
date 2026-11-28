@@ -5,6 +5,7 @@ You need no seller account, seller credentials, hosting infrastructure or backen
 ## Before you start
 
 - **License:** use an OSI-approved open-source license, with its SPDX identifier and a link to the upstream license. Ask Labs about exceptions.
+  Approved project-specific exceptions are recorded in [license exceptions](docs/license-exceptions.md).
 - **Image:** use the project's documented container image for the platform's supported architecture. Identify the version you tested; a digest pins the exact image.
 - **Attribution:** credit the software author as provider. Use published contact details only; flag missing details for review. State whether you are the author or a community contributor, and do not imply unconfirmed author endorsement or support.
 
