@@ -1,0 +1,105 @@
+# Mattermost Team Edition with its PostgreSQL database, one private stack per enrollment. The database
+# password (inside the two connection strings) and the first administrator are bound from the channel's
+# `environment` in offering.json; the values below are the stack's fixed, non-secret settings.
+services:
+  app:
+    image: mattermost/mattermost-team-edition:12.1.0@sha256:35927b9c535a9eb74f0e45385d3fe5d8308b16e0464031f157a834da8af3ee73
+    # The image has no shell, so the server is started by the image's own command and no wait loop can be
+    # scripted here. `depends_on` does not order startup on the platform, and the server tries the database
+    # only for about eight seconds (four attempts) before it exits with an error. It then has to be started
+    # again until the database answers: the platform restarts a container that exits, and `restart` does the
+    # same under Docker (the platform ignores the key).
+    restart: on-failure
+    ports:
+      - 8065
+    environment:
+      TZ: UTC
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      # The server logs to the console only: a log file would fill the temporary disk.
+      MM_LOGSETTINGS_ENABLEFILE: "false"
+      MM_NOTIFICATIONLOGSETTINGS_ENABLEFILE: "false"
+      # mmctl --local (the healthcheck below) talks to the server over a Unix socket inside the container.
+      MM_SERVICESETTINGS_ENABLELOCALMODE: "true"
+    volumes:
+      # config.json: everything set in the System Console, including the site URL. Mattermost writes a
+      # default file here on the first start.
+      - config:/mattermost/config
+      # Uploaded files, profile pictures and the plugins an administrator uploads.
+      - data:/mattermost/data
+    healthcheck:
+      test: [CMD, /mattermost/bin/mmctl, system, status, --local]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 110s
+  db:
+    image: postgres:17-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
+    # Declared so the platform gives this service a name and lets Mattermost reach it: a service
+    # without ports gets no address inside the instance, and only declared ports are open between services.
+    ports:
+      - 5432
+    environment:
+      POSTGRES_USER: mattermost
+      POSTGRES_DB: mattermost
+      PGDATA: /var/lib/postgresql/data/pgdata
+    # The data directory is scratch: it cannot be kept in the customer's storage, because the copy skips the
+    # empty files and folders PostgreSQL needs and keeps no file modes, so a restored directory does not
+    # start. What persists is a dump in /backup. It is rewritten every five minutes (`wait -n` returns when
+    # the sleep ends; a plain `wait` would also wait for the server and never return) and once more at a
+    # normal stop, and restored on a start whose scratch volume has no `restored` marker, before the server
+    # listens on the network (so Mattermost never sees a half-restored database). The marker is written only
+    # once the database is ready, and an unmarked data directory is removed before a restore, so a restore
+    # that failed or was interrupted is done again instead of leaving an empty database to be dumped over
+    # the good one. The restore talks to the server on port 5433 (Unix socket only): the image's entrypoint
+    # runs a temporary server on 5432 while it creates the database, and `pg_isready` cannot tell that one
+    # from the real one. The server is stopped with SIGINT (a fast shutdown) sent to the postmaster.
+    # Backticks and `printenv`, no dollar sign.
+    #
+    # The first administrator is created from here as well, because the Mattermost image has no shell to
+    # run `mmctl user create` in: once Mattermost answers and has no user yet (the bots of its plugins
+    # aside), the account is registered through Mattermost's own API from the bound name, email and
+    # password. Mattermost makes the first account the system administrator and refuses open registration
+    # afterwards, so this never touches a database that already has users.
+    command:
+      - sh
+      - -c
+      - |
+        dump() { pg_dump -U mattermost -d mattermost -Fc -f /backup/db.dump.tmp && mv /backup/db.dump.tmp /backup/db.dump; }
+        if [ ! -e /var/lib/postgresql/data/restored ] && [ -s /backup/db.dump ]; then
+          rm -rf "`printenv PGDATA`"
+          docker-entrypoint.sh postgres -c listen_addresses= -p 5433 &
+          until pg_isready -q -p 5433 -U mattermost -d mattermost; do sleep 1; done
+          pg_restore -p 5433 -U mattermost -d mattermost --no-owner --exit-on-error /backup/db.dump || exit 1
+          kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`
+          while [ -e "`printenv PGDATA`/postmaster.pid" ]; do sleep 1; done
+        fi
+        docker-entrypoint.sh postgres &
+        trap 'dump; kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`; while [ -e "\`printenv PGDATA\`/postmaster.pid" ]; do sleep 1; done; exit 0' TERM INT
+        until pg_isready -q -h 127.0.0.1 -U mattermost -d mattermost; do sleep 1; done
+        touch /var/lib/postgresql/data/restored /tmp/restored
+        (
+          until wget -q -O /dev/null http://app:8065/api/v4/system/ping; do sleep 2; done
+          while [ "`psql -U mattermost -d mattermost -Atc 'select count(*) from users where id not in (select userid from bots)'`" = 0 ]; do
+            wget -q -O /dev/null --header 'Content-Type: application/json' --post-data "{\"email\":\"`printenv MM_ADMIN_EMAIL`\",\"username\":\"`printenv MM_ADMIN_USERNAME`\",\"password\":\"`printenv MM_ADMIN_PASSWORD`\"}" http://app:8065/api/v4/users && echo 'first administrator created' || echo 'first administrator NOT created, trying again'
+            sleep 3
+          done
+        ) &
+        while true; do sleep 300 & wait -n; dump; done
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - dbbackup:/backup
+    healthcheck:
+      # Ready only once any restore has finished and the server answers on the network.
+      test: [CMD-SHELL, "test -f /tmp/restored && pg_isready -h 127.0.0.1 -U mattermost -d mattermost"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (sandboxed, on a small size) is several times slower than
+      # under Docker on a workstation.
+      start_period: 110s
+volumes:
+  config:
+  data:
+  dbdata:
+  dbbackup:
