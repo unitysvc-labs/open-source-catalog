@@ -1,0 +1,45 @@
+{
+  "capabilities": [
+    "browser-file-transfer | Introduces browsers for direct WebRTC file and text transfer, with a server-relayed WebSocket fallback when WebRTC is unavailable."
+  ],
+  "currency": "USD",
+  "description": "PairDrop introduces browsers over a WebSocket connection so they can exchange files or text, normally directly over WebRTC. This recipe enables the upstream WebSocket fallback for browsers without WebRTC. It stores no server-side file library and has no user accounts. Anyone who knows the instance address can join; accept transfers only from devices you recognize. A shared reverse proxy can make unrelated devices appear to share a network, so use device pairing or temporary rooms when discovery is ambiguous.\n\nEnroll in base and open the HTTPS instance address on both devices. No enrollment credentials are required. Pair the devices with the six-digit code or a temporary room, select the receiving device, choose a file and accept the request on the receiver. The server is nano-sized; large transfers through the fallback can exhaust its memory. See How to use this service for network and privacy limitations.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/schlagmichdoch/PairDrop#readme",
+      "homepage": "https://pairdrop.net",
+      "source_code": "https://github.com/schlagmichdoch/PairDrop"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "pairdrop",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Transfer files and text between browsers with your own PairDrop signaling server, device pairing and a WebSocket fallback.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One isolated PairDrop Browser File and Text Transfer instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "pairdrop"
+        }
+      ],
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}
