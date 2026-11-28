@@ -4,7 +4,7 @@
     "ocr | Reads the text of scanned PDFs and images with Tesseract (English, German, French, Italian, Spanish) and keeps a searchable PDF/A copy beside the original."
   ],
   "currency": "USD",
-  "description": "UnitySVC runs the official Paperless-ngx image together with its own PostgreSQL database and task broker in a separate stack for each enrollment, with its own HTTPS address. Paperless-ngx is a self-hosted document management system: you upload scans, PDFs, images and office-style text files in the web interface or through its REST API, it reads the text with OCR, keeps the original next to a searchable PDF/A copy, and files each document with tags, correspondents, document types and custom fields. Full-text search, saved views, automatic matching that learns from your filing, workflows, share links, several users with permissions and a mobile-friendly interface are included. The documents, the database and the trained matching model are kept in the enrollment's storage, so they survive stopping and restarting the instance; the search index is rebuilt at each start.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then drag a file onto the page. Documents arrive only through the web upload, the API or a mail account you connect: there is no consume folder to drop files into. OCR runs on one core, about four seconds a page in a local check. The image's OCR languages are English, German, French, Italian and Spanish. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of the three containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Paperless-ngx documentation and discussions for software-specific help.",
+  "description": "UnitySVC runs the official Paperless-ngx image together with its own PostgreSQL database and task broker in a separate stack for each enrollment, with its own HTTPS address. Paperless-ngx is a self-hosted document management system: you upload scans, PDFs, images and office-style text files in the web interface or through its REST API, it reads the text with OCR, keeps the original next to a searchable PDF/A copy, and files each document with tags, correspondents, document types and custom fields. Full-text search, saved views, automatic matching that learns from your filing, workflows, share links, several users with permissions and a mobile-friendly interface are included. The documents, the database and the trained matching model are kept in the enrollment's storage, so they survive stopping and restarting the instance; the search index is rebuilt at each start.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password, then drag a file onto the page. Documents arrive only through the web upload, the API or a mail account you connect: there is no consume folder to drop files into. One OCR worker processes documents; the web container uses small-2x so first startup has enough CPU. The image's OCR languages are English, German, French, Italian and Spanish. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of the three containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Paperless-ngx documentation and discussions for software-specific help.",
   "details": {
     "features": [
       "Upload in the browser or through the REST API; OCR makes scans searchable",
@@ -80,15 +80,17 @@
               "minLength": 12,
               "pattern": "^[A-Za-z0-9_-]+$",
               "title": "Database password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "PAPERLESS_ADMIN_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Paperless-ngx first creates that account; after that the stored password applies and a change here is ignored. Change the password in Paperless-ngx itself, under My Profile. Save it; it is also shown in the enrollment's instance details.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Paperless-ngx first creates that account; after that the stored password applies and a change here is ignored. Change the password in Paperless-ngx itself, under My Profile. Save it now: the platform keeps it as a secret and does not show it again.",
               "format": "password",
               "minLength": 12,
               "title": "Administrator password",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             },
             "PAPERLESS_ADMIN_USER": {
               "default": "admin",
@@ -112,7 +114,8 @@
               "format": "password",
               "minLength": 32,
               "title": "Secret key",
-              "type": "string"
+              "type": "string",
+              "writeOnly": true
             }
           },
           "required": [
