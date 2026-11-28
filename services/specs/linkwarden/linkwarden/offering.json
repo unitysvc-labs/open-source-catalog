@@ -1,0 +1,162 @@
+{
+  "capabilities": [
+    "bookmark-manager | Saves web links in collections with tags, notes, pinning and search, through a web interface, browser extensions and a REST API.",
+    "web-archiving | Keeps a copy of each saved page as a screenshot, a PDF, a single HTML file and readable text, made with a headless browser inside the instance."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Linkwarden image together with its own PostgreSQL database in a separate stack for each enrollment, with its own HTTPS address. Linkwarden is a self-hosted bookmark manager that also preserves what you save: for every link it keeps a screenshot, a PDF, a single-file HTML copy and a readable text version, made by a headless browser inside the instance, so the page stays readable after the original changes or disappears. Links are organised in collections and sub-collections with tags, can be pinned, highlighted and annotated in the reader view, shared as public collections, and imported from browsers and other bookmark tools. It has browser extensions, a REST API with access tokens and RSS subscriptions. The database and the archived copies are kept in the enrollment's storage, so they survive stopping and restarting the instance. This recipe runs without the optional Meilisearch container: search uses the database instead and matches a link's name, address, description and tags, not the saved page text.\n\nEnroll in the base channel and keep or replace the generated password. The instance creates the first account, which is the administrator, from the name and password you give, and public registration is switched off; the administrator adds other users under Server Administration. Sign in at `https://<instance>/`. After the instance is created, replace the placeholder Instance address with the real address: signing in works without it, signing out does not land on the right page until it is set. Linkwarden sends no email here, so there are no password-reset mails. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of both containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Linkwarden documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Collections, sub-collections, tags, pinned links and search",
+      "A screenshot, PDF, single-file HTML and readable copy of every saved page",
+      "Reader view with highlights and notes",
+      "Public collections, several users, browser extensions and RSS subscriptions",
+      "REST API with access tokens; import and export of bookmarks",
+      "Your data is kept in the enrollment's storage, across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://docs.linkwarden.app",
+      "homepage": "https://linkwarden.app",
+      "source_code": "https://github.com/linkwarden/linkwarden"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "linkwarden",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private bookmark manager that keeps a screenshot, PDF and readable copy of every page you save, with collections, tags and an API. Runs with its own PostgreSQL database.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Linkwarden's PostgreSQL database and the archived copies of your saved pages in the storage of this enrollment, so your links and archives are still there when the instance is stopped or restarted.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Linkwarden with its own PostgreSQL database; links and archived pages are kept in this enrollment's storage between stops and restarts.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "app"
+        }
+      ],
+      "environment": {
+        "app": {
+          "DATABASE_URL": "postgresql://linkwarden:{{ params.DB_PASSWORD }}@db:5432/linkwarden",
+          "LINKWARDEN_ADMIN_PASSWORD": "{{ params.LINKWARDEN_ADMIN_PASSWORD }}",
+          "LINKWARDEN_ADMIN_USERNAME": "{{ params.LINKWARDEN_ADMIN_USERNAME }}",
+          "NEXTAUTH_SECRET": "{{ params.NEXTAUTH_SECRET }}",
+          "NEXTAUTH_URL": "{{ params.INSTANCE_URL }}/api/v1/auth"
+        },
+        "db": {
+          "POSTGRES_PASSWORD": "{{ params.DB_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "DB_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Password of the stack's PostgreSQL database, used only between Linkwarden and the database container of your instance. Keep the generated value: letters, digits, hyphens and underscores only. The database is reachable only from inside the instance. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Database password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "INSTANCE_URL": {
+              "default": "https://instance.invalid",
+              "description": "The address of this instance without a trailing slash, for example https://abc123.example.app (shown in the enrollment's instance details). Signing in, the web interface and the API work without it. Linkwarden uses it for the page it sends you to after signing out and for single sign-on callbacks, so replace the placeholder with your instance address after the instance is created, then save; changing it restarts the instance and keeps your data. The placeholder https://instance.invalid points nowhere, because the platform needs a value here.",
+              "maxLength": 255,
+              "pattern": "^https://[^\\s/]+$",
+              "title": "Instance address",
+              "type": "string"
+            },
+            "LINKWARDEN_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the first account's password only when Linkwarden first creates its database; after that the stored password applies and a change here is ignored. Change the password in Linkwarden's own settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 128,
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "LINKWARDEN_ADMIN_USERNAME": {
+              "default": "admin",
+              "description": "User name of the first account, which is the administrator: 3 to 50 lower-case letters, digits, hyphens and underscores. It is created on the first start, when the database has no users; after that the stored users apply and a change here is ignored.",
+              "maxLength": 50,
+              "minLength": 3,
+              "pattern": "^[a-z0-9_-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "NEXTAUTH_SECRET": {
+              "default": "{{ token_urlsafe(32) }}",
+              "description": "The key Linkwarden signs its sign-in sessions and access tokens with. Keep the generated value. Linkwarden reads it at every start, so if you change it every signed-in session and access token stops working. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 16,
+              "title": "Session signing secret",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "LINKWARDEN_ADMIN_USERNAME",
+            "LINKWARDEN_ADMIN_PASSWORD",
+            "NEXTAUTH_SECRET",
+            "DB_PASSWORD",
+            "INSTANCE_URL"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "DB_PASSWORD": "local-test-dbpass",
+          "INSTANCE_URL": "https://instance.invalid",
+          "LINKWARDEN_ADMIN_PASSWORD": "local-test-password-only",
+          "LINKWARDEN_ADMIN_USERNAME": "admin",
+          "NEXTAUTH_SECRET": "local-test-secret-only-0123456789"
+        }
+      },
+      "resources": {
+        "app": "small",
+        "db": "nano"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "mode": "rw",
+          "source": "{{ storage.path }}/data",
+          "type": "persist"
+        },
+        "dbbackup": {
+          "exclude": [
+            "*.tmp"
+          ],
+          "mode": "rw",
+          "source": "{{ storage.path }}/db-backup",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}

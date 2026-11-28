@@ -1,0 +1,110 @@
+# Linkwarden with its PostgreSQL database, one private stack per enrollment. The first account, the
+# signing secret, the instance address, the database password and the matching DATABASE_URL are bound from
+# the channel's `environment` in offering.json; the values below are the stack's fixed, non-secret settings.
+services:
+  app:
+    image: ghcr.io/linkwarden/linkwarden:v2.17.0@sha256:7c11fde57d1a0c819b6de0079966eba3a33584d718464af7dacde22bd470ae46
+    ports:
+      - 3000
+    # The image's own command (migrate, then the web server and the worker), with two additions.
+    # `depends_on` does not order startup on the platform, so it first waits until PostgreSQL accepts
+    # connections. And Linkwarden lets any visitor register, with the first account as administrator, so
+    # registration is switched off below and, on a database with no users, the first account is created
+    # here from the bound name and password: through Linkwarden's own registration API, on a copy of the
+    # web server that listens on the loopback address only and is stopped again before the real one starts.
+    # A database that already has a user is left alone, so a restart never resets a password. Backticks
+    # and `printenv`, no dollar sign.
+    command:
+      - sh
+      - -c
+      - |
+        PATH="/data/node_modules/.bin:`printenv PATH`"
+        until node -e "require('net').connect(5432,'db').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"; do echo 'waiting for the database'; sleep 2; done
+        prisma migrate deploy --schema=/data/packages/prisma/schema.prisma || exit 1
+        case "`cd /data/packages/prisma && node -e "new (require('@prisma/client').PrismaClient)().user.count().then(n=>console.log(n))"`" in
+          0)
+            echo 'new database: creating the first account'
+            (cd /data/apps/web && NEXT_PUBLIC_DISABLE_REGISTRATION=false exec next start -H 127.0.0.1 -p 3001) &
+            until curl --silent --fail --output /dev/null http://127.0.0.1:3001/api/v1/config; do sleep 1; done
+            node -e "fetch('http://127.0.0.1:3001/api/v1/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:process.env.LINKWARDEN_ADMIN_USERNAME,username:process.env.LINKWARDEN_ADMIN_USERNAME,password:process.env.LINKWARDEN_ADMIN_PASSWORD})}).then(async r=>{console.log('first account:',r.status,r.status===201?'created':await r.text());process.exit(r.status===201?0:1)})" || exit 1
+            pkill -f '^next-server'
+            wait
+            ;;
+          ''|*[!0-9]*)
+            echo 'could not read the user table'
+            exit 1
+            ;;
+        esac
+        exec concurrently -k -n web,worker "cd /data/apps/web && exec next start" "cd /data/apps/worker && exec tsx worker.ts"
+    environment:
+      # Only the first account, made at start, and users it creates in Settings can sign in.
+      NEXT_PUBLIC_DISABLE_REGISTRATION: "true"
+      # Pages archived at the same time (upstream default 5). Each one is a tab of the bundled headless
+      # browser; two at a time keeps the container inside its memory.
+      ARCHIVE_TAKE_COUNT: "2"
+    volumes:
+      # Archived copies of the saved pages (screenshots, PDFs, single-file HTML, readable text), uploaded
+      # files and avatars.
+      - data:/data/data
+    healthcheck:
+      test: [CMD, /usr/bin/curl, --silent, --fail, --output, /dev/null, "http://127.0.0.1:3000/api/v1/config"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (migrations, then the first account) is several times
+      # slower than under Docker on a workstation.
+      start_period: 110s
+  db:
+    image: postgres:16-alpine@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
+    # Declared so the platform gives this service a name and lets Linkwarden reach it: a service
+    # without ports gets no address inside the instance, and only declared ports are open between services.
+    ports:
+      - 5432
+    environment:
+      POSTGRES_USER: linkwarden
+      POSTGRES_DB: linkwarden
+      PGDATA: /var/lib/postgresql/data/pgdata
+    # The data directory is scratch: it cannot be kept in the customer's storage, because the copy skips the
+    # empty files and folders PostgreSQL needs and keeps no file modes, so a restored directory does not
+    # start. What persists is a dump in /backup. It is rewritten every five minutes and once more at a
+    # normal stop, and restored on a start whose scratch volume has no `restored` marker, before the server
+    # listens on the network (so Linkwarden never sees a half-restored database). The marker is written only
+    # once the database is ready, and an unmarked data directory is removed before a restore, so a restore
+    # that failed or was interrupted is done again instead of leaving an empty database to be dumped over
+    # the good one. The restore talks to the server on port 5433 (Unix socket only): the image's entrypoint
+    # runs a temporary server on 5432 while it creates the database, and `pg_isready` cannot tell that one
+    # from the real one. The server is stopped with SIGINT (a fast shutdown) sent to the postmaster.
+    # Backticks and `printenv`, no dollar sign.
+    command:
+      - sh
+      - -c
+      - |
+        dump() { pg_dump -U linkwarden -d linkwarden -Fc -f /backup/db.dump.tmp && mv /backup/db.dump.tmp /backup/db.dump; }
+        if [ ! -e /var/lib/postgresql/data/restored ] && [ -s /backup/db.dump ]; then
+          rm -rf "`printenv PGDATA`"
+          docker-entrypoint.sh postgres -c listen_addresses= -p 5433 &
+          until pg_isready -q -p 5433 -U linkwarden -d linkwarden; do sleep 1; done
+          pg_restore -p 5433 -U linkwarden -d linkwarden --no-owner --exit-on-error /backup/db.dump || exit 1
+          kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`
+          while [ -e "`printenv PGDATA`/postmaster.pid" ]; do sleep 1; done
+        fi
+        docker-entrypoint.sh postgres &
+        trap 'dump; kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`; while [ -e "\`printenv PGDATA\`/postmaster.pid" ]; do sleep 1; done; exit 0' TERM INT
+        until pg_isready -q -h 127.0.0.1 -U linkwarden -d linkwarden; do sleep 1; done
+        touch /var/lib/postgresql/data/restored /tmp/restored
+        while true; do sleep 300 & wait; dump; done
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - dbbackup:/backup
+    healthcheck:
+      # Ready only once any restore has finished and the server answers on the network.
+      test: [CMD-SHELL, "test -f /tmp/restored && pg_isready -h 127.0.0.1 -U linkwarden -d linkwarden"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 110s
+volumes:
+  data:
+  dbdata:
+  dbbackup:
