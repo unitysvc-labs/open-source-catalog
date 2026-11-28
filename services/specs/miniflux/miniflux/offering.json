@@ -1,0 +1,141 @@
+{
+  "capabilities": [
+    "rss-aggregation | Subscribes to RSS, Atom and JSON feeds, refreshes them on a schedule and lets you read, search and organize the articles in a web interface.",
+    "feed-reader-api | Serves the Miniflux REST API, and the Google Reader and Fever compatible APIs once enabled in Settings, so feed-reader apps can sync with the instance."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Miniflux image together with its own PostgreSQL database in a separate stack for each enrollment, with its own HTTPS address. Miniflux is a minimalist, self-hosted feed reader: it subscribes to RSS, Atom and JSON feeds, refreshes them in the background, and shows the articles in a fast, plain web interface with categories, full-text search, keyboard shortcuts, starred entries, filter rules and OPML import and export. It can fetch the full text of an article, and it has a REST API plus Google Reader and Fever compatible APIs for mobile and desktop reader apps. Everything Miniflux stores is in the database, which is kept in the enrollment's storage, so your feeds and articles survive stopping and restarting the instance.\n\nEnroll in the base channel and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password; Miniflux has no public sign-up, and further users are created by the administrator. The instance address is optional to configure: only passkeys and a few generated links need it. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of both containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Miniflux documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "RSS, Atom and JSON feeds with categories, full-text search and starred entries",
+      "Full-text fetching of articles, filter and rewrite rules per feed",
+      "OPML import and export",
+      "REST API with API keys; Google Reader and Fever compatible APIs for reader apps",
+      "Several users, each with their own feeds, created by the administrator",
+      "Your data is kept in the enrollment's storage, across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://miniflux.app/docs/",
+      "homepage": "https://miniflux.app",
+      "source_code": "https://github.com/miniflux/v2"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "miniflux",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted minimalist feed reader for RSS, Atom and JSON feeds, with a REST API and reader-app sync. Runs with its own PostgreSQL database; data survives stops and restarts.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Miniflux's PostgreSQL database in the storage of this enrollment, so your feeds, articles and users are still there when the instance is stopped or restarted.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Miniflux with its own PostgreSQL database; the feeds, articles and users are kept in this enrollment's storage between stops and restarts.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "app"
+        }
+      ],
+      "environment": {
+        "app": {
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "ADMIN_USERNAME": "{{ params.ADMIN_USERNAME }}",
+          "BASE_URL": "{{ params.BASE_URL }}",
+          "DATABASE_URL": "postgres://miniflux:{{ params.DB_PASSWORD }}@db:5432/miniflux?sslmode=disable"
+        },
+        "db": {
+          "POSTGRES_PASSWORD": "{{ params.DB_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Miniflux first creates the account; once the account exists this value is ignored and the stored password applies. Change the password in Miniflux's own settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "ADMIN_USERNAME": {
+              "default": "admin",
+              "description": "The administrator's user name, created on the first start. Changing it later creates another administrator and leaves the first one in place.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@._-]+$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "BASE_URL": {
+              "default": "http://localhost",
+              "description": "Optional. Miniflux works at its instance address without this. Set it to the instance address, for example https://abc123.example.app (shown in the enrollment's instance details, no trailing slash), if you want to sign in with passkeys, or if a reader app does not show feed icons or proxied images: those use this address. The default http://localhost is Miniflux's own default. Changing it restarts the instance and keeps your data.",
+              "pattern": "^https?://[^/\\s]+$",
+              "title": "Instance address (optional)",
+              "type": "string"
+            },
+            "DB_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Password of the stack's PostgreSQL database, used by Miniflux to connect to it. Keep the generated value. The database is reachable only from inside the instance.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Database password",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ADMIN_USERNAME",
+            "ADMIN_PASSWORD",
+            "DB_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "ADMIN_USERNAME": "admin",
+          "BASE_URL": "http://localhost",
+          "DB_PASSWORD": "local-test-db-password"
+        }
+      },
+      "resources": {
+        "app": "nano",
+        "db": "nano"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "dbbackup": {
+          "exclude": [
+            "*.tmp"
+          ],
+          "mode": "rw",
+          "source": "{{ storage.path }}/db-backup",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
