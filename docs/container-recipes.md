@@ -27,6 +27,15 @@ Each Compose service runs as its own pod. Two rules follow that Docker Compose d
 - **Declare the port of every service another service connects to**, with `ports` (the container port alone, for example `- 5432`), even when it is never published. A service gets its name inside the instance only when it declares ports, and only declared ports are open between an instance's services. A database with no `ports` cannot be reached: its name does not resolve, and the application waits for it forever. `expose` is ignored and does not count.
 - **There is no start order.** `depends_on` is ignored, so an application must wait for or retry its dependencies itself.
 
+### Start-up time and `start_period`
+
+A Compose `healthcheck` becomes the container's start-up and readiness check. The platform **restarts a container that has not passed its check by the end of `start_period`**, and an instance that is not ready within about three minutes fails. Start-up there is several times slower than under Docker on a workstation: the container is sandboxed and gets only its size's share of a core. Timings measured locally are therefore not a guide.
+
+- Set `start_period` generously, up to the maximum of `120s`. A short one (20 or 30 seconds) is the usual reason a recipe that works locally never becomes ready on the platform: PostgreSQL's first initialisation alone took about 29 seconds there.
+- A service with no `start_period` gets 60 seconds.
+- If the first start cannot finish in two minutes on the chosen size (an application that installs or migrates itself at first start), choose a larger size: more CPU is the only way to shorten it. wallabag needs `small` for this reason, not for memory.
+- After a failed start, wait about ten minutes before testing the same recipe again. The failed instance is still being removed, and a new test in that time is refused with `409 busy: the instance is still handling its stop request`, which hides the real failure.
+
 Give each service its size in the channel's `resources` map, and name in `entries` only the service customers reach.
 
 Images must already be built. A tag is accepted; use a digest to pin the image you tested. Check the target architecture. Compose service names must be DNS labels: lowercase letters, digits and hyphens.
