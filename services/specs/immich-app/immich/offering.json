@@ -1,0 +1,112 @@
+{
+  "capabilities": [
+    "photo-video-library | Upload and organize photos and videos through Immich web/mobile clients, with albums, account permissions and CPU processing; no machine-learning service."
+  ],
+  "currency": "USD",
+  "description": "Immich stores photos and videos, organizes albums and supports its web and mobile clients. This recipe runs the official server with its supported PostgreSQL vector-extension image and Valkey. Media lives in the immich folder of your home and the database is persisted as a dump. The separate machine-learning service is omitted and disabled in application configuration, so face recognition and semantic search are not supplied. CPU-only image/video processing is supported within the selected size limits.\n\nEnroll in base, preserve the database password and approve home access. Open the instance address immediately and register the first administrator before sharing the address, then upload a small photo and create an album. Existing data retains its users. Large videos, processing queues and imports can exceed resources; see How to use this service for backup and stop/restore limits.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/immich-app/immich#readme",
+      "homepage": "https://immich.app",
+      "source_code": "https://github.com/immich-app/immich"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "immich",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Upload and organize a private photo and video library with Immich web/mobile clients, with media and PostgreSQL backups kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=immich/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated Immich Private Photo and Video Library instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 2283,
+          "service": "app"
+        }
+      ],
+      "environment": {
+        "app": {
+          "DB_PASSWORD": "{{ params.DB_PASSWORD }}"
+        },
+        "db": {
+          "POSTGRES_PASSWORD": "{{ params.DB_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "DB_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Keep this value whenever using the stored database backup. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Database password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "DB_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "DB_PASSWORD": "catalog-local-db-password"
+        }
+      },
+      "resources": {
+        "app": "small-2x",
+        "db": "small",
+        "redis": "nano"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [],
+          "gid": 0,
+          "mode": "rw",
+          "source": "{{ home.path }}/immich/library",
+          "type": "persist",
+          "uid": 0
+        },
+        "dbbackup": {
+          "exclude": [
+            "*.tmp"
+          ],
+          "gid": 0,
+          "mode": "rw",
+          "source": "{{ home.path }}/immich/db-backup",
+          "type": "persist",
+          "uid": 0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,88 @@
+services:
+  app:
+    image: ghcr.io/immich-app/immich-server:v3.4.2@sha256:fc880c1bf665b4aab1e74c15e56ab871225989cd546536e6b77e771869af06bd
+    entrypoint:
+    - tini
+    - --
+    - /bin/bash
+    - -c
+    - until (exec 3<>/dev/tcp/db/5432) 2>/dev/null && (exec 4<>/dev/tcp/redis/6379) 2>/dev/null; do echo 'waiting
+      for database and cache'; sleep 2; done; printf '%s' '{"machineLearning":{"enabled":false}}' > /tmp/immich-config.json;
+      exec start.sh
+    ports:
+    - 2283
+    environment:
+      DB_HOSTNAME: db
+      DB_PORT: '5432'
+      DB_USERNAME: immich
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: redis
+      REDIS_PORT: '6379'
+      IMMICH_CONFIG_FILE: /tmp/immich-config.json
+      TZ: Etc/UTC
+      IMMICH_HOST: 0.0.0.0
+    volumes:
+    - data:/data
+    healthcheck:
+      test:
+      - CMD
+      - immich-healthcheck
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+  db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    ports:
+    - 5432
+    environment:
+      POSTGRES_USER: immich
+      POSTGRES_DB: immich
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+    - sh
+    - -c
+    - "dump() { pg_dump -U immich -d immich -Fc -f /backup/db.dump.tmp && mv /backup/db.dump.tmp /backup/db.dump;\
+      \ }\nif [ ! -e /var/lib/postgresql/data/restored ] && [ -s /backup/db.dump ]; then\n  rm -rf \"`printenv PGDATA`\"\
+      \n  docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf -c listen_addresses= -p 5433\
+      \ &\n  until pg_isready -q -p 5433 -U immich -d immich; do sleep 1; done\n  pg_restore -p 5433 -U immich -d\
+      \ immich --no-owner --exit-on-error /backup/db.dump || exit 1\n  kill -INT `head -1 \"\\`printenv PGDATA\\\
+      `/postmaster.pid\"`\n  while [ -e \"`printenv PGDATA`/postmaster.pid\" ]; do sleep 1; done\nfi\ndocker-entrypoint.sh\
+      \ postgres -c config_file=/etc/postgresql/postgresql.conf &\ntrap 'dump; kill -INT `head -1 \"\\`printenv\
+      \ PGDATA\\`/postmaster.pid\"`; while [ -e \"\\`printenv PGDATA\\`/postmaster.pid\" ]; do sleep 1; done; exit\
+      \ 0' TERM INT\nuntil pg_isready -q -h 127.0.0.1 -U immich -d immich; do sleep 1; done\ntouch /var/lib/postgresql/data/restored\
+      \ /tmp/restored\nwhile true; do for i in `seq 60`; do sleep 5; done; dump; done\n"
+    volumes:
+    - dbdata:/var/lib/postgresql/data
+    - dbbackup:/backup
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - test -f /tmp/restored && pg_isready -h 127.0.0.1 -U immich -d immich
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+  redis:
+    image: valkey/valkey:9.2.1-alpine@sha256:3ad5a213cb1bc2fd4a113c89b6248a88655a6bf1dda69519d04e03cd3e3d2742
+    ports:
+    - 6379
+    command:
+    - valkey-server
+    - --save
+    - ''
+    - --appendonly
+    - 'no'
+    healthcheck:
+      test:
+      - CMD
+      - valkey-cli
+      - ping
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+volumes:
+  dbdata: {}
+  dbbackup: {}
+  data: {}
