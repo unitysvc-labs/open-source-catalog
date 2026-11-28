@@ -1,0 +1,135 @@
+{
+  "capabilities": [
+    "file-synchronization | Upload and manage files through a browser, WebDAV and Nextcloud desktop/mobile clients, with application-managed accounts and sharing."
+  ],
+  "currency": "USD",
+  "description": "Nextcloud provides browser file management, WebDAV and desktop/mobile synchronization. This recipe uses the official Apache image and SQLite for a modest personal installation. It automatically creates the first administrator from enrollment parameters. Files, configuration and custom applications live in the nextcloud folder of your home. The pinned image supplies the core application code on each start; no separate office, video-conferencing or mail server is included.\n\nEnroll in base, save the administrator password and approve home access. Once ready, open the HTTPS instance address, sign in and upload a small file. Set Trusted hostnames to the assigned hostname after startup. Existing data retains its passwords. The small-2x size gives the first-install copy and migrations time to complete. See How to use this service for storage and SQLite limitations.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/nextcloud/server#readme",
+      "homepage": "https://nextcloud.com",
+      "source_code": "https://github.com/nextcloud/server"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "server",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Sync files between devices with a private Nextcloud server, browser uploads, WebDAV and accounts, with data and configuration kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=nextcloud/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated Nextcloud Private File Sync Server instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "nextcloud"
+        }
+      ],
+      "environment": {
+        "nextcloud": {
+          "NEXTCLOUD_ADMIN_PASSWORD": "{{ params.NEXTCLOUD_ADMIN_PASSWORD }}",
+          "NEXTCLOUD_ADMIN_USER": "{{ params.NEXTCLOUD_ADMIN_USER }}",
+          "NEXTCLOUD_TRUSTED_DOMAINS": "{{ params.NEXTCLOUD_TRUSTED_DOMAINS }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "NEXTCLOUD_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Used only when creating the installation. Existing users change their password in Nextcloud. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Initial administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "NEXTCLOUD_ADMIN_USER": {
+              "default": "admin",
+              "description": "Created only on first installation; existing data keeps its users.",
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Initial administrator name",
+              "type": "string"
+            },
+            "NEXTCLOUD_TRUSTED_DOMAINS": {
+              "default": "*",
+              "description": "Initially accepts any hostname because the instance address is assigned later. Replace * with the assigned hostname after the first start. Space-separated hostnames are supported.",
+              "minLength": 1,
+              "title": "Trusted hostnames",
+              "type": "string"
+            }
+          },
+          "required": [
+            "NEXTCLOUD_ADMIN_USER",
+            "NEXTCLOUD_ADMIN_PASSWORD",
+            "NEXTCLOUD_TRUSTED_DOMAINS"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "NEXTCLOUD_ADMIN_PASSWORD": "catalog-local-password-only",
+          "NEXTCLOUD_ADMIN_USER": "admin",
+          "NEXTCLOUD_TRUSTED_DOMAINS": "*"
+        }
+      },
+      "resources": "small-2x",
+      "type": "enrollable",
+      "volumes": {
+        "apps": {
+          "exclude": [],
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/nextcloud/apps",
+          "type": "persist",
+          "uid": 33
+        },
+        "config": {
+          "exclude": [],
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/nextcloud/config",
+          "type": "persist",
+          "uid": 33
+        },
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/nextcloud/data",
+          "type": "persist",
+          "uid": 33
+        }
+      }
+    }
+  }
+}

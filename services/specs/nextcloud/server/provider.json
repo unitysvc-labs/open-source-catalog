@@ -1,0 +1,10 @@
+{
+  "contact_email": "contact@nextcloud.com",
+  "display_name": "Nextcloud GmbH and contributors",
+  "homepage": "https://nextcloud.com",
+  "logo": "https://github.com/nextcloud.png",
+  "name": "nextcloud",
+  "status": "ready",
+  "terms_of_service": "https://github.com/nextcloud/server/blob/master/COPYING",
+  "time_created": "2026-11-28T00:00:00Z"
+}
