@@ -1,0 +1,94 @@
+{
+  "capabilities": [
+    "email-test-inbox | Stores messages posted as JSON to its HTTP send API and shows them in a web inbox with HTML, text, headers, attachments and a compatibility check. SMTP is not reachable from outside the instance.",
+    "email-inspection-api | Lists, searches, reads, tags and deletes the captured messages through a REST API with HTTP basic authentication, for automated tests."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Mailpit image in a separate container for each enrollment, with its own HTTPS address. Mailpit is an email testing tool: an application under test delivers its mail to Mailpit instead of to real recipients, and you read it in a web inbox or fetch it through a REST API. The inbox shows each message's HTML and text parts, headers, raw source and attachments, checks the HTML against email clients and the links for errors, and updates live as mail arrives. Mail is never sent on to anyone. **SMTP delivery from outside is not available:** the platform publishes an instance over HTTPS on port 443 only, so Mailpit's SMTP port cannot be reached from your application. Deliver mail with Mailpit's HTTP send API instead (`POST /api/v1/send`, the message as JSON), which needs a small change in the application under test or a test-only mail transport.\n\nEnroll in the base channel and keep or replace the generated password. Open `https://<instance>/` and sign in with the sign-in name and password (HTTP basic authentication); the same credential is required by every API call, including the send API. The inbox is temporary: it keeps the newest 500 messages while the instance runs and is empty again after the instance is stopped. See How to use this service for the send API, reading mail from a test, and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. See the upstream Mailpit documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Web inbox with HTML, text, headers, raw source and attachments, updated live",
+      "HTTP send API: deliver a message as JSON over HTTPS",
+      "REST API to list, search, read, tag and delete messages from automated tests",
+      "HTML compatibility check and link check for each message",
+      "Web interface and API protected by a sign-in name and password",
+      "No SMTP from outside the instance; captured mail is never sent on"
+    ],
+    "links": {
+      "documentation": "https://mailpit.axllent.org/docs/",
+      "homepage": "https://mailpit.axllent.org",
+      "source_code": "https://github.com/axllent/mailpit"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "mailpit",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private email testing inbox: post test mail as JSON over HTTPS, then read it in Mailpit's web inbox or through its REST API. SMTP from outside is not available.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "description": "One private Mailpit inbox, reached over HTTPS; it is temporary and starts empty after a stop.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8025,
+          "service": "mailpit"
+        }
+      ],
+      "environment": {
+        "mailpit": {
+          "MP_UI_AUTH": "{{ params.MP_UI_USER }}:{{ params.MP_UI_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "MP_UI_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own, using letters, digits, dot, underscore, hyphen or tilde. Mailpit asks for it, with the sign-in name, on the web interface and on every API call, including the send API. Changing it restarts the instance, which empties the inbox. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 128,
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9._~-]+$",
+              "title": "Sign-in password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "MP_UI_USER": {
+              "default": "admin",
+              "description": "The user name for the web interface and the API (HTTP basic authentication). It cannot contain a colon or a space.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9@._+-]+$",
+              "title": "Sign-in name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "MP_UI_USER",
+            "MP_UI_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "MP_UI_PASSWORD": "local-test-password-only",
+          "MP_UI_USER": "admin"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable"
+    }
+  }
+}

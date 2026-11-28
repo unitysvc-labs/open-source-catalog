@@ -1,0 +1,10 @@
+{
+  "display_name": "Mailpit Email Testing Inbox",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.mailpit.volumes[0]: volume 'data' at /data becomes scratch space (an emptyDir the instance gets at that path, counted in ephemeral-storage): its data survives a container restart but not a replacement of the instance"
+  ],
+  "name": "axllent/mailpit",
+  "service_id": "a4626b54-91cc-4ea5-9de8-b83b036fff84",
+  "status": "created",
+  "time_created": "2026-11-28T14:24:04.535234Z"
+}
