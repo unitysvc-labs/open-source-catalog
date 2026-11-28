@@ -33,12 +33,36 @@ services:
     environment:
       POSTGRES_USER: listmonk
       POSTGRES_DB: listmonk
-      # A subfolder, so PostgreSQL creates the data directory itself with the permissions it requires.
       PGDATA: /var/lib/postgresql/data/pgdata
+    # The data directory is scratch: it cannot be kept in the customer's storage, because the copy skips the
+    # empty files and folders PostgreSQL needs and keeps no file modes, so a restored directory does not
+    # start. What persists is a dump in /backup. On a start with no data directory the dump is restored
+    # before the server listens on the network (so listmonk never sees a half-restored database); it is
+    # rewritten every five minutes and once more at a normal stop. The server is stopped with SIGINT (a fast
+    # shutdown) sent to the postmaster. Backticks and `printenv`, no dollar sign.
+    command:
+      - sh
+      - -c
+      - |
+        dump() { pg_dump -U listmonk -d listmonk -Fc -f /backup/db.dump.tmp && mv /backup/db.dump.tmp /backup/db.dump; }
+        if [ ! -s "`printenv PGDATA`/PG_VERSION" ] && [ -s /backup/db.dump ]; then
+          docker-entrypoint.sh postgres -c listen_addresses= &
+          until pg_isready -q -U listmonk -d listmonk; do sleep 1; done
+          pg_restore -U listmonk -d listmonk --no-owner --exit-on-error /backup/db.dump || exit 1
+          kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`
+          while [ -e "`printenv PGDATA`/postmaster.pid" ]; do sleep 1; done
+        fi
+        docker-entrypoint.sh postgres &
+        trap 'dump; kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`; while [ -e "\`printenv PGDATA\`/postmaster.pid" ]; do sleep 1; done; exit 0' TERM INT
+        until pg_isready -q -h 127.0.0.1 -U listmonk -d listmonk; do sleep 1; done
+        touch /tmp/restored
+        while true; do sleep 300 & wait; dump; done
     volumes:
       - dbdata:/var/lib/postgresql/data
+      - dbbackup:/backup
     healthcheck:
-      test: [CMD-SHELL, "pg_isready -U listmonk -d listmonk"]
+      # Ready only once any restore has finished and the server answers on the network.
+      test: [CMD-SHELL, "test -f /tmp/restored && pg_isready -h 127.0.0.1 -U listmonk -d listmonk"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -49,3 +73,4 @@ services:
 volumes:
   uploads:
   dbdata:
+  dbbackup:

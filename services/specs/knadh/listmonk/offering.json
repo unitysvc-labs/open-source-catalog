@@ -116,12 +116,13 @@
       },
       "type": "enrollable",
       "volumes": {
-        "dbdata": {
-          "gid": 70,
+        "dbbackup": {
+          "exclude": [
+            "*.tmp"
+          ],
           "mode": "rw",
-          "source": "{{ storage.path }}/db",
-          "type": "persist",
-          "uid": 70
+          "source": "{{ storage.path }}/db-backup",
+          "type": "persist"
         },
         "uploads": {
           "gid": 0,

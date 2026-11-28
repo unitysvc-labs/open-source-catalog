@@ -24,10 +24,11 @@ listmonk checks every request itself: the administration interface and the API n
 
 ## What is kept, and what is lost
 
-Two folders are persistent: the PostgreSQL data directory (subscribers, lists, campaigns, users and settings) and listmonk's `uploads` folder. They are stored in the enrollment's storage. The platform restores them before the containers start, copies new and changed files back about every 30 seconds while the instance runs, and makes a last copy when it stops. Stopping therefore takes a moment longer while the copy finishes.
+Two folders are persistent: a backup of the PostgreSQL database (subscribers, lists, campaigns, users and settings) and listmonk's `uploads` folder. They are stored in the enrollment's storage. The database itself runs on temporary disk; the instance writes a backup of it every five minutes and once more when it stops, and restores that backup when it starts. The platform copies both folders to storage about every 30 seconds while the instance runs and once more when it stops. Stopping therefore takes a moment longer while the backup and the copy finish.
 
-- The copy of a running database directory is taken file by file, not as a database backup. After a normal stop it is complete. After a crash, or a node failure, up to the last 30 seconds can be lost and PostgreSQL recovers from its write-ahead log on the next start; a copy taken at an unlucky moment is not guaranteed to recover. Export your subscribers and lists from listmonk (**Subscribers > Import / Export**) regularly if you cannot lose them.
-- Files are copied, never deleted from storage. A file PostgreSQL removes, such as an old write-ahead segment, can come back after a restart; this is cosmetic.
+- A normal stop loses nothing. A crash, or a node failure, can lose the changes made since the last backup, up to five minutes. Export your subscribers and lists from listmonk (**Subscribers > Import / Export**) regularly if you cannot lose them.
+- The backup is one file and must stay under 1 GiB, the largest file the platform's storage copy keeps. A very large subscriber list or campaign history can exceed that; export it before it does.
+- Uploaded files are copied, never deleted from storage: a file removed in listmonk can come back after a restart.
 - Empty files, symbolic links and files over 1 GiB are not stored.
 - Removing the enrollment removes its storage. Enrolling again starts with an empty listmonk and new passwords.
 
