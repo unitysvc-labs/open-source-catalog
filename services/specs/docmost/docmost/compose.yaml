@@ -1,0 +1,84 @@
+services:
+  app:
+    image: docmost/docmost:0.98.0@sha256:c3bdc84767de0fc9431763523636ddfd783c35c25ef7d4a3c95c064628e78d7a
+    entrypoint:
+    - node
+    - -e
+    - 'const net=require(''node:net''),{spawn}=require(''node:child_process'');
+
+      const wait=(host,port)=>new Promise(resolve=>{const retry=()=>{const s=net.connect(port,host);s.on(''connect'',()=>{s.destroy();resolve()});s.on(''error'',()=>{s.destroy();setTimeout(retry,2000)})};retry()});
+
+      Promise.all([wait(''db'',5432),wait(''redis'',6379)]).then(()=>{const child=spawn(process.execPath,[''dist/main''],{stdio:''inherit''});for(const
+      signal of [''SIGTERM'',''SIGINT''])process.on(signal,()=>child.kill(signal));child.on(''exit'',(code)=>process.exit(code||0));child.on(''error'',()=>process.exit(1))}).catch(()=>process.exit(1));'
+    ports:
+    - 3000
+    environment:
+      REDIS_URL: redis://redis:6379
+      STORAGE_DRIVER: local
+      DISABLE_TELEMETRY: 'true'
+    volumes:
+    - data:/app/data/storage
+    healthcheck:
+      test:
+      - CMD
+      - node
+      - -e
+      - fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+  db:
+    image: postgres:17-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
+    ports:
+    - 5432
+    environment:
+      POSTGRES_USER: docmost
+      POSTGRES_DB: docmost
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+    - sh
+    - -c
+    - "dump() { pg_dump -U docmost -d docmost -Fc -f /backup/db.dump.tmp && mv /backup/db.dump.tmp /backup/db.dump;\
+      \ }\nif [ ! -e /var/lib/postgresql/data/restored ] && [ -s /backup/db.dump ]; then\n  rm -rf \"`printenv PGDATA`\"\
+      \n  docker-entrypoint.sh postgres -c listen_addresses= -p 5433 &\n  until pg_isready -q -p 5433 -U docmost\
+      \ -d docmost; do sleep 1; done\n  pg_restore -p 5433 -U docmost -d docmost --no-owner --exit-on-error /backup/db.dump\
+      \ || exit 1\n  kill -INT `head -1 \"\\`printenv PGDATA\\`/postmaster.pid\"`\n  while [ -e \"`printenv PGDATA`/postmaster.pid\"\
+      \ ]; do sleep 1; done\nfi\ndocker-entrypoint.sh postgres &\ntrap 'dump; kill -INT `head -1 \"\\`printenv PGDATA\\\
+      `/postmaster.pid\"`; while [ -e \"\\`printenv PGDATA\\`/postmaster.pid\" ]; do sleep 1; done; exit 0' TERM\
+      \ INT\nuntil pg_isready -q -h 127.0.0.1 -U docmost -d docmost; do sleep 1; done\ntouch /var/lib/postgresql/data/restored\
+      \ /tmp/restored\nwhile true; do for i in `seq 60`; do sleep 5; done; dump; done\n"
+    volumes:
+    - dbdata:/var/lib/postgresql/data
+    - dbbackup:/backup
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - test -f /tmp/restored && pg_isready -h 127.0.0.1 -U docmost -d docmost
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+  redis:
+    image: valkey/valkey:9.2.1-alpine@sha256:3ad5a213cb1bc2fd4a113c89b6248a88655a6bf1dda69519d04e03cd3e3d2742
+    ports:
+    - 6379
+    command:
+    - valkey-server
+    - --save
+    - ''
+    - --appendonly
+    - 'no'
+    healthcheck:
+      test:
+      - CMD
+      - valkey-cli
+      - ping
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+volumes:
+  dbdata: {}
+  dbbackup: {}
+  data: {}
