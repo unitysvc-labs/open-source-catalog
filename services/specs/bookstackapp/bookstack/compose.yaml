@@ -1,0 +1,127 @@
+# BookStack with its MariaDB database, one private stack per enrollment. The first administrator, the application
+# key and the database password are bound from the channel's `environment` in offering.json; the values below
+# are the stack's fixed, non-secret settings. BookStack publishes no image of its own; its documentation points to
+# the LinuxServer.io image used here.
+services:
+  app:
+    image: lscr.io/linuxserver/bookstack:v26.09.3-ls301@sha256:2ab643f9bce3e29b3347b595e369977eea3a40cef72d887fce635faf1cea3abc
+    # This entrypoint wraps the image's own (/init) and uses backticks and `printenv`, never a dollar sign:
+    # 1. `depends_on` does not order startup on the platform and the image waits only 30 seconds for the
+    #    database before it migrates, so wait here until MariaDB accepts connections (it listens on the network
+    #    only after any restore has finished).
+    # 2. Write BookStack's .env without the sample APP_URL line. With no APP_URL BookStack builds its links from
+    #    the address of each request (APP_PROXIES below makes it trust the platform proxy's X-Forwarded-Proto),
+    #    so it works at an instance address that is known only after enrollment.
+    # 3. BookStack's migration creates the published default account admin@admin.com / password and there is no
+    #    environment setting for it. The image runs /custom-cont-init.d scripts after the migration and before
+    #    the web server starts, so one is written here that calls BookStack's own
+    #    `bookstack:create-admin --initial`: it replaces the default account's email and password with the bound
+    #    ones while that account exists, and does nothing once it is gone (every later start). If it does
+    #    neither, the script blocks, so the web server never starts with the default password; the next start
+    #    tries again.
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        until nc -z -w 2 db 3306; do echo 'waiting for the database'; sleep 2; done
+        mkdir -p /config/www /custom-cont-init.d
+        test -s /config/www/.env || grep -v '^APP_URL=' /app/www/.env.example > /config/www/.env
+        cat > /custom-cont-init.d/first-admin <<'SCRIPT'
+        #!/usr/bin/with-contenv bash
+        cd /app/www
+        s6-setuidgid abc php artisan bookstack:create-admin --initial --name=Admin --email="`printenv BOOKSTACK_ADMIN_EMAIL`" --password="`printenv BOOKSTACK_ADMIN_PASSWORD`" > /tmp/first-admin.log 2>&1
+        cat /tmp/first-admin.log
+        if ! grep -q -e 'default admin user has been updated' -e 'Skipping creation of new admin user' /tmp/first-admin.log; then
+          echo 'the first administrator could not be set: not starting the web server' >&2
+          sleep infinity
+        fi
+        SCRIPT
+        chmod 755 /custom-cont-init.d/first-admin
+        exec /init
+    ports:
+      - 80
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+      # The instance is reached only through the platform's HTTPS proxy; trust its forwarded headers.
+      APP_PROXIES: "*"
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: bookstack
+      DB_USERNAME: bookstack
+    volumes:
+      # Images (public/uploads) and attachments (storage/uploads/files). The rest of /config (the generated
+      # .env, nginx and PHP settings, logs, sessions and caches) is rebuilt at every start and is not kept.
+      - uploads:/config/www/uploads
+      - files:/config/www/files
+    healthcheck:
+      # BookStack's own status page: 200 only when the database, cache and session store all answer.
+      test: [CMD, curl, -fsS, "http://127.0.0.1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (sandboxed, on a small size) is several times slower than
+      # under Docker on a workstation.
+      start_period: 110s
+  db:
+    image: mariadb:11.4.13@sha256:a8992b5e5404d11e03c54a31d0c1bdea3fd116d283aa6d1a627551f29045309b
+    # Declared so the platform gives this service a name and lets BookStack reach it: a service
+    # without ports gets no address inside the instance, and only declared ports are open between services.
+    ports:
+      - 3306
+    environment:
+      MARIADB_DATABASE: bookstack
+      MARIADB_USER: bookstack
+      # Nothing uses the root account: BookStack and the dump below sign in as `bookstack`.
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    # The data directory is scratch: the storage copy skips empty files and folders and keeps no file modes,
+    # so a live data directory cannot be kept there. What persists is a dump in /backup, written with
+    # `mariadb-dump` every five minutes and once more at a normal stop.
+    # - Restore: a data directory counts as complete only when it holds the marker `.initialised`, written
+    #   after the server has answered on the network. Without the marker the directory is emptied and the dump
+    #   is handed to the image's own entrypoint as /docker-entrypoint-initdb.d/restore.sql. The entrypoint loads
+    #   such files while it initialises an empty data directory, after it has created the database and the
+    #   user, on a temporary server that listens on the Unix socket only (--skip-networking); if the load fails
+    #   the entrypoint stops and this command exits 1, leaving the directory unmarked for the next start.
+    # - Readiness: `mariadb-admin ping` over TCP (127.0.0.1) answers only for the final server, never for the
+    #   temporary one, so BookStack cannot connect before the restore is complete. /tmp/restored gates both the
+    #   healthcheck and the dump, so a stop during initialisation never overwrites the good dump.
+    # - Stop: on SIGTERM the dump is written (to a .tmp file, then renamed), the server gets SIGTERM (MariaDB's
+    #   normal shutdown) and the command exits 0. `%1` is the entrypoint job, which becomes mariadbd itself.
+    # - If the server dies on its own the command exits 1.
+    # `wait %2` waits for the sleep alone; a bare `wait` would also wait for the server and never return.
+    # To reuse for another MariaDB/MySQL stack: replace the user and database name `bookstack` (five places).
+    # Backticks and `printenv`, no dollar sign.
+    command:
+      - bash
+      - -c
+      - |
+        dump() { test -f /tmp/restored && MYSQL_PWD="`printenv MARIADB_PASSWORD`" mariadb-dump -u bookstack --single-transaction --no-tablespaces bookstack > /backup/db.sql.tmp && mv /backup/db.sql.tmp /backup/db.sql; }
+        rm -f /tmp/restored
+        if [ ! -f /var/lib/mysql/.initialised ]; then
+          find /var/lib/mysql -mindepth 1 -delete
+          if [ -s /backup/db.sql ]; then cp /backup/db.sql /docker-entrypoint-initdb.d/restore.sql; fi
+        fi
+        docker-entrypoint.sh mariadbd &
+        trap 'dump; kill %1; wait %1; exit 0' TERM INT
+        until MYSQL_PWD="`printenv MARIADB_PASSWORD`" mariadb-admin -h 127.0.0.1 -u bookstack --silent ping; do kill -0 %1 || exit 1; sleep 1; done
+        touch /var/lib/mysql/.initialised /tmp/restored
+        while kill -0 %1; do sleep 300 & wait %2; dump; done
+        exit 1
+    volumes:
+      - dbdata:/var/lib/mysql
+      - dbbackup:/backup
+    healthcheck:
+      # Ready only once any restore has finished and the server answers on the network (the image's own check).
+      test: [CMD-SHELL, "test -f /tmp/restored && healthcheck.sh --connect --innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 110s
+volumes:
+  uploads:
+  files:
+  dbdata:
+  dbbackup:

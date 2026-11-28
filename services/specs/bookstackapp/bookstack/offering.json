@@ -1,0 +1,162 @@
+{
+  "capabilities": [
+    "wiki-pages | Stores documentation as pages in books, chapters and shelves, written in a WYSIWYG or Markdown editor, with page revisions.",
+    "documentation-search | Full-text search across books, chapters and pages, with filters for tags, dates and authors.",
+    "document-export | Exports pages, chapters and books as PDF, HTML, plain text, Markdown or a portable ZIP.",
+    "user-roles-and-permissions | Controls who can view or edit content with users, roles and per-book, per-chapter and per-page permissions."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs BookStack together with its own MariaDB database in a separate stack for each enrollment, with its own HTTPS address. BookStack is a self-hosted wiki and documentation platform: content is organised as shelves, books, chapters and pages, edited in a WYSIWYG or Markdown editor, with page revisions, full-text search, image and file attachments, diagrams, exports, users with roles and permissions, and a REST API. BookStack publishes no container image of its own; this service uses the LinuxServer.io image that BookStack's documentation points to. The database, the uploaded images and the attachments are kept in the enrollment's storage, so they survive stopping and restarting the instance.\n\nEnroll in the base channel, enter the administrator's email address and keep or replace the generated password. Open the instance address and sign in with that email and password; the published default account `admin@admin.com` is replaced before the instance answers. The instance has no mail server, so password reset and invitation emails are not sent. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of both containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the BookStack documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Shelves, books, chapters and pages with a WYSIWYG or Markdown editor",
+      "Page revisions, full-text search, tags and cross-book linking",
+      "Image uploads, file attachments and diagrams.net drawings",
+      "Users, roles and content permissions, multi-factor authentication and a REST API",
+      "Your data is kept in the enrollment's storage, across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://www.bookstackapp.com/docs/",
+      "homepage": "https://www.bookstackapp.com",
+      "source_code": "https://codeberg.org/bookstack/bookstack"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "bookstack",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private BookStack wiki for documentation in books, chapters and pages, with its own MariaDB database. Pages, images and attachments are kept in the enrollment's storage.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps BookStack's database backup, uploaded images and attachments in the storage of this enrollment, so your books and pages are still there when the instance is stopped or restarted.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private BookStack with its own MariaDB database; the books, pages, images and attachments are kept in this enrollment's storage between stops and restarts.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 80,
+          "service": "app"
+        }
+      ],
+      "environment": {
+        "app": {
+          "APP_KEY": "{{ params.APP_KEY }}",
+          "BOOKSTACK_ADMIN_EMAIL": "{{ params.BOOKSTACK_ADMIN_EMAIL }}",
+          "BOOKSTACK_ADMIN_PASSWORD": "{{ params.BOOKSTACK_ADMIN_PASSWORD }}",
+          "DB_PASSWORD": "{{ params.DB_PASSWORD }}"
+        },
+        "db": {
+          "MARIADB_PASSWORD": "{{ params.DB_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "APP_KEY": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; BookStack uses it to encrypt sessions, cookies and stored secrets such as multi-factor authentication settings. You do not need to type it anywhere. It must be exactly 32 letters, digits, hyphens or underscores, or a key in BookStack's `base64:` form (`base64:` followed by 32 random bytes in Base64). Changing it signs everyone out and makes stored multi-factor settings unreadable. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 51,
+              "minLength": 32,
+              "pattern": "^(base64:[A-Za-z0-9+/]{43}=|[A-Za-z0-9_-]{32})$",
+              "title": "Application key",
+              "type": "string",
+              "writeOnly": true
+            },
+            "BOOKSTACK_ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The email address the administrator signs in with. BookStack's built-in first account (`admin@admin.com`) is renamed to this address on the first start; afterwards this value is ignored and you change it in BookStack under My Account. No mail is sent to it. `admin@admin.com` itself is not accepted.",
+              "maxLength": 190,
+              "minLength": 5,
+              "pattern": "^(?!admin@admin\\.com$)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
+              "title": "Administrator email",
+              "type": "string"
+            },
+            "BOOKSTACK_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It replaces the published default password of BookStack's first account only on the first start of this enrollment's data: on later starts this value is ignored and the existing password still applies. Change the password in BookStack under My Account. The instance sends no email, so a lost password cannot be reset. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "DB_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Password of the stack's MariaDB database, used by BookStack to connect to it. Keep the generated value; you do not need to type it anywhere. The database is reachable only from inside the instance. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Database password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "BOOKSTACK_ADMIN_EMAIL",
+            "BOOKSTACK_ADMIN_PASSWORD",
+            "APP_KEY",
+            "DB_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "APP_KEY": "local-test-app-key-0123456789abc",
+          "BOOKSTACK_ADMIN_EMAIL": "admin@example.com",
+          "BOOKSTACK_ADMIN_PASSWORD": "local-test-password-only",
+          "DB_PASSWORD": "local-test-db-password"
+        }
+      },
+      "resources": {
+        "app": "nano",
+        "db": "nano"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "dbbackup": {
+          "exclude": [
+            "*.tmp"
+          ],
+          "mode": "rw",
+          "source": "{{ storage.path }}/db-backup",
+          "type": "persist"
+        },
+        "files": {
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/files",
+          "type": "persist",
+          "uid": 1000
+        },
+        "uploads": {
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/uploads",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
