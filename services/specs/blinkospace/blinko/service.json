@@ -1,0 +1,12 @@
+{
+  "display_name": "Blinko Note Server",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.blinko.volumes[0]: volume 'blinko-files' at /app/.blinko is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.blinko.depends_on: `depends_on` is ignored: there is no start ordering, so the service must retry until its dependencies answer (readiness keeps traffic away until it does)",
+    "upstream_access_config.base: services.postgres.volumes[0]: volume 'postgres-data' at /var/lib/postgresql/data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "blinkospace/blinko",
+  "service_id": "d7d60c9c-c001-464f-938b-4dcc09d81a8b",
+  "status": "created",
+  "time_created": "2026-11-26T01:54:35.284973Z"
+}

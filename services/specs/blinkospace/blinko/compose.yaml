@@ -1,0 +1,54 @@
+# Blinko with its PostgreSQL database, one private stack per enrollment. The database password, the
+# signing secret, the matching DATABASE_URL and the first administrator are bound from the channel's
+# `environment` in offering.json; the values below are the stack's fixed, non-secret settings.
+services:
+  blinko:
+    image: blinkospace/blinko:1.8.9@sha256:ebbdcc375451570fad37319dea443c062d2a451a45d4f2ee0d98189d4b7615a5
+    # `depends_on` does not order startup on the platform, and Blinko's own start script does not retry:
+    # it runs migrations once, so a database that is not up yet leaves an empty schema. Wait for the
+    # database first. Then, once Blinko answers, create the first administrator from the bound name and
+    # password: Blinko otherwise lets the first visitor to register become the administrator. After the
+    # first user exists Blinko refuses registration, so on a restart this call is refused and harmless.
+    command:
+      - /usr/local/bin/dumb-init
+      - --
+      - /bin/sh
+      - -c
+      - |
+        until nc -z postgres 5432; do sleep 2; done
+        ./start.sh &
+        until wget -q -O /dev/null http://127.0.0.1:1111/; do sleep 2; done
+        node -e "fetch('http://127.0.0.1:1111/api/v1/user/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:process.env.BLINKO_ADMIN_NAME,password:process.env.BLINKO_ADMIN_PASSWORD})}).then(r=>r.text()).then(t=>console.log('first administrator:',t.slice(0,60)))"
+        wait
+    ports:
+      - 1111
+    environment:
+      NODE_ENV: production
+    volumes:
+      # Uploaded files and attachments. The channel decides whether this volume persists, in the blinko
+      # folder of the customer's home (offering.json, `volumes`); under plain Docker it is an ordinary
+      # named volume.
+      - blinko-files:/app/.blinko
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:16-alpine@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
+    # Declared so the platform gives this service a name and lets Blinko reach it: a service
+    # without ports gets no address inside the instance, and only declared ports are open between services.
+    ports:
+      - 5432
+    environment:
+      POSTGRES_DB: blinko
+      POSTGRES_USER: blinko
+      # A subfolder, so the volume's own root (which may hold a lost+found or be owned by root) is not the data directory.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U blinko -d blinko]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  blinko-files:
+  postgres-data:
