@@ -1,0 +1,35 @@
+services:
+  photoprism:
+    image: photoprism/photoprism:latest@sha256:9409cf8e5a6ebcbe3170d14537556cbc20997aaa307096d6eeedbfc5eeef6719
+    ports:
+    - 2342
+    environment:
+      PHOTOPRISM_AUTH_MODE: password
+      PHOTOPRISM_PUBLIC: 'false'
+      PHOTOPRISM_DATABASE_DRIVER: sqlite
+      PHOTOPRISM_DATABASE_DSN: /photoprism/storage/index.db?_busy_timeout=5000&_journal_mode=DELETE
+      PHOTOPRISM_HTTP_HOST: 0.0.0.0
+      PHOTOPRISM_HTTP_PORT: '2342'
+      PHOTOPRISM_DISABLE_TLS: 'true'
+      PHOTOPRISM_DISABLE_TENSORFLOW: 'true'
+      PHOTOPRISM_WORKERS: '1'
+      PHOTOPRISM_UID: '1000'
+      PHOTOPRISM_GID: '1000'
+    volumes:
+    - originals:/photoprism/originals
+    - storage:/photoprism/storage
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -fsS
+      - -o
+      - /dev/null
+      - http://127.0.0.1:2342/api/v1/status
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+volumes:
+  originals: {}
+  storage: {}
