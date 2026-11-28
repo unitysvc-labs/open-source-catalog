@@ -1,0 +1,110 @@
+{
+  "capabilities": [
+    "spreadsheet-database | Create relational spreadsheet documents with linked tables, Python formulas, charts, imports, exports and a REST API."
+  ],
+  "currency": "USD",
+  "description": "Grist combines a spreadsheet with a relational database: link tables, define Python formulas, and arrange grids, cards and charts over the same records. This recipe uses the open-source grist-oss image and its Pyodide formula sandbox. Documents, the home database and sessions are kept in the grist folder of your home. It is configured for one installation administrator, with Grist kept behind its boot-key setup gate rather than an anonymous default identity.\n\nEnroll in base, save the generated boot key and session signing secret, then open /boot at the instance address. Enter the key and an administrator email. Keep Quick setup out of service; do not enable anonymous/default-identity access. Use the administrator session to create and edit documents. Multi-user identity-provider setup is outside this recipe. See How to use this service for the exact sign-in steps and storage limits.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/gristlabs/grist-core#readme",
+      "homepage": "https://www.getgrist.com",
+      "source_code": "https://github.com/gristlabs/grist-core"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "grist-core",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private spreadsheet database with relational tables, Python formulas, charts and an API, using the open-source Grist image and administrator boot-key access.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=grist/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated Grist Open Source Spreadsheet Database instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8484,
+          "service": "grist"
+        }
+      ],
+      "environment": {
+        "grist": {
+          "GRIST_BOOT_KEY": "{{ params.GRIST_BOOT_KEY }}",
+          "GRIST_SESSION_SECRET": "{{ params.GRIST_SESSION_SECRET }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "GRIST_BOOT_KEY": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Use this key at /boot to sign in as the installation administrator. It controls the whole instance, including its API. Changing it changes the boot credential. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator boot key",
+              "type": "string",
+              "writeOnly": true
+            },
+            "GRIST_SESSION_SECRET": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Keep this value across restarts and re-enrollments to preserve session signing. Changing it signs browsers out without deleting documents. Save it now: the platform stores it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Session signing secret",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "GRIST_BOOT_KEY",
+            "GRIST_SESSION_SECRET"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "GRIST_BOOT_KEY": "catalog-local-boot-key-only",
+          "GRIST_SESSION_SECRET": "catalog-local-session-secret-only"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 1001,
+          "mode": "rw",
+          "source": "{{ home.path }}/grist",
+          "type": "persist",
+          "uid": 1001
+        }
+      }
+    }
+  }
+}

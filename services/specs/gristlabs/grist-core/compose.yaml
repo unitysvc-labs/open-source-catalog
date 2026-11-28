@@ -1,0 +1,21 @@
+services:
+  grist:
+    image: gristlabs/grist-oss:1.7.22@sha256:40d2c0ce0c29b2aa1ec1dcf9652ec26a13a8f2b4b44116733bcede428afd27dc
+    ports:
+      - 8484
+    environment:
+      GRIST_IN_SERVICE: "false"
+      GRIST_SANDBOX_FLAVOR: pyodide
+      GRIST_SQLITE_MODE: sync
+      GRIST_FORCE_LOGIN: "true"
+      GRIST_ANON_PLAYGROUND: "false"
+    volumes:
+      - data:/persist
+    healthcheck:
+      test: [CMD, curl, -f, "http://127.0.0.1:8484/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 110s
+volumes:
+  data:
