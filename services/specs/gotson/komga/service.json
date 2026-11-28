@@ -1,0 +1,11 @@
+{
+  "display_name": "Komga Media Server for Comics, Manga and E-books",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.komga.volumes[0]: volume 'config' at /config is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.komga.volumes[1]: volume 'library' at /library is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "gotson/komga",
+  "service_id": "ecc65222-9215-46cb-8682-14088760ca2e",
+  "status": "created",
+  "time_created": "2026-11-28T14:16:22.350768Z"
+}
