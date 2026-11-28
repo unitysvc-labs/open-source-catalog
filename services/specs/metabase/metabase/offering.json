@@ -1,0 +1,119 @@
+{
+  "capabilities": [
+    "business-intelligence | Connects to your SQL databases and lets you ask questions with a visual query builder or SQL, chart the results and arrange them in dashboards.",
+    "sql-query-editor | Runs SQL you write against a connected database and shows the result as a table or chart that can be saved and shared with other users of the instance."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Metabase open-source edition image (`metabase/metabase`, AGPL-3.0) in a separate container for each enrollment, with its own HTTPS address. Metabase is a business-intelligence tool: you connect it to databases you already have (PostgreSQL, MySQL, SQL Server, BigQuery, Snowflake, SQLite and others), then explore tables, build questions with a visual query builder or in SQL, chart the results, and arrange them in dashboards for the people you invite. A sample database is included to try it. The instance must be able to reach your database over the network. Metabase keeps its own state (accounts, saved questions, dashboards and the connection settings of your databases) in its embedded H2 database, one file stored in the `metabase` folder of your home, so it survives stopping the instance and even removing it and enrolling again. Metabase's authors advise against the H2 database for production use; this service suits evaluation, personal use and small teams. Features of the paid Metabase editions are not included.\n\nEnroll in the base channel, enter the administrator's email address (the sign-in name) and keep or replace the generated password. The administrator account is created for you before the instance becomes reachable, so there is no setup wizard open to the first visitor. Sign in at `https://<instance>/`, then add your database under Admin > Databases. No email is sent: invite people by creating their accounts with a password, and a forgotten password is reset by an administrator. You can run one Metabase instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Metabase documentation and discussion forum for software-specific help.",
+  "details": {
+    "features": [
+      "Visual query builder and SQL editor over your own databases",
+      "Charts, dashboards with filters, collections and saved questions",
+      "Users, groups and data permissions of the open-source edition",
+      "Sample database included for a first look",
+      "Administrator account created from the enrollment; no open setup wizard",
+      "Your Metabase data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://www.metabase.com/docs/latest/",
+      "homepage": "https://www.metabase.com",
+      "source_code": "https://github.com/metabase/metabase"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "metabase",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private Metabase (open-source edition): connect your databases, ask questions visually or in SQL, and build dashboards, with the administrator set at enrollment and data kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Metabase's application database in the metabase folder of your home, so your accounts, questions and dashboards are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=metabase/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Metabase on two cores; its application database is kept in the metabase folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 3000,
+          "service": "metabase"
+        }
+      ],
+      "environment": {
+        "metabase": {
+          "MB_ADMIN_EMAIL": "{{ params.MB_ADMIN_EMAIL }}",
+          "MB_ADMIN_PASSWORD": "{{ params.MB_ADMIN_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "MB_ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The administrator's email address, which is the sign-in name. Metabase sends no email from this service, so any address works; use your own if you plan to set up email in Metabase later. It is used only when Metabase first creates the account: your data lives in your home, so if an account already exists (an earlier enrollment, or a later restart) this value is ignored.",
+              "format": "email",
+              "maxLength": 254,
+              "pattern": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
+              "title": "Administrator email (sign-in name)",
+              "type": "string"
+            },
+            "MB_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own, at least 12 characters. It is the administrator's password only when Metabase first creates the account: your data lives in your home, so if an account already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in Metabase's account settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "MB_ADMIN_EMAIL",
+            "MB_ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "MB_ADMIN_EMAIL": "admin@example.com",
+          "MB_ADMIN_PASSWORD": "local-test-password-only"
+        }
+      },
+      "resources": "small-2x",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*.trace.db",
+            "*.temp.db",
+            "*.lock.db"
+          ],
+          "gid": 2000,
+          "mode": "rw",
+          "source": "{{ home.path }}/metabase",
+          "type": "persist",
+          "uid": 2000
+        }
+      }
+    }
+  }
+}
