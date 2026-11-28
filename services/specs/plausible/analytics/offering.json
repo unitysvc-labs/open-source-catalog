@@ -1,0 +1,161 @@
+{
+  "capabilities": [
+    "website-analytics | Collect website pageviews and events through the Plausible tracking script and display authenticated analytics dashboards for configured sites."
+  ],
+  "currency": "USD",
+  "description": "Plausible Community Edition collects website pageviews and events with its tracking script and presents analytics dashboards. This recipe runs the official CE image with PostgreSQL for accounts/sites and ClickHouse for events. Both databases use scratch working directories and persisted native exports. It is intended for small sites; each database export must stay below 1 GiB. Geolocation uses the bundled country data; external Google integrations, mail delivery and paid cloud services are not supplied.\n\nEnroll in base, save the generated secrets, then set Public address to the assigned HTTPS URL. Open it immediately and create the first owner account before sharing the address. Add a website and copy its tracking snippet to that site. Registration becomes invite-only after initial setup, and email verification is disabled because no SMTP service is configured. See How to use this service for backup, data-loss and size limits.\n\nCustomers pay the channel's platform compute base cost while the instance runs, including idle time. Labs adds no markup and receives no seller payout. This community recipe is unofficial; inclusion does not imply author endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://github.com/plausible/analytics#readme",
+      "homepage": "https://plausible.io",
+      "source_code": "https://github.com/plausible/analytics"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "analytics",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "Privacy-friendly website analytics with Plausible Community Edition, PostgreSQL and ClickHouse, with account and event database backups kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep the application data across instance stops and re-enrollment.",
+          "object": "service:home",
+          "options": "path=plausible/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One isolated Plausible Community Web Analytics instance.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8000,
+          "service": "app"
+        }
+      ],
+      "environment": {
+        "app": {
+          "BASE_URL": "{{ params.BASE_URL }}",
+          "CLICKHOUSE_DATABASE_URL": "http://plausible:{{ params.CLICKHOUSE_PASSWORD }}@events:8123/plausible_events",
+          "CLICKHOUSE_PASSWORD": "{{ params.CLICKHOUSE_PASSWORD }}",
+          "DATABASE_URL": "postgresql://plausible:{{ params.DB_PASSWORD }}@db:5432/plausible",
+          "SECRET_KEY_BASE": "{{ params.SECRET_KEY_BASE }}"
+        },
+        "db": {
+          "POSTGRES_PASSWORD": "{{ params.DB_PASSWORD }}"
+        },
+        "events": {
+          "CLICKHOUSE_PASSWORD": "{{ params.CLICKHOUSE_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "BASE_URL": {
+              "default": "https://instance.invalid",
+              "description": "Replace the placeholder with the assigned HTTPS instance address before creating the first account or installing the tracker.",
+              "pattern": "^https://[^/]+$",
+              "title": "Public address",
+              "type": "string"
+            },
+            "CLICKHOUSE_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Private ClickHouse credential used by the application and backup command. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Events database password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "DB_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Keep this value whenever using the stored database backup. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Database password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "SECRET_KEY_BASE": {
+              "default": "{{ token_urlsafe(48) }}",
+              "description": "Keep this value with the same application data; changing it invalidates sessions and signed values. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Application signing secret",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "DB_PASSWORD",
+            "CLICKHOUSE_PASSWORD",
+            "SECRET_KEY_BASE",
+            "BASE_URL"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "BASE_URL": "https://instance.invalid",
+          "CLICKHOUSE_PASSWORD": "catalog-local-events-password",
+          "DB_PASSWORD": "catalog-local-db-password",
+          "SECRET_KEY_BASE": "catalog-local-secret-key-0123456789abcdef-0123456789abcdef-0123456789"
+        }
+      },
+      "resources": {
+        "app": "small",
+        "db": "nano",
+        "events": "small-2x"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [],
+          "gid": 65533,
+          "mode": "rw",
+          "source": "{{ home.path }}/plausible/app",
+          "type": "persist",
+          "uid": 999
+        },
+        "dbbackup": {
+          "exclude": [
+            "*.tmp"
+          ],
+          "gid": 0,
+          "mode": "rw",
+          "source": "{{ home.path }}/plausible/db-backup",
+          "type": "persist",
+          "uid": 0
+        },
+        "eventsbackup": {
+          "exclude": [
+            "*.tmp.zip"
+          ],
+          "gid": 101,
+          "mode": "rw",
+          "source": "{{ home.path }}/plausible/events-backup",
+          "type": "persist",
+          "uid": 101
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,132 @@
+services:
+  app:
+    image: ghcr.io/plausible/community-edition:v3.2.2@sha256:f92a0d7f608187ae6163fb9a033281d0a0c1d4fcb895205676432eff82c9aec4
+    entrypoint:
+    - sh
+    - -c
+    - 'until nc -z db 5432; do echo ''waiting for PostgreSQL''; sleep 2; done
+
+      until wget -q -O- "http://plausible:`printenv CLICKHOUSE_PASSWORD`@events:8123/?query=EXISTS%20TABLE%20catalog_bootstrap.ready"
+      | grep -q ''^1''; do echo ''waiting for ClickHouse restore''; sleep 2; done
+
+      /entrypoint.sh db createdb && /entrypoint.sh db migrate || exit 1
+
+      exec /entrypoint.sh run
+
+      '
+    ports:
+    - 8000
+    environment:
+      HTTP_PORT: '8000'
+      DISABLE_REGISTRATION: invite_only
+      ENABLE_EMAIL_VERIFICATION: 'false'
+      TMPDIR: /var/lib/plausible/tmp
+    volumes:
+    - data:/var/lib/plausible
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8000/
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+  db:
+    image: postgres:17-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
+    ports:
+    - 5432
+    environment:
+      POSTGRES_USER: plausible
+      POSTGRES_DB: plausible
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+    - sh
+    - -c
+    - "dump() { pg_dump -U plausible -d plausible -Fc -f /backup/db.dump.tmp && mv /backup/db.dump.tmp\
+      \ /backup/db.dump; }\nif [ ! -e /var/lib/postgresql/data/restored ] && [ -s /backup/db.dump ]; then\n\
+      \  rm -rf \"`printenv PGDATA`\"\n  docker-entrypoint.sh postgres -c listen_addresses= -p 5433 &\n\
+      \  until pg_isready -q -p 5433 -U plausible -d plausible; do sleep 1; done\n  pg_restore -p 5433\
+      \ -U plausible -d plausible --no-owner --exit-on-error /backup/db.dump || exit 1\n  kill -INT `head\
+      \ -1 \"\\`printenv PGDATA\\`/postmaster.pid\"`\n  while [ -e \"`printenv PGDATA`/postmaster.pid\"\
+      \ ]; do sleep 1; done\nfi\ndocker-entrypoint.sh postgres &\ntrap 'dump; kill -INT `head -1 \"\\\
+      `printenv PGDATA\\`/postmaster.pid\"`; while [ -e \"\\`printenv PGDATA\\`/postmaster.pid\" ]; do\
+      \ sleep 1; done; exit 0' TERM INT\nuntil pg_isready -q -h 127.0.0.1 -U plausible -d plausible; do\
+      \ sleep 1; done\ntouch /var/lib/postgresql/data/restored /tmp/restored\nwhile true; do for i in\
+      \ `seq 60`; do sleep 5; done; dump; done\n"
+    volumes:
+    - dbdata:/var/lib/postgresql/data
+    - dbbackup:/backup
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - test -f /tmp/restored && pg_isready -h 127.0.0.1 -U plausible -d plausible
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+  events:
+    image: clickhouse/clickhouse-server:24.12-alpine@sha256:cd450891db46cc6ffe313ca2b0fb7dbfb897a6873ca74a724cbe050a2cf62621
+    entrypoint:
+    - bash
+    - -c
+    - "set -e\nmkdir -p /backup /etc/clickhouse-server/config.d /etc/clickhouse-server/users.d\nchown\
+      \ clickhouse:clickhouse /backup\nrm -f /etc/clickhouse-server/config.d/docker_related_config.xml\n\
+      cat > /etc/clickhouse-server/config.d/catalog.xml <<'CONFIG'\n<clickhouse>\n <listen_host replace=\"\
+      replace\">0.0.0.0</listen_host>\n <mark_cache_size>134217728</mark_cache_size>\n <background_schedule_pool_size>16</background_schedule_pool_size>\n\
+      \ <background_buffer_flush_schedule_pool_size>4</background_buffer_flush_schedule_pool_size>\n <background_message_broker_schedule_pool_size>4</background_message_broker_schedule_pool_size>\n\
+      \ <background_distributed_schedule_pool_size>4</background_distributed_schedule_pool_size>\n <max_thread_pool_size>256</max_thread_pool_size>\n\
+      \ <logger><level>warning</level><console>true</console></logger>\n <metric_log remove=\"remove\"\
+      /><asynchronous_metric_log remove=\"remove\"/><query_thread_log remove=\"remove\"/><text_log remove=\"\
+      remove\"/><trace_log remove=\"remove\"/><session_log remove=\"remove\"/><part_log remove=\"remove\"\
+      />\n <storage_configuration><disks><backups><type>local</type><path>/backup/</path></backups></disks></storage_configuration>\n\
+      \ <backups><allowed_disk>backups</allowed_disk><allowed_path>/backup/</allowed_path></backups>\n\
+      </clickhouse>\nCONFIG\ncat > /etc/clickhouse-server/users.d/catalog.xml <<'CONFIG'\n<!-- https://clickhouse.com/docs/en/operations/tips#using-less-than-16gb-of-ram\
+      \ -->\n<clickhouse>\n    <profiles>\n        <default>\n            <!-- https://clickhouse.com/docs/en/operations/settings/settings#max_threads\
+      \ -->\n            <max_threads>1</max_threads>\n            <!-- https://clickhouse.com/docs/en/operations/settings/settings#max_block_size\
+      \ -->\n            <max_block_size>8192</max_block_size>\n            <!-- https://clickhouse.com/docs/en/operations/settings/settings#max_download_threads\
+      \ -->\n            <max_download_threads>1</max_download_threads>\n            <!--\n          \
+      \  https://clickhouse.com/docs/en/operations/settings/settings#input_format_parallel_parsing -->\n\
+      \            <input_format_parallel_parsing>0</input_format_parallel_parsing>\n            <!--\n\
+      \            https://clickhouse.com/docs/en/operations/settings/settings#output_format_parallel_formatting\
+      \ -->\n            <output_format_parallel_formatting>0</output_format_parallel_formatting>\n  \
+      \      </default>\n    </profiles>\n</clickhouse>\n\nCONFIG\nclient() { clickhouse-client --host\
+      \ 127.0.0.1 --user plausible --password \"`printenv CLICKHOUSE_PASSWORD`\"; }\ndump() { test -f\
+      \ /tmp/restored || return 0; rm -f /backup/events.tmp.zip; echo \"BACKUP DATABASE plausible_events\
+      \ TO Disk('backups', 'events.tmp.zip')\" | client && mv /backup/events.tmp.zip /backup/events.zip;\
+      \ }\nrm -f /tmp/restored\n/entrypoint.sh &\ntrap 'dump; kill -TERM %1; wait %1; exit 0' TERM INT\n\
+      until echo 'SELECT 1' | client >/dev/null 2>&1; do kill -0 %1 || exit 1; sleep 1; done\necho 'DROP\
+      \ DATABASE IF EXISTS catalog_bootstrap SYNC' | client\nif [ ! -f /var/lib/clickhouse/restored ]\
+      \ && [ -s /backup/events.zip ]; then\n echo 'DROP DATABASE IF EXISTS plausible_events SYNC' | client\n\
+      \ echo \"RESTORE DATABASE plausible_events FROM Disk('backups', 'events.zip')\" | client\nfi\necho\
+      \ 'CREATE DATABASE IF NOT EXISTS plausible_events' | client\necho 'CREATE DATABASE catalog_bootstrap'\
+      \ | client\necho 'CREATE TABLE catalog_bootstrap.ready (x UInt8) ENGINE=Memory' | client\ntouch\
+      \ /var/lib/clickhouse/restored /tmp/restored\nwhile kill -0 %1; do sleep 300 & wait %2; dump; done\n\
+      exit 1\n"
+    ports:
+    - 8123
+    - 9000
+    environment:
+      CLICKHOUSE_USER: plausible
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
+    volumes:
+    - eventsdata:/var/lib/clickhouse
+    - eventsbackup:/backup
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - test -f /tmp/restored && echo "SELECT 1" | clickhouse-client --host 127.0.0.1 --user plausible
+        --password "`printenv CLICKHOUSE_PASSWORD`"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+volumes:
+  dbdata: {}
+  dbbackup: {}
+  data: {}
+  eventsdata: {}
+  eventsbackup: {}
