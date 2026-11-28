@@ -77,7 +77,7 @@
             },
             "CLICKHOUSE_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Private ClickHouse credential used by the application and backup command. Save it now: the platform stores it as a secret and does not show it again.",
+              "description": "Private ClickHouse credential used by the application and backup command. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
               "format": "password",
               "minLength": 12,
               "pattern": "^[A-Za-z0-9_-]+$",
@@ -87,7 +87,7 @@
             },
             "DB_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Keep this value whenever using the stored database backup. Save it now: the platform stores it as a secret and does not show it again.",
+              "description": "Keep this value whenever using the stored database backup. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
               "format": "password",
               "minLength": 12,
               "pattern": "^[A-Za-z0-9_-]+$",
@@ -97,7 +97,7 @@
             },
             "SECRET_KEY_BASE": {
               "default": "{{ token_urlsafe(48) }}",
-              "description": "Keep this value with the same application data; changing it invalidates sessions and signed values. Save it now: the platform stores it as a secret and does not show it again.",
+              "description": "Keep this value with the same application data; changing it invalidates sessions and signed values. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
               "format": "password",
               "minLength": 12,
               "title": "Application signing secret",
