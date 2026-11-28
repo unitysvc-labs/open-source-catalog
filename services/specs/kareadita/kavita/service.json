@@ -1,0 +1,11 @@
+{
+  "display_name": "Kavita Reading Server for Comics, Manga and E-books",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.kavita.volumes[0]: volume 'config' at /kavita/config is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.kavita.volumes[1]: volume 'library' at /library is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "kareadita/kavita",
+  "service_id": "0970e0fe-cfe9-4f8c-aad9-7ef9f952621f",
+  "status": "created",
+  "time_created": "2026-11-28T03:17:24.077532Z"
+}

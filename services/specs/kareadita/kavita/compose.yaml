@@ -1,0 +1,29 @@
+# Kavita, one private instance per enrollment. It needs no environment: Kavita has no setting for a first
+# account, and the first account registered through the web page becomes the administrator (see usage.md).
+# The image runs as root, as upstream ships it.
+services:
+  kavita:
+    image: jvmilazz0/kavita:0.9.1@sha256:31181a32f0dda73cae68721867028a7253d57881b58bea5754cd9e578e75421a
+    ports:
+      - 5000
+    volumes:
+      # Kavita's configuration folder: the SQLite database (users, libraries, reading progress), the generated
+      # token key, cover images, bookmarks, themes and fonts. The channel decides whether this volume persists,
+      # in the kavita folder of the customer's home (offering.json, `volumes`), and leaves out the reading
+      # cache, temporary files, backups and logs; under plain Docker it is an ordinary named volume.
+      - config:/kavita/config
+      # The books, comics and manga, read only. The channel restores them from the customer's home before
+      # Kavita starts.
+      - library:/library:ro
+    healthcheck:
+      test: [CMD, curl, -fsS, "http://127.0.0.1:5000/api/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (sandboxed, on a small size) is several times slower than
+      # under Docker on a workstation.
+      start_period: 110s
+volumes:
+  config:
+  library:
