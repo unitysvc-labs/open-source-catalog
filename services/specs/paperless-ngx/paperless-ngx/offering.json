@@ -135,7 +135,7 @@
       "resources": {
         "db": "nano",
         "redis": "nano",
-        "web": "small"
+        "web": "small-2x"
       },
       "type": "enrollable",
       "volumes": {
