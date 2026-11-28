@@ -32,10 +32,14 @@ services:
     - -c
     - 'mkdir -p /docker-entrypoint-hooks.d/before-starting
 
-      printf ''%s
+      printf %s ''#!/bin/sh
 
-      '' ''#!/bin/sh'' ''set -e'' ''php /var/www/html/occ config:system:set sqlite.journal_mode --value=DELETE''
-      > /docker-entrypoint-hooks.d/before-starting/sqlite-mode.sh
+      set -e
+
+      php -r ''"''"''echo json_encode(["system" => ["trusted_domains" => preg_split("/\s+/", trim(getenv("NEXTCLOUD_TRUSTED_DOMAINS"))),
+      "sqlite.journal_mode" => "DELETE"]]);''"''"'' | php /var/www/html/occ config:import
+
+      '' > /docker-entrypoint-hooks.d/before-starting/sqlite-mode.sh
 
       chmod 755 /docker-entrypoint-hooks.d/before-starting/sqlite-mode.sh
 
