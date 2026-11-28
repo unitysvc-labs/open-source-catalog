@@ -26,6 +26,10 @@ services:
       - uploads:/listmonk/uploads
   db:
     image: postgres:17-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
+    # Declared so the platform gives this service a name and lets listmonk reach it: a service
+    # without ports gets no address inside the instance, and only declared ports are open between services.
+    ports:
+      - 5432
     environment:
       POSTGRES_USER: listmonk
       POSTGRES_DB: listmonk
