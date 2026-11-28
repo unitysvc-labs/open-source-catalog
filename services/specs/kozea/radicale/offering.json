@@ -1,0 +1,119 @@
+{
+  "capabilities": [
+    "caldav-server | Stores calendars, to-do lists and journals and syncs them with calendar applications over the CalDAV protocol, for the one user set at enrollment.",
+    "carddav-server | Stores address books and syncs contacts with contact applications over the CardDAV protocol, for the one user set at enrollment."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Radicale image in a separate container for each enrollment, with its own HTTPS address. Radicale is a small CalDAV and CardDAV server: calendar and contact applications (Apple Calendar and Contacts, Thunderbird, DAVx5 on Android, GNOME and KDE applications and others) connect to it and keep events, to-do lists, journals and contacts in sync between your devices. It has a simple built-in web page for creating, importing and downloading calendars and address books, but no web calendar of its own. Each event or contact is one plain `.ics` or `.vcf` file, stored in the `radicale` folder of your home, so your data survives stopping the instance and even removing it and enrolling again. One limitation follows from how that folder is kept: the copy in your home never deletes a file, so an event, contact or calendar you delete comes back the next time the instance is stopped and started, until you remove its file from your home.\n\nEnroll in the base channel, choose a user name and keep or replace the generated password. Give your calendar application the address `https://<instance>/` with that name and password; a single calendar's address is `https://<instance>/<user>/<calendar>/`. Every request needs the name and password (HTTP Basic authentication over HTTPS), and the user sees only its own collections. The password is the one in the enrollment: change it there. You can run one Radicale instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Radicale documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "CalDAV calendars, to-do lists and journals; CardDAV address books",
+      "Works with Apple Calendar and Contacts, Thunderbird, DAVx5 and other CalDAV/CardDAV applications",
+      "Built-in web page to create, import and download collections",
+      "One user per instance; every request needs its name and password",
+      "Events and contacts are plain .ics and .vcf files kept in your home, across stops, restarts and re-enrollment",
+      "Deleted items come back after a stop and start until removed from your home"
+    ],
+    "links": {
+      "documentation": "https://radicale.org/v3.html",
+      "homepage": "https://radicale.org",
+      "source_code": "https://github.com/Kozea/Radicale"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "radicale",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private CalDAV and CardDAV server: sync calendars, to-dos and contacts between your devices with your own Radicale instance, with the data kept as plain files in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Radicale's calendars and address books in the radicale folder of your home, so your events and contacts are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=radicale/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Radicale server for one user; its calendars and address books are kept in the radicale folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 5232,
+          "service": "radicale"
+        }
+      ],
+      "environment": {
+        "radicale": {
+          "RADICALE_PASSWORD": "{{ params.RADICALE_PASSWORD }}",
+          "RADICALE_USER": "{{ params.RADICALE_USER }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "RADICALE_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. Calendar applications send it with the user name on every request. Radicale has no page for changing a password, so this value is the password in force each time the instance starts: change it here to change it (the instance restarts and your calendars stay), and a new enrollment starts with the password entered there, not an earlier one. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 72,
+              "minLength": 12,
+              "title": "Password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "RADICALE_USER": {
+              "default": "user",
+              "description": "The name you sign in with. It is also the first part of your collection addresses (https://<instance>/<name>/<calendar>/), and your calendars and address books are stored under it in your home. Keep the same name in a later enrollment: under another name the earlier collections stay in your home but are not visible.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+              "title": "User name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "RADICALE_USER",
+            "RADICALE_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "RADICALE_PASSWORD": "local-test-password-only",
+          "RADICALE_USER": "user"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            ".Radicale.tmp-*",
+            ".Radicale.tmp-*/**"
+          ],
+          "gid": 1000,
+          "mode": "rw",
+          "source": "{{ home.path }}/radicale",
+          "type": "persist",
+          "uid": 1000
+        }
+      }
+    }
+  }
+}
