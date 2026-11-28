@@ -27,4 +27,4 @@ The platform restores persisted files before startup, copies changed files about
 
 ## Cost and support
 
-The **base** channel uses **small-2x**. Pay the current platform compute base rate for the time the instance runs, including idle time. Labs adds no markup and receives no payout. Stop the instance when finished. Consult the [upstream documentation](https://github.com/immich-app/immich#readme) for application behavior; this recipe does not promise author support.
+The **base** channel runs **small-2x** for app, **small** for db, **nano** for redis. All containers incur runtime charges. Pay the current platform compute base rate for the time the instance runs, including idle time. Labs adds no markup and receives no payout. Stop the instance when finished. Consult the [upstream documentation](https://github.com/immich-app/immich#readme) for application behavior; this recipe does not promise author support.
