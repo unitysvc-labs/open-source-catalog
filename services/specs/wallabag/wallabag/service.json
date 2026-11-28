@@ -1,0 +1,11 @@
+{
+  "display_name": "wallabag Read-It-Later",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.wallabag.volumes[0]: volume 'data' at /var/www/wallabag/data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes",
+    "upstream_access_config.base: services.wallabag.volumes[1]: volume 'images' at /var/www/wallabag/web/assets/images is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "wallabag/wallabag",
+  "service_id": "38792f08-cdbb-4c43-88ac-27e0e3c728bb",
+  "status": "created",
+  "time_created": "2026-11-27T21:35:59.705987Z"
+}

@@ -1,0 +1,51 @@
+# wallabag, one private instance per enrollment. The account's password, the application secret and the public
+# address are bound from the channel's `environment` in offering.json; the values below are the fixed, non-secret
+# settings. With no database driver configured the image uses its embedded SQLite database.
+services:
+  wallabag:
+    image: wallabag/wallabag:2.6.19@sha256:957dd984804462367132482c37d7bd1512cabe8a9503ec22e06efddc2872942b
+    # The image's installer always creates the account `wallabag` with the password `wallabag`, and has no
+    # environment setting for it. So this entrypoint runs the image's own entrypoint once in its `migrate` mode
+    # (it installs wallabag when the database is new, then applies database migrations and returns), sets the
+    # account's password with wallabag's own `fos:user:change-password` command when the database was new, and then
+    # starts the image's entrypoint as usual. If the password cannot be set, the new database is removed, so an
+    # instance never serves the default password. It first gives the two volumes to the user wallabag runs as
+    # (nobody, uid 65534), because an empty volume is mounted owned by root. It uses backticks and `printenv`
+    # rather than a dollar sign, so Compose and the platform leave it untouched.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        chown nobody:nobody /var/www/wallabag/data /var/www/wallabag/web/assets/images
+        rm -f /tmp/new-database
+        test -s /var/www/wallabag/data/db/wallabag.sqlite || touch /tmp/new-database
+        /entrypoint.sh migrate || exit 1
+        if test -f /tmp/new-database; then
+          su -s /bin/sh nobody -c 'php bin/console fos:user:change-password --env=prod --no-interaction -- wallabag "`printenv WALLABAG_PASSWORD`"' || { rm -f /var/www/wallabag/data/db/wallabag.sqlite; exit 1; }
+          rm -f /tmp/new-database
+        fi
+        exec /entrypoint.sh wallabag
+    ports:
+      - 80
+    environment:
+      # Nobody but the installed account can sign in: no public registration.
+      SYMFONY__ENV__FOSUSER_REGISTRATION: "false"
+    volumes:
+      # The SQLite database (db/wallabag.sqlite) and the key that encrypts saved site credentials. The channel
+      # decides whether these volumes persist, in the wallabag folder of the customer's home (offering.json,
+      # `volumes`); under plain Docker they are ordinary named volumes.
+      - data:/var/www/wallabag/data
+      # Article images, when the "download images locally" setting is turned on.
+      - images:/var/www/wallabag/web/assets/images
+    healthcheck:
+      test: [CMD, curl, -fsS, -A, healthcheck, "http://127.0.0.1/api/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (sandboxed, on a small size) is several times slower than
+      # under Docker on a workstation.
+      start_period: 120s
+volumes:
+  data:
+  images:
