@@ -14,8 +14,8 @@
       "Your data is kept in your home, across stops, restarts and re-enrollment"
     ],
     "links": {
-      "documentation": "https://www.dokuwiki.org/manual",
-      "homepage": "https://www.dokuwiki.org",
+      "documentation": "https://github.com/dokuwiki/docker#readme",
+      "homepage": "https://github.com/dokuwiki/dokuwiki",
       "source_code": "https://github.com/dokuwiki/dokuwiki"
     },
     "protocols": [
