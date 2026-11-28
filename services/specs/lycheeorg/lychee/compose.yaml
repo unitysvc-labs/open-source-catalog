@@ -1,0 +1,39 @@
+services:
+  lychee:
+    image: lycheeorg/lychee:v7.13.1@sha256:836e3bb22f02295180b92d382191954845df9993bb73f81e71d394bf0dd0ece1
+    entrypoint:
+      - bash
+      - -c
+      - |
+        printenv APP_KEY | grep -q '^base64:' || export APP_KEY="base64:`printenv APP_KEY | tr -d '\n' | base64 -w0`"
+        if [ ! -s /data/lychee/database.sqlite ]; then
+          rm -f /data/lychee/new.sqlite /data/lychee/new.sqlite-journal /data/lychee/new.sqlite-wal /data/lychee/new.sqlite-shm
+          chown www-data:www-data /data/lychee
+          (
+            set -e -o pipefail
+            export DB_DATABASE=/data/lychee/new.sqlite
+            gosu www-data php artisan migrate --force > /dev/null
+            gosu www-data php artisan lychee:create_user "`printenv LYCHEE_ADMIN_USER`" "`printenv LYCHEE_ADMIN_PASSWORD`" | grep -q 'Successfully created admin user'
+          ) || { rm -f /data/lychee/new.sqlite /data/lychee/new.sqlite-journal /data/lychee/new.sqlite-wal /data/lychee/new.sqlite-shm; echo 'first-run setup failed: no database was created' >&2; exit 1; }
+          mv /data/lychee/new.sqlite /data/lychee/database.sqlite
+          echo 'created the database and the administrator'
+        fi
+        exec /usr/local/bin/entrypoint.sh php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=8000
+    ports:
+      - 8000
+    environment:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /data/lychee/database.sqlite
+      TRUSTED_PROXIES: "*"
+    volumes:
+      - database:/data/lychee
+      - uploads:/app/public/uploads
+    healthcheck:
+      test: [CMD, curl, -fsS, -o, /dev/null, "http://127.0.0.1:8000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 110s
+volumes:
+  database:
+  uploads:
