@@ -1,0 +1,157 @@
+{
+  "capabilities": [
+    "team-chat | Sends and receives messages in public and private channels, direct messages and threads, with file attachments and search, in a web interface and the Mattermost desktop and mobile apps.",
+    "chat-webhooks | Posts messages from other systems through incoming webhooks and calls other systems through outgoing webhooks and slash commands.",
+    "chat-api | Exposes users, teams, channels, posts and files through a REST API and a WebSocket event stream, with personal access tokens and bot accounts."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Mattermost Team Edition image together with its own PostgreSQL database in a separate stack for each enrollment, with its own HTTPS address. Mattermost is a self-hosted team chat server: teams with public and private channels, direct and group messages, threads, file sharing, search, incoming and outgoing webhooks, slash commands, bots and a REST and WebSocket API, used from the browser or from the Mattermost desktop and mobile apps. Team Edition is the open-source edition; features that need a Mattermost commercial license are not included. The database, the uploaded files and the server configuration are kept in the enrollment's storage, so they survive stopping and restarting the instance.\n\nEnroll in the base channel and keep or replace the generated administrator password. The instance creates the system administrator from the name, email and password you give, so the first visitor cannot claim the server; sign in at `https://<instance>/` and invite other people with a team invite link. The instance has no mail server: password reset and invitations by email do not work until you enter an SMTP server of your own in the System Console. Set the Site URL in the System Console to the instance address after the first sign-in. See How to use this service for full setup and limitations.\n\nYou pay the platform compute cost of both containers while the instance runs, including idle time, and the platform keeps the data in the enrollment's storage while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Mattermost documentation and forum for software-specific help.",
+  "details": {
+    "features": [
+      "Teams, public and private channels, direct and group messages, threads and reactions",
+      "File sharing and message search",
+      "Incoming and outgoing webhooks, slash commands, bot accounts and personal access tokens",
+      "REST and WebSocket API; works with the Mattermost desktop and mobile apps",
+      "Your data is kept in the enrollment's storage, across stops and restarts"
+    ],
+    "links": {
+      "documentation": "https://docs.mattermost.com",
+      "homepage": "https://mattermost.com",
+      "source_code": "https://github.com/mattermost/mattermost"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "mattermost",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted team chat server with channels, direct messages, threads, file sharing and an API. Runs with its own PostgreSQL database; data is kept in the enrollment's storage.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Mattermost's PostgreSQL database, uploaded files and server configuration in the storage of this enrollment, so your teams, channels and messages are still there when the instance is stopped or restarted.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Mattermost Team Edition server with its own PostgreSQL database; messages, files and settings are kept in this enrollment's storage between stops and restarts.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8065,
+          "service": "app"
+        }
+      ],
+      "environment": {
+        "app": {
+          "MM_SQLSETTINGS_DATASOURCE": "postgres://mattermost:{{ params.DB_PASSWORD }}@db:5432/mattermost?sslmode=disable&connect_timeout=10"
+        },
+        "db": {
+          "MM_ADMIN_EMAIL": "{{ params.MM_ADMIN_EMAIL }}",
+          "MM_ADMIN_PASSWORD": "{{ params.MM_ADMIN_PASSWORD }}",
+          "MM_ADMIN_USERNAME": "{{ params.MM_ADMIN_USERNAME }}",
+          "POSTGRES_PASSWORD": "{{ params.DB_PASSWORD }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "DB_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Password of the stack's PostgreSQL database, used by Mattermost to connect to it. Keep the generated value; letters, digits, hyphen and underscore only. The database is reachable only from inside the instance.",
+              "format": "password",
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Database password",
+              "type": "string"
+            },
+            "MM_ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "Email address of the system administrator account; you can sign in with it or with the user name. No mail is sent to it unless you configure an SMTP server in Mattermost. It is used only when the instance creates the first account; afterwards change it in Mattermost's own profile settings.",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$",
+              "title": "Administrator email",
+              "type": "string"
+            },
+            "MM_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own (letters, digits, hyphen and underscore only). It is the system administrator's password only when the instance creates the first account on an empty database; after that the stored password applies and a change here is ignored. Change the password in Mattermost's own profile settings. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "maxLength": 72,
+              "minLength": 12,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "MM_ADMIN_USERNAME": {
+              "default": "admin",
+              "description": "User name of the system administrator, created on the first start: 3 to 22 lowercase letters, digits, dots, hyphens or underscores, starting with a letter. It is used only when the instance creates the first account; on later starts the existing users still apply.",
+              "pattern": "^[a-z][a-z0-9._-]{2,21}$",
+              "title": "Administrator name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "MM_ADMIN_USERNAME",
+            "MM_ADMIN_EMAIL",
+            "MM_ADMIN_PASSWORD",
+            "DB_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "DB_PASSWORD": "local-test-db-password",
+          "MM_ADMIN_EMAIL": "admin@example.com",
+          "MM_ADMIN_PASSWORD": "local-test-password-only",
+          "MM_ADMIN_USERNAME": "admin"
+        }
+      },
+      "resources": {
+        "app": "small",
+        "db": "nano"
+      },
+      "type": "enrollable",
+      "volumes": {
+        "config": {
+          "gid": 2000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/config",
+          "type": "persist",
+          "uid": 2000
+        },
+        "data": {
+          "gid": 2000,
+          "mode": "rw",
+          "source": "{{ storage.path }}/data",
+          "type": "persist",
+          "uid": 2000
+        },
+        "dbbackup": {
+          "exclude": [
+            "*.tmp"
+          ],
+          "mode": "rw",
+          "source": "{{ storage.path }}/db-backup",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
