@@ -1,0 +1,140 @@
+{
+  "capabilities": [
+    "llm-chat-ui | Browser chat with a customer-supplied OpenAI-compatible model API, including model selection, conversation history and application user accounts; no inference model or credits are included."
+  ],
+  "currency": "USD",
+  "description": "Each enrollment runs an isolated Open WebUI AI chat interface using the official slim image and its original name, logo and interface branding. Connect your own OpenAI-compatible model API to chat with its available models, manage conversation history and use the application’s user accounts. Users, chats and uploaded files persist in enrollment storage. This channel includes no model server, GPU, model API subscription or inference credits. Slim omits local document, embedding and speech runtimes; knowledge retrieval needs additional external services that are not configured by this recipe.\n\nEnroll in base, enter the model provider base URL and your own provider API key, and save the generated administrator password and application secret. Sign in at the instance HTTPS address with the administrator email and password, select a model and start a chat. Public sign-up is disabled; the administrator can manage other users. Enrollment settings apply at each start. Admin Panel configuration edits are temporary, so change the provider connection through enrollment settings. See How to use this service for setup, supported features and storage limits.\n\nCustomers pay the channel’s platform compute base cost while running, including idle time, plus any charges from their own model provider. Labs adds no markup and receives no seller payout. This unofficial community recipe is included by a maintainer-approved exception for the non-OSI Open WebUI License, with branding retained. Inclusion does not imply upstream endorsement or promised support.",
+  "details": {
+    "links": {
+      "documentation": "https://docs.openwebui.com/",
+      "homepage": "https://openwebui.com/",
+      "source_code": "https://github.com/open-webui/open-webui"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "open-webui",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private AI chat interface for your own OpenAI-compatible model API, with saved conversations, user accounts and original Open WebUI branding.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keep Open WebUI users, chats, settings and uploaded files in this enrollment’s storage between instance stops.",
+          "object": "service:storage",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "Private Open WebUI slim with one OpenAI-compatible model API connection and persistent users and chats. Bring your own model provider.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "web"
+        }
+      ],
+      "environment": {
+        "web": {
+          "OPENAI_API_BASE_URL": "{{ params.OPENAI_API_BASE_URL }}",
+          "OPENAI_API_KEY": "{{ params.OPENAI_API_KEY }}",
+          "WEBUI_ADMIN_EMAIL": "{{ params.WEBUI_ADMIN_EMAIL }}",
+          "WEBUI_ADMIN_PASSWORD": "{{ params.WEBUI_ADMIN_PASSWORD }}",
+          "WEBUI_SECRET_KEY": "{{ params.WEBUI_SECRET_KEY }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "OPENAI_API_BASE_URL": {
+              "default": "https://api.openai.com/v1",
+              "description": "Externally reachable OpenAI-compatible model API base URL, including its version path, for example https://api.openai.com/v1. This is a model provider connection, not the Open WebUI address. Changing it restarts the instance.",
+              "pattern": "^https?://[^\\s;]+$",
+              "title": "Model provider base URL",
+              "type": "string"
+            },
+            "OPENAI_API_KEY": {
+              "description": "Your own key for the model provider above. No model credits are included; provider usage is billed separately. For an API that deliberately needs no key, enter unused. This value is forwarded to that provider. Changing it restarts the instance; store it securely.",
+              "format": "password",
+              "minLength": 1,
+              "title": "Model provider API key",
+              "type": "string",
+              "writeOnly": true
+            },
+            "WEBUI_ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "Login identifier for the administrator created only when the database has no users. Use your own address if desired. Changing this setting later does not rename or replace an existing account.",
+              "format": "email",
+              "title": "Administrator email",
+              "type": "string"
+            },
+            "WEBUI_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Save the generated value before completing enrollment. Used only when the database has no users; later changes here do not reset an account. Change an existing password in Open WebUI. Treat enrollment settings as sensitive; password formatting does not make them a secret vault.",
+              "format": "password",
+              "maxLength": 64,
+              "minLength": 12,
+              "title": "Initial administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "WEBUI_SECRET_KEY": {
+              "default": "{{ token_urlsafe(48) }}",
+              "description": "Keep this generated value unchanged across starts. Open WebUI uses it for signed credentials and protected application data; changing it invalidates sessions and may make encrypted settings unreadable. Save it securely.",
+              "format": "password",
+              "minLength": 32,
+              "title": "Application secret key",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "WEBUI_ADMIN_EMAIL",
+            "WEBUI_ADMIN_PASSWORD",
+            "WEBUI_SECRET_KEY",
+            "OPENAI_API_BASE_URL",
+            "OPENAI_API_KEY"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "OPENAI_API_BASE_URL": "https://example.invalid/v1",
+          "OPENAI_API_KEY": "local-test-provider-key-only",
+          "WEBUI_ADMIN_EMAIL": "owner@example.com",
+          "WEBUI_ADMIN_PASSWORD": "local-test-password-only",
+          "WEBUI_SECRET_KEY": "local-test-secret-only-0123456789abcdef0123456789"
+        }
+      },
+      "resources": "small",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "cache/**",
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "mode": "rw",
+          "source": "{{ storage.path }}/data",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
