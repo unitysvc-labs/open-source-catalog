@@ -50,6 +50,8 @@ channels for different compute sizes, parameters/defaults or environment values;
 declare each channel's settings explicitly. Use a separate recipe for a different
 stack. See [sizes and channels](docs/container-recipes.md#sizes-and-channels).
 
+In a stack, declare `ports` on every service another service connects to (a database's `5432`, a cache's `6379`): a service without ports has no name inside the instance and its ports are closed to its siblings, although Docker Compose lets it work. See [stacks](docs/container-recipes.md#stacks-services-that-talk-to-each-other).
+
 Keep Compose literal. Bind configurable application settings through channel
 parameters and `environment`; do not rely on Compose `${VAR}` interpolation,
 `.env` files, `.env.example`, `env_file`, a seller-secret manifest, or
