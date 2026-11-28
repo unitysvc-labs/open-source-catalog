@@ -1,0 +1,48 @@
+services:
+  nextcloud:
+    image: nextcloud:35.0.3-apache@sha256:f44180601f18e7664557232b4c5edb0eb4a82d649c05b93313f4e15909553d42
+    ports:
+    - 80
+    environment:
+      SQLITE_DATABASE: nextcloud
+      OVERWRITEPROTOCOL: https
+      APACHE_DISABLE_REWRITE_IP: '1'
+      TRUSTED_PROXIES: 0.0.0.0/0
+      PHP_MEMORY_LIMIT: 1024M
+      PHP_UPLOAD_LIMIT: 512M
+      APACHE_BODY_LIMIT: '536870912'
+    volumes:
+    - data:/var/www/html/data
+    - config:/var/www/html/config
+    - apps:/var/www/html/custom_apps
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -fsS
+      - -o
+      - /dev/null
+      - http://127.0.0.1:80/status.php
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+    entrypoint:
+    - /bin/sh
+    - -c
+    - 'mkdir -p /docker-entrypoint-hooks.d/before-starting
+
+      printf ''%s
+
+      '' ''#!/bin/sh'' ''set -e'' ''php /var/www/html/occ config:system:set sqlite.journal_mode --value=DELETE''
+      > /docker-entrypoint-hooks.d/before-starting/sqlite-mode.sh
+
+      chmod 755 /docker-entrypoint-hooks.d/before-starting/sqlite-mode.sh
+
+      exec /entrypoint.sh apache2-foreground
+
+      '
+volumes:
+  data: {}
+  config: {}
+  apps: {}
