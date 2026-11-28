@@ -93,7 +93,7 @@ services:
         trap 'dump; kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`; while [ -e "\`printenv PGDATA\`/postmaster.pid" ]; do sleep 1; done; exit 0' TERM INT
         until pg_isready -q -h 127.0.0.1 -U linkwarden -d linkwarden; do sleep 1; done
         touch /var/lib/postgresql/data/restored /tmp/restored
-        while true; do sleep 300 & wait; dump; done
+        while true; do for i in `seq 60`; do sleep 5; done; dump; done
     volumes:
       - dbdata:/var/lib/postgresql/data
       - dbbackup:/backup
