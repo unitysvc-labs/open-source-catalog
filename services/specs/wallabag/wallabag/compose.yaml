@@ -45,7 +45,7 @@ services:
       # Generous on purpose: the platform restarts a container that has not passed its check by the end
       # of this period, and a first start there (sandboxed, on a small size) is several times slower than
       # under Docker on a workstation.
-      start_period: 150s
+      start_period: 120s
 volumes:
   data:
   images:
