@@ -1,0 +1,81 @@
+# Komga, one private instance per enrollment. The administrator's email address and password are bound from
+# the channel's `environment` in offering.json; the values below are the instance's fixed, non-secret settings.
+# The image runs as root, as upstream ships it.
+services:
+  komga:
+    image: gotson/komga:1.30.2@sha256:e4198a0d529d2be70bee5012484538154897c2d3071043b133bdaeacb806444e
+    ports:
+      - 25600
+    # Komga has no setting for a first account: on a new database, whoever reaches the address first claims the
+    # server and becomes its administrator. So this wraps the image's own start command (the `java` line is the
+    # image's entrypoint, unchanged) to add one step. Before the server listens on the network, Komga is started
+    # on 127.0.0.1:25601 only and asked, through its own claim API, whether it has been claimed. If not (a new
+    # database), it is claimed with the bound ADMIN_EMAIL and ADMIN_PASSWORD; if it already has users, nothing is
+    # done, so a restart never resets a password. That private server is then stopped, a marker is written
+    # beside the database, and only then does Komga listen on port 25600. With the marker and the database
+    # present, later starts skip the step. If the step fails, a database that this start created is removed and
+    # the container stops with an error, so the next start tries again.
+    # Backticks and `printenv`, no dollar sign.
+    entrypoint:
+      - sh
+      - -c
+      - |
+        claim() {
+          rm -f /tmp/claim.json
+          for i in `seq 100`; do
+            curl -fsS -o /tmp/claim.json http://127.0.0.1:25601/api/v1/claim 2>/dev/null && break
+            pgrep java >/dev/null || return 1
+            sleep 1
+          done
+          grep -q '"isClaimed":true' /tmp/claim.json && echo 'administrator account: the server is already claimed' && return 0
+          grep -q '"isClaimed":false' /tmp/claim.json || return 1
+          curl -fsS -o /dev/null -X POST -H "X-Komga-Email: `printenv ADMIN_EMAIL`" -H "X-Komga-Password: `printenv ADMIN_PASSWORD`" http://127.0.0.1:25601/api/v1/claim || return 1
+          echo 'administrator account: created from the enrollment'
+        }
+        if [ -s /config/claimed ] && [ -s /config/database.sqlite ]; then
+          echo 'administrator account: created on an earlier start'
+        else
+          rm -f /tmp/new-database
+          [ -s /config/database.sqlite ] || echo new > /tmp/new-database
+          java -XX:TieredStopAtLevel=1 -Dspring.profiles.include=docker --enable-native-access=ALL-UNNAMED -jar application.jar --spring.config.additional-location=file:/config/ --server.address=127.0.0.1 --server.port=25601 &
+          if claim; then
+            pkill java; wait
+            echo claimed > /config/claimed
+          else
+            echo 'administrator account: could not be created' >&2
+            pkill java; wait
+            [ -e /tmp/new-database ] && rm -f /config/database.sqlite /config/database.sqlite-journal
+            exit 1
+          fi
+        fi
+        exec java -Dspring.profiles.include=docker --enable-native-access=ALL-UNNAMED -jar application.jar --spring.config.additional-location=file:/config/
+    environment:
+      # Keep the three SQLite databases in rollback-journal mode instead of Komga's default write-ahead log,
+      # so the database files that are copied to the customer's home are complete without a `-wal` file.
+      KOMGA_DATABASE_JOURNALMODE: DELETE
+      KOMGA_TASKSDB_JOURNALMODE: DELETE
+      KOMGA_SESSIONSDB_JOURNALMODE: DELETE
+      # The heap limit upstream documents, set to fit the `small` size (2 GiB) with room for the rest of the JVM.
+      JAVA_TOOL_OPTIONS: -Xmx1g
+    volumes:
+      # Komga's configuration folder: the SQLite databases (users, libraries, series, covers, reading progress,
+      # sessions) and custom fonts. The channel decides whether this volume persists, in the komga folder of the
+      # customer's home (offering.json, `volumes`), and leaves out the search index and the logs; under plain
+      # Docker it is an ordinary named volume.
+      - config:/config
+      # The comics, manga and e-books, read only. The channel restores them from the customer's home before
+      # Komga starts.
+      - library:/library:ro
+    healthcheck:
+      # Port 25600 is opened only after the administrator account step, so this passes only then.
+      test: [CMD, curl, -fsS, -o, /dev/null, "http://127.0.0.1:25600/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (sandboxed, on a small size) is several times slower than
+      # under Docker on a workstation.
+      start_period: 110s
+volumes:
+  config:
+  library:
