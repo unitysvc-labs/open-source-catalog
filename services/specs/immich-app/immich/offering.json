@@ -63,7 +63,7 @@
           "properties": {
             "DB_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Keep this value whenever using the stored database backup. Save it now: the platform stores it as a secret and does not show it again.",
+              "description": "Keep this value whenever using the stored database backup. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
               "format": "password",
               "minLength": 12,
               "pattern": "^[A-Za-z0-9_-]+$",
