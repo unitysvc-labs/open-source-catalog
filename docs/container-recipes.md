@@ -20,6 +20,15 @@ The [core instance-spec validator](https://github.com/unitysvc/unitysvc-core/blo
 | Resource settings | The channel's named size controls resources. `deploy.resources` is ignored; `mem_limit` and `cpus` are rejected. |
 | Unsupported | Builds, privileged/host access, bind mounts, Compose secrets/configs, and other keys rejected by the validator |
 
+### Stacks: services that talk to each other
+
+Each Compose service runs as its own pod. Two rules follow that Docker Compose does not have, so a stack that works under Docker can still fail on the platform:
+
+- **Declare the port of every service another service connects to**, with `ports` (the container port alone, for example `- 5432`), even when it is never published. A service gets its name inside the instance only when it declares ports, and only declared ports are open between an instance's services. A database with no `ports` cannot be reached: its name does not resolve, and the application waits for it forever. `expose` is ignored and does not count.
+- **There is no start order.** `depends_on` is ignored, so an application must wait for or retry its dependencies itself.
+
+Give each service its size in the channel's `resources` map, and name in `entries` only the service customers reach.
+
 Images must already be built. A tag is accepted; use a digest to pin the image you tested. Check the target architecture. Compose service names must be DNS labels: lowercase letters, digits and hyphens.
 
 A named volume is scratch storage by default. It survives a container restart but is lost when the instance is stopped or replaced, and counts against ephemeral-storage limits. To keep a volume's files between runs, persist it in the channel (below); the Compose file stays the same and runs unchanged under Docker.
