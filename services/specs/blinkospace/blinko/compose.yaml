@@ -43,7 +43,7 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     # The data directory is scratch: it cannot be kept in the customer's storage, because the copy skips the
     # empty files and folders PostgreSQL needs and keeps no file modes, so a restored directory does not
-    # start. What persists is a dump in /backup. On a start with no data directory the dump is restored
+    # start. What persists is a dump in /backup. On a start with no restored data directory the dump is restored
     # before the server listens on the network (so Blinko never sees a half-restored database); it is
     # rewritten every five minutes and once more at a normal stop. The server is stopped with SIGINT (a fast
     # shutdown) sent to the postmaster. Backticks and `printenv`, no dollar sign.
@@ -52,17 +52,18 @@ services:
       - -c
       - |
         dump() { pg_dump -U blinko -d blinko -Fc -f /backup/db.dump.tmp && mv /backup/db.dump.tmp /backup/db.dump; }
-        if [ ! -s "`printenv PGDATA`/PG_VERSION" ] && [ -s /backup/db.dump ]; then
-          docker-entrypoint.sh postgres -c listen_addresses= &
-          until pg_isready -q -U blinko -d blinko; do sleep 1; done
-          pg_restore -U blinko -d blinko --no-owner --exit-on-error /backup/db.dump || exit 1
+        if [ ! -e /var/lib/postgresql/data/restored ] && [ -s /backup/db.dump ]; then
+          rm -rf "`printenv PGDATA`"
+          docker-entrypoint.sh postgres -c listen_addresses= -p 5433 &
+          until pg_isready -q -p 5433 -U blinko -d blinko; do sleep 1; done
+          pg_restore -p 5433 -U blinko -d blinko --no-owner --exit-on-error /backup/db.dump || exit 1
           kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`
           while [ -e "`printenv PGDATA`/postmaster.pid" ]; do sleep 1; done
         fi
         docker-entrypoint.sh postgres &
         trap 'dump; kill -INT `head -1 "\`printenv PGDATA\`/postmaster.pid"`; while [ -e "\`printenv PGDATA\`/postmaster.pid" ]; do sleep 1; done; exit 0' TERM INT
         until pg_isready -q -h 127.0.0.1 -U blinko -d blinko; do sleep 1; done
-        touch /tmp/restored
+        touch /var/lib/postgresql/data/restored /tmp/restored
         while true; do sleep 300 & wait; dump; done
     volumes:
       - postgres-data:/var/lib/postgresql/data

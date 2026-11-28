@@ -34,9 +34,9 @@ Do not persist a database's live data directory. The storage copy skips empty fi
 Persist a dump instead, as `blinkospace/blinko` and `knadh/listmonk` do (copy the `command` of their database service):
 
 - The data directory is a scratch volume; a second volume, `/backup`, is the one the channel persists (with `"exclude": ["*.tmp"]`).
-- The database service's command wraps the image's entrypoint. On a start with no data directory and a dump present, it starts the server on the Unix socket only, restores the dump, and stops it; then it starts the server normally, writes a dump every five minutes, and writes a last one on SIGTERM before stopping the server.
+- The database service's command wraps the image's entrypoint. On a start where a dump is present and the data directory carries no `restored` marker, it removes the data directory, starts the server on the Unix socket only and on another port (5433), restores the dump, and stops it; then it starts the server normally, writes the marker, writes a dump every five minutes, and writes a last one on SIGTERM before stopping the server. The other port matters: while the image initialises a new data directory it runs a temporary server on the usual port, and a restore that starts against that one fails.
 - Its healthcheck passes only after the restore, so the application, which reaches the database through its service name, never sees a half-restored database.
-- Test it under Docker: start, write data, `docker compose stop`, delete the data-directory volume, start again, and check the data is back. Check too that the stop takes seconds, not the whole timeout.
+- Test it under Docker: start, write data, `docker compose stop`, delete the data-directory volume, start again, and check the data is back. Check too that the stop takes seconds, not the whole timeout. Run it with the database limited to the CPU of its size (`cpus: 0.5` for `nano`) and repeat the restore three times: the timing faults only show on a slow start.
 - Say in `usage.md` that a crash can lose up to five minutes and that the dump must stay under 1 GiB.
 
 The same reasoning applies to other databases (MySQL/MariaDB, Redis with persistence): persist an export the database writes, not its working files.
