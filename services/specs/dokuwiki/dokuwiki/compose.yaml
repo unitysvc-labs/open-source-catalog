@@ -1,0 +1,71 @@
+# DokuWiki, one private instance per enrollment. The wiki title, the administrator and its password are bound
+# from the channel's `environment` in offering.json; nothing in this file is secret.
+# A new DokuWiki is configured by its web installer (install.php), where the first visitor names the
+# administrator and chooses the access policy, and it has no environment setting for either. So on a storage
+# folder without a configuration the entrypoint below runs DokuWiki's own installer before the web server
+# starts: it serves install.php with PHP's built-in server on the loopback address only, posts the form
+# (access control on, the closed policy, registration off) and stops that server. The installer writes
+# conf/local.php, conf/users.auth.php (with DokuWiki's own password hash) and conf/acl.auth.php, and refuses
+# to run again once they exist. If the step fails the files are removed and the container stops, so the
+# instance never starts with an open installer. A folder that already holds the three files (a restore, or a
+# restart) is left alone; one that holds only some of them stops the container, because DokuWiki would run
+# without access control.
+# On every start it then sets each page file's modification time back to the date of the page's last entry in
+# its changelog (data/meta/<page>.changes). DokuWiki takes a page's revision from that time, and a restored
+# file carries the time it was stored, a few seconds later; left alone, DokuWiki answers the first edit of
+# such a page with "A newer version exists". DokuWiki corrects the time itself, but only after it has read it.
+# A page whose last entry is a deletion is skipped: its file is back only because the copy in the customer's
+# home never deletes, and DokuWiki then records it as an external edit.
+# The script has no dollar sign, so neither Docker Compose nor the platform rewrites it.
+services:
+  dokuwiki:
+    image: dokuwiki/dokuwiki:2026-07-14c@sha256:5d9eba8edb0c31c39c55efeb9d066bc5cb0e845024147c3eeb9bc63baf153b1f
+    entrypoint:
+      - bash
+      - -c
+      - |
+        cd /storage || exit 1
+        if [ ! -s conf/local.php ] && [ ! -s conf/users.auth.php ] && [ ! -s conf/acl.auth.php ]; then
+          /dokuwiki-storagesetup.sh > /dev/null 2>&1 &&
+          { php -S 127.0.0.1:8081 -t /var/www/html > /dev/null 2>&1 & } &&
+          curl -s -o /dev/null --retry 30 --retry-delay 1 --retry-connrefused http://127.0.0.1:8081/health.php &&
+          curl -s -o /dev/null http://127.0.0.1:8081/install.php \
+            --data-urlencode "l=en" --data-urlencode "submit=" \
+            --data-urlencode "d[title]=`printenv DOKUWIKI_TITLE`" \
+            --data-urlencode "d[acl]=on" \
+            --data-urlencode "d[superuser]=`printenv DOKUWIKI_ADMIN_USER`" \
+            --data-urlencode "d[fullname]=Administrator" \
+            --data-urlencode "d[email]=admin@example.com" \
+            --data-urlencode "d[password]=`printenv DOKUWIKI_ADMIN_PASSWORD`" \
+            --data-urlencode "d[confirm]=`printenv DOKUWIKI_ADMIN_PASSWORD`" \
+            --data-urlencode "d[policy]=2" \
+            --data-urlencode "d[license]=0" &&
+          kill %1 &&
+          grep -qs "useacl" conf/local.php &&
+          grep -qs "^`printenv DOKUWIKI_ADMIN_USER`:" conf/users.auth.php &&
+          [ -s conf/acl.auth.php ] ||
+          { rm -f conf/local.php conf/users.auth.php conf/acl.auth.php conf/plugins.local.php; echo "first-run setup failed" >&2; exit 1; }
+        elif [ ! -s conf/local.php ] || [ ! -s conf/users.auth.php ] || [ ! -s conf/acl.auth.php ]; then
+          echo "conf/local.php, conf/users.auth.php and conf/acl.auth.php must all be present, or all absent" >&2
+          exit 1
+        fi
+        find data/meta -name "*.changes" 2> /dev/null |
+          sed -n 's|^data/meta/\(.*\)\.changes|[ "`tail -n 1 "data/meta/\1.changes" \| cut -f 3`" != D ] \&\& touch -c -d "@`tail -n 1 "data/meta/\1.changes" \| cut -f 1`" "data/pages/\1.txt"|p' |
+          sh 2> /dev/null
+        exec /dokuwiki-entrypoint.sh
+    ports:
+      - 8080
+    volumes:
+      # Everything DokuWiki writes: conf/ (settings, users, access control), data/ (pages, media, old
+      # revisions, metadata, search index) and lib/ (plugins and templates you install). The channel decides
+      # whether this volume persists, in the dokuwiki folder of the customer's home (offering.json, `volumes`);
+      # under plain Docker it is an ordinary named volume.
+      - storage:/storage
+    healthcheck:
+      test: [CMD, curl, -f, -s, -o, /dev/null, "http://127.0.0.1:8080/health.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 110s
+volumes:
+  storage:

@@ -1,0 +1,130 @@
+{
+  "capabilities": [
+    "wiki | Keeps pages as plain text files that are edited in the browser with a simple markup, with old revisions and comparison, namespaces, full-text search, uploaded media, and access control by user and group."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official DokuWiki image in a separate container for each enrollment, with its own HTTPS address. DokuWiki is a wiki that needs no database: every page is a plain text file, written in a simple markup and edited in the browser. It keeps every old revision of a page with a comparison view, has namespaces, a full-text search, a media manager for uploaded images and files, access control lists by user and group, and a large library of plugins and templates that the administrator installs from the wiki itself. The wiki starts private: reading and editing need a sign-in, and visitors cannot register. All of it (pages, media, old revisions, settings, users and installed plugins) is kept as files in the `dokuwiki` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel, choose a wiki title and keep or replace the generated administrator password. Sign in at `https://<instance>/` with the administrator name and password; DokuWiki's web installer is completed from these values before the web server starts, so it is never open to a visitor. The address needs no configuration. Two limits follow from how the files are kept: a page or media file you delete comes back at the next start unless you also delete its file in your home, and the instance cannot send email. You can run one DokuWiki instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream DokuWiki manual, forum and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Pages are plain text files in a simple markup; no database",
+      "Every revision of a page is kept, with a comparison view and recent changes",
+      "Namespaces, full-text search and a media manager for images and files",
+      "Access control lists by user and group; private by default",
+      "Plugins and templates installed from the wiki's own extension manager",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/dokuwiki/docker#readme",
+      "homepage": "https://github.com/dokuwiki/dokuwiki",
+      "source_code": "https://github.com/dokuwiki/dokuwiki"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "dokuwiki",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted wiki that keeps pages as plain text files: edit in the browser, keep every revision, search, upload media and control access, with data kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps DokuWiki's pages, media, old revisions, settings, users and installed plugins in the dokuwiki folder of your home, so your wiki is still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=dokuwiki/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private DokuWiki; its files are kept in the dokuwiki folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "dokuwiki"
+        }
+      ],
+      "environment": {
+        "dokuwiki": {
+          "DOKUWIKI_ADMIN_PASSWORD": "{{ params.DOKUWIKI_ADMIN_PASSWORD }}",
+          "DOKUWIKI_ADMIN_USER": "{{ params.DOKUWIKI_ADMIN_USER }}",
+          "DOKUWIKI_TITLE": "{{ params.DOKUWIKI_TITLE }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "DOKUWIKI_ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It becomes the administrator's password only when DokuWiki is first set up: your wiki lives in your home, so if it is already set up (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in DokuWiki under Update Profile. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Administrator password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "DOKUWIKI_ADMIN_USER": {
+              "default": "admin",
+              "description": "The administrator's login name, created when DokuWiki is first set up: lower-case letters and digits, which may be joined by a dot, hyphen or underscore. It is ignored once the wiki is set up; manage users in DokuWiki's User Manager.",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$",
+              "title": "Administrator name",
+              "type": "string"
+            },
+            "DOKUWIKI_TITLE": {
+              "default": "My Wiki",
+              "description": "The name shown at the top of every page. It is used only when DokuWiki is first set up; change it later in DokuWiki under Admin > Configuration Settings.",
+              "maxLength": 100,
+              "minLength": 2,
+              "title": "Wiki title",
+              "type": "string"
+            }
+          },
+          "required": [
+            "DOKUWIKI_TITLE",
+            "DOKUWIKI_ADMIN_USER",
+            "DOKUWIKI_ADMIN_PASSWORD"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "DOKUWIKI_ADMIN_PASSWORD": "local-test-password-only",
+          "DOKUWIKI_ADMIN_USER": "admin",
+          "DOKUWIKI_TITLE": "My Wiki"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "storage": {
+          "exclude": [
+            "data/cache",
+            "data/locks",
+            "data/tmp",
+            "data/log"
+          ],
+          "gid": 33,
+          "mode": "rw",
+          "source": "{{ home.path }}/dokuwiki",
+          "type": "persist",
+          "uid": 33
+        }
+      }
+    }
+  }
+}
