@@ -1,0 +1,140 @@
+{
+  "capabilities": [
+    "cron-job-monitoring | Gives each scheduled job a ping URL and marks the job down when a ping does not arrive within its period or cron schedule plus grace time; jobs can also report a start, a failure or an exit code.",
+    "downtime-alerts | Sends a notification when a check goes down or comes back up through the integrations you configure, such as webhooks, Slack, Microsoft Teams, Mattermost, ntfy, Gotify or PagerDuty. Email alerts are not available in this recipe."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Healthchecks image in a separate container for each enrollment, with its own HTTPS address. Healthchecks monitors cron jobs and other scheduled tasks by listening for their pings: each check has its own ping URL, the job requests it when it finishes (and can also signal a start or a failure), and when a ping does not arrive within the check's period and grace time the check goes down and Healthchecks notifies you through the integrations you set up, such as webhooks, Slack, Microsoft Teams, Mattermost, ntfy, Gotify or PagerDuty. Schedules can be simple periods or cron expressions, and the web interface shows each check's status, its log of pings and status badges; there is also a management REST API. Accounts, checks and ping history are kept in the instance's own SQLite database, stored in the `healthchecks` folder of your home, so they survive stopping the instance and even removing it and enrolling again. This instance has no mail server configured, so it does not send email alerts or reports and does not offer sign-in links by email; integrations that need their own application credentials (Discord, Telegram, Matrix, Signal, Pushover, SMS) are not set up either.\n\nEnroll in the base channel and keep or replace the generated account password. Sign in at `https://<instance>/` with the account email and password. Then replace the placeholder instance address with your instance's address and save, so that the ping URLs shown in the interface are the real ones; pings and sign-in work before that, only the displayed addresses are wrong. Sign-up is closed, so nobody else can create an account. A check only stays up while the instance is running to receive its pings, and alerts are only sent while it runs. You can run one Healthchecks instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Healthchecks documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "A ping URL per job, with start, success, failure and exit-code signals",
+      "Simple period or cron-expression schedules with a grace time",
+      "Alerts through webhooks, Slack, Microsoft Teams, Mattermost, ntfy, Gotify, PagerDuty and other integrations",
+      "Ping log with request bodies, status badges and a management REST API",
+      "Projects, tags and read-only API keys",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://healthchecks.io/docs/",
+      "homepage": "https://healthchecks.io",
+      "source_code": "https://github.com/healthchecks/healthchecks"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "healthchecks",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted monitor for cron jobs and background tasks: each job pings its own URL, and Healthchecks alerts you when a ping is late. Data is kept in your home between runs.",
+  "time_created": "2026-11-27T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Healthchecks' database in the healthchecks folder of your home, so your account, checks and ping history are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=healthchecks/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Healthchecks instance; its data is kept in the healthchecks folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8000,
+          "service": "healthchecks"
+        }
+      ],
+      "environment": {
+        "healthchecks": {
+          "ADMIN_EMAIL": "{{ params.ADMIN_EMAIL }}",
+          "ADMIN_PASSWORD": "{{ params.ADMIN_PASSWORD }}",
+          "SECRET_KEY": "{{ params.SECRET_KEY }}",
+          "SITE_ROOT": "{{ params.SITE_ROOT }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "ADMIN_EMAIL": {
+              "default": "admin@example.com",
+              "description": "The email address you sign in with; Healthchecks identifies accounts by email. The account is a superuser, created on the first start. This instance sends no mail, so the address does not have to receive any. It is used only when no account with this address exists: your data lives in your home, so on a later start or enrollment the existing accounts still apply, and changing it later creates another superuser and leaves the first one in place.",
+              "maxLength": 254,
+              "minLength": 3,
+              "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+              "title": "Account email",
+              "type": "string"
+            },
+            "ADMIN_PASSWORD": {
+              "default": "{{ token_urlsafe(24) }}",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the account's password only when Healthchecks first creates the account: your data lives in your home, so if the account already exists (an earlier enrollment, or a later restart) this value is ignored and the existing password still applies. Change the password in Healthchecks' admin pages (`/admin/`, Users); the Set Password page in Account Settings needs email, which this instance does not send. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 12,
+              "title": "Account password",
+              "type": "string",
+              "writeOnly": true
+            },
+            "SECRET_KEY": {
+              "default": "{{ token_urlsafe(48) }}",
+              "description": "Generated for this enrollment; keep it. Healthchecks signs its session cookies and other tokens with it. You never type it. Changing it signs everyone out. Anyone who knows it could forge a sign-in, so keep it private. Save it now: the platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 32,
+              "title": "Signing secret",
+              "type": "string",
+              "writeOnly": true
+            },
+            "SITE_ROOT": {
+              "default": "https://instance.invalid",
+              "description": "The address of this instance, for example https://abc123.example.app (shown in the enrollment's instance details), with no trailing slash and no path. Healthchecks builds the ping URLs, badge URLs and links it shows from this value, not from the address you opened. Sign-in and incoming pings work without it, but with the placeholder https://instance.invalid the ping URLs shown in the interface point nowhere, so replace it with your instance address after the instance is created, then save; changing it restarts the instance and keeps your data. The platform needs a value here, which is why there is a placeholder.",
+              "pattern": "^https?://[^/\\s]+$",
+              "title": "Instance address",
+              "type": "string"
+            }
+          },
+          "required": [
+            "ADMIN_EMAIL",
+            "ADMIN_PASSWORD",
+            "SECRET_KEY"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "ADMIN_EMAIL": "admin@example.com",
+          "ADMIN_PASSWORD": "local-test-password-only",
+          "SECRET_KEY": "local-test-secret-key-only-0123456789",
+          "SITE_ROOT": "https://instance.invalid"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm",
+            "*-journal"
+          ],
+          "gid": 999,
+          "mode": "rw",
+          "source": "{{ home.path }}/healthchecks",
+          "type": "persist",
+          "uid": 999
+        }
+      }
+    }
+  }
+}
