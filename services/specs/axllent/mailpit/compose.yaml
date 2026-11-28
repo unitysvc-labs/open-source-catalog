@@ -1,0 +1,29 @@
+# Mailpit, one private test inbox per enrollment. The sign-in for the web interface and the API is bound from
+# the channel's `environment` in offering.json (MP_UI_AUTH); the values below are the fixed, non-secret settings.
+services:
+  mailpit:
+    image: axllent/mailpit:v1.34.0@sha256:23a2ef85bc50853ab3093645d1d64679afd8887e89da5e48a88940c172591a4e
+    ports:
+      - 8025
+    environment:
+      # Listen on IPv4 (the image's default, [::], needs IPv6 in the pod). Only the web port is published:
+      # the SMTP port is reachable inside the container alone.
+      MP_UI_BIND_ADDR: 0.0.0.0:8025
+      MP_SMTP_BIND_ADDR: 0.0.0.0:1025
+      # The inbox is a scratch volume, so it survives a container restart and is empty after a stop.
+      MP_DATABASE: /data/mailpit.db
+      # Keep the newest 500 messages (Mailpit's default) of at most 10 MB each; older ones are pruned.
+      MP_MAX_MESSAGES: "500"
+      MP_MAX_MESSAGE_SIZE: "10"
+      # The image is pinned, so do not ask GitHub whether a newer release exists.
+      MP_DISABLE_VERSION_CHECK: "true"
+    volumes:
+      - data:/data
+    healthcheck:
+      test: [CMD, /mailpit, readyz]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 110s
+volumes:
+  data:
