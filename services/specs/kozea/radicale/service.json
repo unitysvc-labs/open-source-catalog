@@ -1,0 +1,10 @@
+{
+  "display_name": "Radicale Calendar and Contacts Server (CalDAV and CardDAV)",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.radicale.volumes[0]: volume 'data' at /var/lib/radicale is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "kozea/radicale",
+  "service_id": "c439c9bb-d3cd-47fe-8c88-6ce06713a777",
+  "status": "created",
+  "time_created": "2026-11-28T15:23:12.088533Z"
+}
