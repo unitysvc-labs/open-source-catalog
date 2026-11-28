@@ -1,0 +1,28 @@
+# Shiori, one private instance per enrollment. The session secret key is bound from the channel's `environment`
+# in offering.json; the values below are the instance's fixed, non-secret settings.
+# The image is built from scratch: it holds only the shiori binary, runs as root and has no shell, curl or wget,
+# and Shiori has no health command, so there is no healthcheck (the server listens about two seconds after start).
+# For the same reason nothing can run before the server: the first account is Shiori's own default one, which
+# the customer replaces at first sign-in (see usage.md).
+services:
+  shiori:
+    image: ghcr.io/go-shiori/shiori:v1.8.0@sha256:d3bdfc1b68b8f267a04cf74d73b8a0e1d99ac71c3a9047375e97202f079eb1f6
+    ports:
+      - 8080
+    environment:
+      # The same database file Shiori uses by default (/shiori/shiori.db), with two SQLite connection settings.
+      # Shiori puts SQLite in write-ahead mode and never closes the database, not even at a clean stop, so by
+      # default nearly everything stays in shiori.db-wal (measured: a 4 KiB shiori.db beside a 790 KiB
+      # write-ahead file), and write-ahead files are not kept in the customer's home. With
+      # wal_autocheckpoint(1) SQLite moves every committed change into shiori.db at once, so that file alone
+      # is complete. Shiori 1.8.0 passes only the path of this URL to its SQLite driver (modernc.org/sqlite),
+      # which reads its own options after a question mark; the question mark is therefore written as %3F to
+      # stay in the path. Check this again when changing the image version.
+      SHIORI_DATABASE_URL: "sqlite:////shiori/shiori.db%3F_pragma=wal_autocheckpoint(1)&_pragma=busy_timeout(5000)"
+    volumes:
+      # The SQLite database (shiori.db) and the saved pages: archive/, ebook/ and thumb/. The channel decides
+      # whether this volume persists, in the shiori folder of the customer's home (offering.json, `volumes`);
+      # under plain Docker it is an ordinary named volume.
+      - data:/shiori
+volumes:
+  data:

@@ -1,0 +1,104 @@
+{
+  "capabilities": [
+    "bookmark-manager | Saves web bookmarks with tags, a title and an excerpt, and searches them by keyword or tag, through a web interface and a REST API.",
+    "offline-archive | Keeps a copy of each saved page you ask it to archive, with its readable text and an optional EPUB e-book, viewable after the original page changes or disappears."
+  ],
+  "currency": "USD",
+  "description": "UnitySVC runs the official Shiori image in a separate container for each enrollment, with its own HTTPS address. Shiori is a small bookmark manager written in Go: add a link with tags, a title and an excerpt, search by keyword or tag, and optionally keep an offline archive of the page, a readable text-only view and an EPUB e-book made from it. A bookmark can be marked public, which makes its saved content readable by link without signing in. Accounts are owners or read-only visitors, and there is a REST API. Everything is kept in the instance's own SQLite database and files, stored in the `shiori` folder of your home, so it survives stopping the instance and even removing it and enrolling again.\n\nEnroll in the base channel; the only setting is a generated secret key that keeps you signed in across restarts. Shiori has no setting for the first account's password: a new instance starts with Shiori's published default account, and anyone who reaches the address can use it until you change its password. Open `https://<instance>/` as soon as the instance is ready, sign in with the default account and change the password under Settings > Accounts. You can run one Shiori instance at a time. See How to use this service for full setup and limitations.\n\nYou pay the selected channel's platform compute cost while the instance runs, including idle time, and the platform keeps the data in your home while it is stopped. Labs adds no markup and receives no seller payout. See the upstream Shiori documentation and issue tracker for software-specific help.",
+  "details": {
+    "features": [
+      "Bookmarks with tags, titles and excerpts, searched by keyword or tag",
+      "Optional offline archive of each page, with a readable view and an EPUB e-book",
+      "Public links to the saved content of bookmarks you mark public",
+      "Owner and read-only visitor accounts",
+      "REST API with sign-in tokens",
+      "Your data is kept in your home, across stops, restarts and re-enrollment"
+    ],
+    "links": {
+      "documentation": "https://github.com/go-shiori/shiori/tree/master/docs",
+      "homepage": "https://github.com/go-shiori/shiori",
+      "source_code": "https://github.com/go-shiori/shiori"
+    },
+    "protocols": [
+      "http"
+    ]
+  },
+  "instance_spec": "compose.yaml",
+  "name": "shiori",
+  "payout_price": {
+    "description": "At cost: UnitySVC Labs receives no seller payout",
+    "price": "0",
+    "type": "constant"
+  },
+  "service_type": "container",
+  "status": "ready",
+  "summary": "A private, self-hosted bookmark manager with an offline archive: save and tag links, keep a readable copy and an e-book of each page, on your own Shiori instance with data kept in your home.",
+  "time_created": "2026-11-28T00:00:00Z",
+  "upstream_access_config": {
+    "base": {
+      "access_method": "container",
+      "customer_access_requests": [
+        {
+          "justification": "Keeps Shiori's database and archived pages in the shiori folder of your home, so your bookmarks are still there when you stop, remove or re-enroll the instance.",
+          "object": "service:home",
+          "options": "path=shiori/",
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "required": true
+        }
+      ],
+      "description": "One private Shiori instance; its data is kept in the shiori folder of your home between runs and enrollments.",
+      "entries": [
+        {
+          "auth": "app",
+          "name": "web",
+          "path": "/",
+          "port": 8080,
+          "service": "shiori"
+        }
+      ],
+      "environment": {
+        "shiori": {
+          "SHIORI_HTTP_SECRET_KEY": "{{ params.SHIORI_HTTP_SECRET_KEY }}"
+        }
+      },
+      "params": {
+        "schema": {
+          "properties": {
+            "SHIORI_HTTP_SECRET_KEY": {
+              "default": "{{ token_urlsafe(32) }}",
+              "description": "Generated for this enrollment. Shiori signs its sign-in tokens with it and reads it at every start. Keep it; there is no need to enter your own, and it is not a password you sign in with. If you replace it later, or enroll again with a newly generated one, everyone signed in has to sign in again; your bookmarks and accounts are not affected. The platform keeps it as a secret and does not show it again.",
+              "format": "password",
+              "minLength": 32,
+              "title": "Session secret key",
+              "type": "string",
+              "writeOnly": true
+            }
+          },
+          "required": [
+            "SHIORI_HTTP_SECRET_KEY"
+          ],
+          "type": "object"
+        },
+        "testing_defaults": {
+          "SHIORI_HTTP_SECRET_KEY": "local-test-secret-key-only-0123456789"
+        }
+      },
+      "resources": "nano",
+      "type": "enrollable",
+      "volumes": {
+        "data": {
+          "exclude": [
+            "*-wal",
+            "*-shm"
+          ],
+          "mode": "rw",
+          "source": "{{ home.path }}/shiori",
+          "type": "persist"
+        }
+      }
+    }
+  }
+}
