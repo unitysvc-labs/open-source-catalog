@@ -1,0 +1,79 @@
+# Metabase (open-source edition), one private instance per enrollment. The administrator's email address and
+# password are bound from the channel's `environment` in offering.json; the values below are the instance's
+# fixed, non-secret settings.
+services:
+  metabase:
+    image: metabase/metabase:v0.65.6@sha256:21a0c25c12a9d6334c9efb3d74db9973707baaf543ae6abb43bd6d42818e01af
+    ports:
+      - 3000
+    # This wraps the image's own entrypoint (/app/run_metabase.sh) to create the administrator account.
+    # A new Metabase has no account: the first visitor completes a setup wizard and becomes the
+    # administrator, and there is no environment setting or command that creates the account instead.
+    # So a background step waits until Metabase answers on 127.0.0.1, and if no account exists yet it
+    # completes the setup through Metabase's own API (the setup token from /api/session/properties, then
+    # POST /api/setup) with the bound MB_ADMIN_EMAIL and MB_ADMIN_PASSWORD. If an account already exists
+    # (a restart, or data restored from the customer's home) nothing is done, so a restart never resets
+    # the password. Only then is /tmp/ready written, and the healthcheck below passes only when it exists,
+    # so the instance is not ready, and is not given traffic, before the account exists. If the setup
+    # call fails, Metabase is stopped (kill 1) and the next start tries again.
+    # Metabase itself is started with `exec`, so it stays the container's main process and gets the stop
+    # signal. Backticks and `printenv`, no dollar sign.
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        (
+          until curl -fs -o /dev/null http://127.0.0.1:3000/api/health; do sleep 1; done
+          if curl -fsS http://127.0.0.1:3000/api/session/properties | grep -q '"has-user-setup":true'; then
+            echo 'administrator account: already exists'
+          else
+            {
+              printf '{"token":"'
+              curl -fsS http://127.0.0.1:3000/api/session/properties | tr ',' '\n' | grep '"setup-token"' | cut -d '"' -f 4 | tr -d '\n'
+              printf '","user":{"first_name":"Metabase","last_name":"Admin","email":"'
+              printenv MB_ADMIN_EMAIL | tr -d '\n' | sed 's/\\/\\\\/g; s/"/\\"/g'
+              printf '","password":"'
+              printenv MB_ADMIN_PASSWORD | tr -d '\n' | sed 's/\\/\\\\/g; s/"/\\"/g'
+              printf '"},"prefs":{"site_name":"Metabase","site_locale":"en","allow_tracking":false}}'
+            } > /tmp/setup.json
+            if curl -fsS -o /dev/null -X POST -H 'Content-Type: application/json' --data-binary @/tmp/setup.json http://127.0.0.1:3000/api/setup; then
+              rm -f /tmp/setup.json
+              echo 'administrator account: created from the enrollment'
+            else
+              rm -f /tmp/setup.json
+              echo 'administrator account: the setup call failed, stopping'
+              kill 1
+              exit 1
+            fi
+          fi
+          touch /tmp/ready
+        ) &
+        exec /app/run_metabase.sh
+    environment:
+      # The application database is Metabase's embedded H2 database, a file in the data volume.
+      MB_DB_TYPE: h2
+      MB_DB_FILE: /metabase-data/metabase.db
+      # The generated administrator password has no guaranteed digit, which the default rule requires;
+      # ask for length instead.
+      MB_PASSWORD_COMPLEXITY: weak
+      MB_PASSWORD_LENGTH: "12"
+      # Do not send anonymous usage statistics or check for new versions; the image is pinned.
+      MB_ANON_TRACKING_ENABLED: "false"
+      MB_CHECK_FOR_UPDATES: "false"
+    volumes:
+      # The H2 application database: accounts, saved questions, dashboards and the connection settings of
+      # your data sources. The channel decides whether this volume persists, in the metabase folder of the
+      # customer's home (offering.json, `volumes`); under plain Docker it is an ordinary named volume.
+      - data:/metabase-data
+    healthcheck:
+      # /tmp/ready is written only after the administrator account exists.
+      test: [CMD-SHELL, "test -f /tmp/ready && curl -fsS -o /dev/null http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Generous on purpose: the platform restarts a container that has not passed its check by the end
+      # of this period, and a first start there (a JVM that also creates its database) is several times
+      # slower than under Docker on a workstation.
+      start_period: 110s
+volumes:
+  data:

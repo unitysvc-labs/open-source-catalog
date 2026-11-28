@@ -1,0 +1,10 @@
+{
+  "display_name": "Metabase Business Intelligence (open-source edition)",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.metabase.volumes[0]: volume 'data' at /metabase-data is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "metabase/metabase",
+  "service_id": "4ee47491-6b3d-4f63-a08a-a4c97fcbd7ef",
+  "status": "created",
+  "time_created": "2026-11-28T14:23:45.443553Z"
+}
