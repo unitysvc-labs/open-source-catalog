@@ -1,0 +1,10 @@
+{
+  "display_name": "Apprise Notification API",
+  "instance_spec_warnings": [
+    "upstream_access_config.base: services.apprise.volumes[0]: volume 'config' at /config is persisted: its files are restored before the service starts and copied back while it runs and when it stops, so they outlive the instance. Nothing is deleted from storage; empty files, symlinks and files over 1 GiB are not stored; a crash can lose the last 30 seconds of writes"
+  ],
+  "name": "caronc/apprise-api",
+  "service_id": "cec447a8-a7ef-4f64-8f16-2b6b1e9148c4",
+  "status": "created",
+  "time_created": "2026-11-28T15:23:24.714627Z"
+}
