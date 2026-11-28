@@ -85,7 +85,7 @@
             },
             "PAPERLESS_ADMIN_PASSWORD": {
               "default": "{{ token_urlsafe(24) }}",
-              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Paperless-ngx first creates that account; after that the stored password applies and a change here is ignored. Change the password in Paperless-ngx itself, under My Profile. Save it now: the platform keeps it as a secret and does not show it again.",
+              "description": "Generated for this enrollment; keep it or enter your own. It is the administrator's password only when Paperless-ngx first creates that account; after that the stored password applies and a change here is ignored. Change the password in Paperless-ngx itself, under My Profile. Save this value securely. Treat enrollment settings as sensitive; a password field does not make them a secret vault.",
               "format": "password",
               "minLength": 12,
               "title": "Administrator password",
